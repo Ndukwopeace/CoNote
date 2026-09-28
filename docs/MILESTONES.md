@@ -65,11 +65,12 @@ A GitHub Actions workflow at `.github/workflows/ci.yml` checks every change. It 
   3. `npm run format:check` (Prettier)
   4. `npm run typecheck` (`tsc --noEmit`)
   5. `npm test -- --run --coverage` (Vitest, no watch mode; fails below the coverage floor)
-  6. `npm run build`, with `VITE_DATA_SOURCE=mock`
-  7. `npm run size` (bundle budget)
-  8. `npm run e2e` (Playwright against the built app, with axe checks)
-  9. `npm audit --audit-level=high`
-  10. gitleaks secret scan
+  6. SonarCloud scan with the coverage report (skipped until the `SONAR_TOKEN` secret exists)
+  7. `npm run build`, with `VITE_DATA_SOURCE=mock`
+  8. `npm run size` (bundle budget)
+  9. `npm run e2e` (Playwright against the built app, with axe checks)
+  10. `npm audit --audit-level=high`
+  11. gitleaks secret scan
 - **Hardening:** actions pinned to commit SHAs; `permissions: contents: read` (standards section 6.7).
 - **Concurrency:** a new push to the same branch cancels the run still in progress for that branch.
 - **Branch protection:** once the first run is green, require the CI check to pass before merging into the default branch. This is a repository setting, changed by the repo owner in GitHub.

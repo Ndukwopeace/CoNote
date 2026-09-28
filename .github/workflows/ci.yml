@@ -33,6 +33,9 @@ jobs:
       # Get the code. SECURITY: every action is pinned to an exact commit, so a hijacked tag
       # upstream can't swap in malicious code (supply-chain attack). The comment says the version.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history, so SonarCloud can tell which lines are new in a pull request.
+          fetch-depth: 0
 
       # Install the Node version from .nvmrc, with npm's download cache.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -60,6 +63,22 @@ jobs:
       # Vitest once (not watch mode), failing below the 80% coverage floor.
       - name: Unit and component tests with coverage
         run: npm test -- --run --coverage
+
+      # Whether the SonarCloud token is set up. Pull requests from forks never receive secrets,
+      # and the token is added by the repository owner, so the scan is skipped until it exists.
+      # Only "true" or "false" is written out; the token itself never leaves the secrets store.
+      - name: Check for SonarCloud token
+        id: sonar
+        run: echo "enabled=${{ secrets.SONAR_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      # Code quality and the coverage report above, sent to SonarCloud (sonar-project.properties).
+      - name: SonarCloud scan
+        if: steps.sonar.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        env:
+          # SECURITY: the token only lets CI upload analysis results. It is passed to this one
+          # step, not the whole job, so no npm script or other tool can read it.
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       # Production build.
       - name: Build

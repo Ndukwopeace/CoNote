@@ -588,6 +588,7 @@ Taken from the wireframes:
 | D26 | Form handling | Needed for FR-AUTH-3 inline errors | `react-hook-form` with `@hookform/resolvers` and the shared zod schemas in `lib/authSchemas.ts`. The mock auth service checks the same schemas, so the rules hold even when the form is skipped. Errors show on blur and on submit. |
 | D27 | Reset links | Found while building M2 | A reset code works once, and only the latest one works. The reset page checks the code before showing any field, and the service checks it again when the password is saved. A successful reset signs out any session on the device, so the sign-in page and its notice show. |
 | D28 | Landing dashboard preview | Open question 5 | Drawn with styled boxes (`DashboardPreview.tsx`), so no image file is needed and it follows the design tokens. Can be swapped for a real screenshot later. |
+| D29 | SonarCloud analysis | Automatic Analysis showed 0% coverage because it can't read coverage reports | Run the SonarCloud scan in CI after the tests, with `sonar-project.properties`. Coverage is measured on the same logic folders as Vitest. Automatic Analysis is turned off in SonarCloud, and the scan is skipped until the `SONAR_TOKEN` secret exists. |
 
 ---
 
