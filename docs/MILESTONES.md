@@ -1,6 +1,6 @@
 # CoNote Student Portal — Build Milestones
 
-These milestones break the work in [`REQUIREMENTS.md`](./REQUIREMENTS.md) into six stages. Each stage ends with something that can be opened in a browser and checked. They are a planning aid added during review; they were not part of the original brief.
+These milestones break the work in [`REQUIREMENTS.md`](./REQUIREMENTS.md) into six stages. Every milestone follows [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md), and nothing counts as done until its Definition of Done is met. Each stage ends with something that can be opened in a browser and checked. They are a planning aid added during review; they were not part of the original brief.
 
 ## How this build handles the backend
 
@@ -26,6 +26,17 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
 **Covers:** section 5 (technology and folders), section 6 (design system), section 7 (routes), section 8 (navigation), FR-AUTH-7.
 
 - Vite + React + TypeScript (strict), Tailwind, shadcn/ui, React Router, TanStack Query, ESLint, Prettier, Vitest
+- Quality tooling from `ENGINEERING_STANDARDS.md`:
+  - compiler flags (section 4.1)
+  - ESLint rules and import boundaries (sections 3.1 and 14)
+  - coverage thresholds (section 2.6)
+  - Husky + lint-staged (section 13)
+  - `size-limit` (section 8)
+  - Playwright with one smoke test
+  - test factories and `ServicesProvider` test helper
+  - PR template carrying the Definition of Done
+  - Dependabot config
+- Security groundwork: `SafeHtml`, `isSafeRedirect`, `lib/env.ts` zod check, `AppError` + `reportError`, and security headers in `vercel.json` (standards sections 5 and 6)
 - Colour, radius and font tokens in `src/styles/tokens.css`; Tailwind reads from them
 - Folder structure from section 5.1
 - Every route from section 7 registered, with placeholder pages
@@ -53,13 +64,18 @@ A GitHub Actions workflow at `.github/workflows/ci.yml` checks every change. It 
   2. `npm run lint` (ESLint, zero errors)
   3. `npm run format:check` (Prettier)
   4. `npm run typecheck` (`tsc --noEmit`)
-  5. `npm test -- --run` (Vitest, no watch mode)
+  5. `npm test -- --run --coverage` (Vitest, no watch mode; fails below the coverage floor)
   6. `npm run build`, with `VITE_DATA_SOURCE=mock`
+  7. `npm run size` (bundle budget)
+  8. `npm run e2e` (Playwright against the built app, with axe checks)
+  9. `npm audit --audit-level=high`
+  10. gitleaks secret scan
+- **Hardening:** actions pinned to commit SHAs; `permissions: contents: read` (standards section 6.7).
 - **Concurrency:** a new push to the same branch cancels the run still in progress for that branch.
 - **Branch protection:** once the first run is green, require the CI check to pass before merging into the default branch. This is a repository setting, changed by the repo owner in GitHub.
 - **CI does not deploy.** Vercel's GitHub integration builds and deploys on its own. CI only decides whether a change is safe to merge.
 - **Later additions:**
-  - M6: a Playwright smoke test that loads the landing page, logs in with the mock account, and opens each portal page
+  - M2–M5: a Playwright test for each critical flow as it is built (standards section 2.3)
   - Backend stage: Supabase secrets stored as GitHub Actions secrets, never in the workflow file
 
 ### Deployment
@@ -183,7 +199,8 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
 - Responsive pass at 360, 768, 1024 and 1440 px
 - Code-split routes; check bundle size and landing-page load time
 - Lint, typecheck and tests all passing in CI
-- Playwright smoke test added to the CI workflow
+- Every critical flow in standards section 2.3 covered by a Playwright test
+- Security headers verified on the production URL; Lighthouse check on the landing page
 - `README.md`: setup, scripts, environment variables, folder guide, and how to switch to Supabase
 
 **Done when:** the app is ready to demo or hand over, and a new developer can run it from the README alone.

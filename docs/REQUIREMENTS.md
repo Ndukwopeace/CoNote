@@ -3,7 +3,7 @@
 **Status:** Draft v0.2 (adds the gaps found in `USER_FLOWS.md`)
 **Scope:** Student Portal only
 **Sources:** Original written brief (partial, cut off during Sign Up) and the wireframes in [`docs/wireframes/`](./wireframes)
-**Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys)
+**Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys), [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md) (testing, architecture, security, review)
 
 Items marked **[Default]** are working decisions made to unblock the build. They can change later. Section 15 lists every one of them in a single table.
 
@@ -506,8 +506,8 @@ Taken from the wireframes:
   - Route guards are for UX only; real enforcement is RLS.
   - Nothing in the student bundle references teacher or admin routes.
   - Signing out clears the session, the TanStack Query cache, unsent note drafts and the Ask AI conversation. The next person on a shared computer sees none of the previous student's data, even with the Back button. Mock demo data (notes the student saved) stays, since it stands in for a server.
-- **NFR-5 Code quality:** TypeScript strict, zero ESLint errors, no `any` in domain code, and no component file over about 250 lines.
-- **NFR-6 Testing:** unit tests for the mock services and for form validation schemas; component tests for the note editor form, the summary state card and the auth guard.
+- **NFR-5 Code quality:** as defined in `ENGINEERING_STANDARDS.md` sections 3 and 4. In short: TypeScript strict with extra flags, zero ESLint errors, no `any`, enforced import boundaries, components under about 250 lines.
+- **NFR-6 Testing:** test-driven development as defined in `ENGINEERING_STANDARDS.md` section 2. It covers unit, component, contract and end-to-end tests, with an 80% coverage floor on logic folders.
 - **NFR-7 Browsers:** the latest two versions of Chrome, Edge, Firefox and Safari (desktop and iOS).
 
 ---
