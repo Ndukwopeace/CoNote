@@ -128,7 +128,7 @@ Added after M1 at the team's request. It comes straight after M2 so the icons us
 - Self-host Plus Jakarta Sans (D23): remove the Google Fonts `<link>` from `index.html` and the Google domains from the CSP
 - `vercel.json`:
   - CSP gains `worker-src 'self'` and `manifest-src 'self'`
-  - `Cache-Control: no-cache` on `/sw.js`, `/registerSW.js` and `/manifest.webmanifest`, so browsers always check for a new version
+  - `Cache-Control: no-cache` on `/sw.js` and `/manifest.webmanifest`, so browsers always check for a new version (the app registers the worker itself, so no `registerSW.js` is generated)
 - Offline banner (FR-PWA-4)
 - Update toast that waits while a note has unsaved changes (FR-PWA-5). In M2.5 the "unsaved changes" signal is a small shared flag that M4's editor will set.
 - "Install app" item in the avatar menu, with iOS instructions (FR-PWA-6)

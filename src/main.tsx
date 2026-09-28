@@ -3,6 +3,9 @@
  * into index.html's #root element.
  */
 
+// Plus Jakarta Sans, served from CoNote itself (decision D23): works offline, and no request
+// goes to a font server. The variable file covers every weight the app uses (400 to 800).
+import '@fontsource-variable/plus-jakarta-sans/wght.css'
 // Global styles and design tokens, loaded once for the whole app.
 import './styles/globals.css'
 
@@ -23,6 +26,8 @@ import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/routes'
 // Picks mock or Supabase services.
 import { createServices } from '@/app/createServices'
+// Catches the browser's install offer (FR-PWA-6).
+import { installPromptStore } from '@/features/pwa/installPrompt'
 // The checked environment variables (importing this validates them).
 import { env } from '@/lib/env'
 
@@ -30,6 +35,9 @@ import { env } from '@/lib/env'
 const container = document.getElementById('root')
 // Without it nothing can render; fail with a message that says why.
 if (!container) throw new Error('Missing #root element in index.html')
+
+// Listen for the install offer now: Chrome sends it early, often before any menu exists.
+installPromptStore.start(window)
 
 // One router for the whole app.
 const router = createBrowserRouter(routes)

@@ -9,8 +9,14 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     // ES modules.
     "module": "esnext",
-    // Global types: Vite's import.meta.env, Vitest's globals, and jest-dom's matchers.
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom/vitest"],
+    // Global types: Vite's import.meta.env, Vitest's globals, jest-dom's matchers, and the PWA
+    // plugin's virtual:pwa-register/react module.
+    "types": [
+      "vite/client",
+      "vitest/globals",
+      "@testing-library/jest-dom/vitest",
+      "vite-plugin-pwa/react"
+    ],
     // Don't type-check library declaration files (faster; libraries are checked by their authors).
     "skipLibCheck": true,
 

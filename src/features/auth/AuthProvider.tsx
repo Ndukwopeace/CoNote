@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query'
 // React hooks used below, and the children type.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+// Deletes cached responses that may hold student data (FR-PWA-7).
+import { clearRuntimeCaches } from '@/lib/pwa'
 // Reports failures without exposing them to the student.
 import { reportError } from '@/lib/reportError'
 // Route constants; the landing page is the sign-out destination.
@@ -98,6 +100,15 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
           // SECURITY: remove drafts, the AI conversation and session keys from browser storage.
           // This runs even when the service call failed.
           clearUserData([window.localStorage, window.sessionStorage])
+          // SECURITY: delete the service worker's runtime caches, which may hold notes or
+          // summaries (FR-PWA-7), so the next person can't read them offline. The app shell
+          // cache holds no student data and stays. Browsers without the Cache API skip this.
+          await clearRuntimeCaches('caches' in globalThis ? globalThis.caches : undefined).catch(
+            (error: unknown) => {
+              // Reported, never thrown: sign-out must still finish.
+              reportError(error, { where: 'AuthProvider.clearRuntimeCaches' })
+            },
+          )
         }
       },
       acknowledgeSignOut: () => {

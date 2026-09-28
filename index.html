@@ -13,15 +13,9 @@
     <meta name="description" content="CoNote: your notes, collective understanding." />
     <!-- Colours the mobile browser's address bar in the brand colour. -->
     <meta name="theme-color" content="#4F46E5" />
-    <!-- Open the font servers' connections early so the font loads sooner.
-         M2.5 replaces Google Fonts with a self-hosted copy (decision D23). -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Plus Jakarta Sans. display=swap shows fallback text at once instead of blank text. -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    />
+    <!-- Home-screen icon for iPhone and iPad, which ignore the manifest's icons (FR-PWA-1).
+         The manifest link itself is added by the PWA plugin at build time. -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
     <!-- Default tab title; each page replaces it with its own. -->
     <title>CoNote</title>
   </head>

@@ -30,14 +30,22 @@ Sent with every response (`"source": "/(.*)"`).
 |---|---|---|
 | `default-src 'self'` | Anything not listed below may load only from CoNote's own address | Any resource type we forgot to list is blocked by default, not allowed |
 | `script-src 'self'` | Scripts may load only from CoNote's own files | **Cross-site scripting (XSS).** Even if an attacker got HTML into a note past the sanitiser, an inline `<script>`, an `onclick=` handler or a script from another site would not run. |
-| `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` | Stylesheets from CoNote and Google Fonts; inline styles allowed | Radix sets inline `style=` positions for menus and tooltips, so inline styles must be allowed. Styles cannot run code. Google Fonts goes away in M2.5 (D23). |
-| `font-src 'self' https://fonts.gstatic.com` | Fonts from CoNote and Google's font server | Blocks fonts from anywhere else. The Google entry goes in M2.5. |
+| `style-src 'self' 'unsafe-inline'` | Stylesheets from CoNote only; inline styles allowed | Radix sets inline `style=` positions for menus and tooltips, so inline styles must be allowed. Styles cannot run code. Google Fonts was removed in M2.5 (D23). |
+| `font-src 'self'` | Fonts from CoNote only | Blocks fonts from anywhere else, including `data:` URLs, which is why `vite.config.ts` never inlines font files. |
 | `img-src 'self' data: blob: https://*.supabase.co` | Images from CoNote, inline data, local blobs (avatar previews) and Supabase storage | Stops injected images from loading from tracking servers, which could log who read a note and when |
+| `worker-src 'self'` | The service worker must come from CoNote | **Malicious service worker.** A worker sits between the app and the network and can rewrite every response; only CoNote's own `sw.js` may register. |
+| `manifest-src 'self'` | The web app manifest must come from CoNote | An injected `<link rel="manifest">` pointing elsewhere could rename the app or change where the installed app opens |
 | `connect-src 'self' https://*.supabase.co wss://*.supabase.co` | The app may only talk to CoNote and Supabase | **Data exfiltration.** Injected code could not send notes or session tokens to an attacker's server. |
 | `frame-ancestors 'none'` | No other site may show CoNote inside a frame | **Clickjacking,** where a hidden CoNote frame is placed under a fake button to trick a student into clicking "Delete" or "Sign out" |
 | `base-uri 'self'` | Limits the `<base>` tag to CoNote | An injected `<base>` tag redirecting every relative link and script path to another site |
 | `form-action 'self'` | Forms may only submit to CoNote | An injected form sending typed passwords to an attacker |
 | `object-src 'none'` | No `<object>` or `<embed>` plugins | Old plugin-based attacks (Flash, Java applets) |
+
+**Cache rule for the service worker and manifest** (`"source": "/(sw\\.js|manifest\\.webmanifest)"`):
+
+| Header | Value | Why |
+|---|---|---|
+| `Cache-Control` | `no-cache` | Browsers must ask the server every time, so a new deploy is noticed and the update toast appears (FR-PWA-5). Without it, a cached old worker could hide updates for hours. The hashed files under `/assets/` are still cached normally. |
 
 **Other headers:**
 
@@ -95,6 +103,8 @@ Run by the pre-commit hook on staged files only.
 | `react-router` | Addresses and page navigation |
 | `@tanstack/react-query` | Fetching, caching and refreshing server data |
 | `zod` | Checking data shapes (environment, forms, stored sessions, service responses) |
+| `workbox-window` | Registers the service worker and tells the app when a new version is waiting (FR-PWA-5); loaded on its own after the first render |
+| `@fontsource-variable/plus-jakarta-sans` | The Plus Jakarta Sans font files, served by CoNote itself (D23). SIL Open Font Licence. |
 | `react-hook-form` | Form state and validation timing (errors on blur and on submit) without re-rendering the whole form on each keystroke (D26) |
 | `@hookform/resolvers` | Connects the zod schemas to react-hook-form, so the forms and the auth service share one set of rules (D26) |
 | `dompurify` | **SECURITY:** removes dangerous HTML from notes before display (XSS) |
@@ -108,6 +118,7 @@ Run by the pre-commit hook on staged files only.
 | Package | What it's for |
 |---|---|
 | `vite`, `@vitejs/plugin-react` | Build tool and its React support |
+| `vite-plugin-pwa` | Generates the service worker, the precache list and the web app manifest at build time (M2.5) |
 | `tailwindcss`, `@tailwindcss/vite`, `tw-animate-css` | Styling and animations |
 | `typescript`, `@types/*` | Type checking and type definitions |
 | `vitest`, `@vitest/coverage-v8`, `jsdom` | Unit tests, coverage, simulated browser |

@@ -589,6 +589,10 @@ Taken from the wireframes:
 | D27 | Reset links | Found while building M2 | A reset code works once, and only the latest one works. The reset page checks the code before showing any field, and the service checks it again when the password is saved. A successful reset signs out any session on the device, so the sign-in page and its notice show. |
 | D28 | Landing dashboard preview | Open question 5 | Drawn with styled boxes (`DashboardPreview.tsx`), so no image file is needed and it follows the design tokens. Can be swapped for a real screenshot later. |
 | D29 | SonarCloud analysis | Automatic Analysis showed 0% coverage because it can't read coverage reports | Run the SonarCloud scan in CI after the tests, with `sonar-project.properties`. Coverage is measured on the same logic folders as Vitest. Automatic Analysis is turned off in SonarCloud, and the scan is skipped until the `SONAR_TOKEN` secret exists. |
+| D30 | App icons | FR-PWA-1 needs PNG icons; no designer files yet | Drawn from the logo mark by `scripts/generate-icons.mjs` using the Chromium already installed for the browser tests, so no image library is added. The PNGs are committed; rerun the script when the logo changes. |
+| D31 | Update toast | FR-PWA-5 names only "Reload" | A "Later" button hides the toast until the next update, so the student is never forced to reload mid-task. The app checks on focus at most once an hour. |
+| D32 | Offline banner placement | FR-PWA-4 says "under the top bar"; public and auth pages have no top bar | Shown at the top of the main content on every layout, as a polite live region, so it sits inside a landmark and is announced without interrupting. |
+| D33 | Runtime cache names | FR-PWA-7 needs to find student-data caches | Every runtime cache is named `conote-runtime-…` (`RUNTIME_CACHE_PREFIX` in `lib/pwa.ts`); sign-out deletes those and keeps the precache. M4 and M5 must use the prefix. |
 
 ---
 
