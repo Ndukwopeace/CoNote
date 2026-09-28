@@ -397,6 +397,7 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-PWA-6 Install.**
   - Where the browser supports an install prompt, an "Install app" item appears in the avatar menu. It is hidden once installed or where unsupported.
   - On iOS Safari, the same item opens short instructions: Share, then "Add to Home Screen".
+  - The public pages (landing, Terms, Privacy) show a "Get the CoNote app" strip at the top with an **Install app** button that does the same. It follows the same visibility rules and can be dismissed; the dismissal is remembered in the browser (D34).
 - **FR-PWA-7 Sign-out and caches.** The precached app shell holds no student data and stays. Every runtime cache that holds student data (FR-PWA-8) is deleted on sign-out (NFR-4).
 
 **Level 2 (with M4 and M5): offline reading.**
@@ -593,6 +594,7 @@ Taken from the wireframes:
 | D31 | Update toast | FR-PWA-5 names only "Reload" | A "Later" button hides the toast until the next update, so the student is never forced to reload mid-task. The app checks on focus at most once an hour. |
 | D32 | Offline banner placement | FR-PWA-4 says "under the top bar"; public and auth pages have no top bar | Shown at the top of the main content on every layout, as a polite live region, so it sits inside a landmark and is announced without interrupting. |
 | D33 | Runtime cache names | FR-PWA-7 needs to find student-data caches | Every runtime cache is named `conote-runtime-…` (`RUNTIME_CACHE_PREFIX` in `lib/pwa.ts`); sign-out deletes those and keeps the precache. M4 and M5 must use the prefix. |
+| D34 | Install offer for visitors | Asked for after M2.5: a way to get the app from the public page | A strip at the top of the public pages with an **Install app** button. It installs through the browser (Chrome and Edge dialog; iOS Add to Home Screen steps), since a web app has no file to download. Hidden where installing isn't possible or CoNote is already installed. Dismissable; the dismissal is kept in `localStorage` and holds no personal data. |
 
 ---
 

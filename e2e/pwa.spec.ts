@@ -7,7 +7,7 @@
 import { expect, test } from '@playwright/test'
 
 // Shared helpers.
-import { primaryNav, signIn, watchCspViolations } from './helpers.ts'
+import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
 
 // FR-PWA-1: what the browser needs to offer installation.
 test('the app has an installable manifest with its icons', async ({ page, request }) => {
@@ -124,4 +124,59 @@ test('the font loads from CoNote itself', async ({ page }) => {
   ).toBe(true)
   // ...and no font server was contacted.
   expect([...hosts].filter((host) => host.includes('google'))).toEqual([])
+})
+
+// D34: the "Get the CoNote app" strip on the public pages, where Chrome offers installation.
+test('the landing page offers to install the app', async ({ page }) => {
+  // Open the landing page and wait for it to render.
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+  // Chrome would fire this when CoNote is installable; tests run in a private window, where it
+  // never does, so the test fires it, with a prompt() that records being called.
+  await page.evaluate(() => {
+    const offer = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt: () => {
+        document.body.dataset.installPrompted = 'yes'
+        return Promise.resolve()
+      },
+    })
+    window.dispatchEvent(offer)
+  })
+
+  // The strip appears at the top, and passes axe, including colour contrast.
+  const strip = page.getByRole('banner').getByText('Get the CoNote app.')
+  await expect(strip).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // "Install app" opens the browser's dialog.
+  await page.getByRole('banner').getByRole('button', { name: 'Install app' }).click()
+  await expect(page.locator('body')).toHaveAttribute('data-install-prompted', 'yes')
+})
+
+// D34 on iOS, which has no install prompt: the strip shows the Add to Home Screen steps.
+test('the landing page shows the Add to Home Screen steps on iPhone', async ({ browser }) => {
+  // A fresh window that identifies as iPhone Safari.
+  const context = await browser.newContext({
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  })
+  const page = await context.newPage()
+
+  // The strip is offered straight away.
+  await page.goto('/')
+  await page.getByRole('banner').getByRole('button', { name: 'Install app' }).click()
+
+  // The steps open in a dialog, accessible.
+  const dialog = page.getByRole('dialog', { name: 'Install CoNote' })
+  await expect(dialog).toContainText('Add to Home Screen')
+  await expectNoAxeViolations(page)
+
+  // Closing the strip keeps it closed after a reload.
+  await dialog.getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('button', { name: 'Dismiss' }).click()
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByText('Get the CoNote app.')).toBeHidden()
+  await context.close()
 })
