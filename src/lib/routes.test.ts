@@ -22,6 +22,12 @@ describe('routeTo', () => {
     expect(routeTo.editNote('n1')).toBe('/notes/n1/edit')
   })
 
+  // SECURITY: proves the class ID in "Add Note" is encoded, so it can't add query parameters.
+  it('builds the new-note path for a class', () => {
+    expect(routeTo.newNote('swe-311-c4')).toBe('/notes/new?classId=swe-311-c4')
+    expect(routeTo.newNote('a&tab=x')).toBe('/notes/new?classId=a%26tab%3Dx')
+  })
+
   // SECURITY: proves an ID with "/" or "?" is encoded, so it can't change the address's shape.
   it('encodes IDs so they cannot change the path structure', () => {
     expect(routeTo.note('a/b?c')).toBe('/notes/a%2Fb%3Fc')

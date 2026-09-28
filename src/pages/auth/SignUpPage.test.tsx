@@ -105,7 +105,12 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign up' }))
 
     // Assert: greeted by the new first name.
-    expect(await screen.findByText(/Welcome, Ada/)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /Good (morning|afternoon|evening), Ada/,
+      }),
+    ).toBeInTheDocument()
   })
 
   // Proves the button shows progress while the account is created (FR-AUTH-6).

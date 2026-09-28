@@ -3,6 +3,8 @@
  * implementation. More services join the registry as the milestones that need them land.
  */
 
+// The course, class, note, summary and notification shapes.
+import type { AppNotification, ClassSession, Course, ID, Note, Summary } from '@/types/domain'
 // The auth data shapes the interface methods accept and return.
 import type {
   OAuthProvider,
@@ -46,8 +48,64 @@ export interface AuthService {
   onAuthChange(listener: (session: Session | null) => void): () => void
 }
 
+/** The student's enrolled courses (FR-CRS). Unknown IDs reject with a not_found AppError. */
+export interface CourseService {
+  /** Every course the student is enrolled in, in display order. */
+  listMyCourses(): Promise<Course[]>
+  /** One enrolled course. */
+  getCourse(courseId: ID): Promise<Course>
+}
+
+/** Class sessions (FR-CLS). Unknown IDs reject with a not_found AppError. */
+export interface ClassService {
+  /** One course's classes, in class-number order. */
+  listClasses(courseId: ID): Promise<ClassSession[]>
+  /** Every class across the student's enrolled courses, soonest first. */
+  listMyClasses(): Promise<ClassSession[]>
+  /** One class. */
+  getClass(classId: ID): Promise<ClassSession>
+}
+
+/** Narrows a note list to one course or one class. */
+export interface NoteFilter {
+  // Only notes for this course.
+  courseId?: ID
+  // Only notes for this class.
+  classId?: ID
+}
+
+/** The student's own notes. Reading only in M3; writing arrives in M4. */
+export interface NoteService {
+  /** The signed-in student's notes, newest first. Never anyone else's (RLS, section 12.2). */
+  listMyNotes(filter?: NoteFilter): Promise<Note[]>
+}
+
+/** Published summaries. The rest of the interface arrives in M5. */
+export interface SummaryService {
+  /** Published summaries only, newest first; draft content never reaches the client. */
+  listPublished(filter?: { courseId?: ID }): Promise<Summary[]>
+}
+
+/** The student's notifications. Reading only in M3; marking as read arrives in M5. */
+export interface NotificationService {
+  /** Newest first. */
+  list(): Promise<AppNotification[]>
+  /** How many are unread, for the bell's badge. */
+  unreadCount(): Promise<number>
+}
+
 /** The full set of services the app receives through ServicesProvider. */
 export interface Services {
-  // Authentication. Courses, notes and the rest join here in later milestones.
+  // Authentication.
   auth: AuthService
+  // Enrolled courses.
+  courses: CourseService
+  // Class sessions.
+  classes: ClassService
+  // The student's notes.
+  notes: NoteService
+  // Published summaries.
+  summaries: SummaryService
+  // Notifications.
+  notifications: NotificationService
 }

@@ -41,7 +41,9 @@ test('a new visitor signs up from the landing page and reaches the dashboard', a
 
   // Arrives on the dashboard, greeted by the new name.
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByText(/Welcome, Ada/)).toBeVisible()
+  await expect(
+    page.getByRole('heading', { level: 1, name: /Good (morning|afternoon|evening), Ada/ }),
+  ).toBeVisible()
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
   expect(cspViolations).toEqual([])
