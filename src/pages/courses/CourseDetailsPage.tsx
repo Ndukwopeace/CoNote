@@ -20,6 +20,8 @@ import { NotFoundPanel } from '@/components/common/NotFoundPanel'
 import { PageTitle } from '@/components/common/PageTitle'
 // The notes list.
 import { NoteList } from '@/components/common/NoteList'
+// The summaries list.
+import { SummaryList } from '@/components/common/SummaryList'
 // Loading placeholders.
 import { HeaderSkeleton, ListSkeleton } from '@/components/common/Skeletons'
 // The status label.
@@ -38,8 +40,6 @@ import { useNow } from '@/hooks/useNow'
 import { usePublishedSummaries } from '@/hooks/useSummaries'
 // Class status from the clock.
 import { getClassStatus } from '@/lib/classes'
-// Relative times.
-import { formatRelativeTime } from '@/lib/dates'
 // Teacher initials.
 import { initials } from '@/lib/initials'
 // "4 classes", "1 note".
@@ -336,36 +336,6 @@ function SummariesTab({ courseId }: Readonly<{ courseId: string }>) {
 
   // Class by ID, for titles.
   const classById = new Map(classes.data.map((session) => [session.id, session]))
-
-  return (
-    <ul className="divide-y rounded-xl border bg-card">
-      {summaries.data.map((summary) => {
-        // The summary's class.
-        const session = classById.get(summary.classId)
-        return (
-          <li key={summary.id}>
-            {/* Opens the summary (the full view arrives in M5). */}
-            <Link
-              to={routeTo.summary(courseId, summary.classId)}
-              className="flex items-center gap-3 p-4 outline-none hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <span className="min-w-0 flex-1">
-                {/* Class number and title. */}
-                <span className="block font-medium">
-                  {session ? `${String(session.number)}. ${session.title}` : 'Class summary'}
-                </span>{' '}
-                {/* Who approved it and when. */}
-                <span className="block text-sm text-muted-foreground">
-                  Approved by {summary.reviewedBy.fullName} ·{' '}
-                  {formatRelativeTime(summary.publishedAt, now)}
-                </span>
-              </span>
-              {/* "New" until the student opens it. */}
-              {!summary.viewedByMe && <StatusBadge status="published" />}
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
-  )
+  // The summaries.
+  return <SummaryList summaries={summaries.data} classById={classById} now={now} />
 }

@@ -12,6 +12,10 @@ import type { ReactNode } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 // Sign-in state.
 import { AuthProvider } from '@/features/auth/AuthProvider'
+// Keeps opened notes readable offline.
+import { OfflineSync } from '@/features/offline/OfflineSync'
+// Toast messages.
+import { ToastProvider } from '@/features/toast/ToastProvider'
 // Injected service implementations.
 import { ServicesProvider } from '@/services/ServicesProvider'
 // Their type.
@@ -36,8 +40,12 @@ export function AppProviders({ services, queryClient, children }: Readonly<AppPr
       <QueryClientProvider client={queryClient}>
         {/* Sign-in state, available to every page. */}
         <AuthProvider>
-          {/* Tooltip settings, then the app itself. */}
-          <TooltipProvider>{children}</TooltipProvider>
+          {/* Saves and restores the signed-in student's notes for offline reading. */}
+          <OfflineSync />
+          {/* Tooltip settings, toasts, then the app itself. */}
+          <TooltipProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ServicesProvider>

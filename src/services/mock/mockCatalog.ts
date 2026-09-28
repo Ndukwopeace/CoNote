@@ -12,7 +12,6 @@ import type { ID } from '@/types/domain'
 import type {
   ClassService,
   CourseService,
-  NoteFilter,
   NoteService,
   NotificationService,
   SummaryService,
@@ -20,6 +19,10 @@ import type {
 
 // The fake network delay.
 import { simulateLatency } from './latency'
+// The demo note service.
+import { createMockNoteService } from './mockNotes'
+// The demo student every note belongs to.
+import { DEMO_STUDENT_ID } from './seed/constants'
 // The demo data's shape.
 import type { Seed } from './seed'
 
@@ -29,6 +32,8 @@ interface MockCatalogOptions {
   seed: Seed
   // Delay per call; tests pass 0.
   latencyMs: number
+  // Where notes are kept between reloads; tests usually leave it out.
+  noteStore?: Storage
 }
 
 /** The read-only services built over one seed. */
@@ -52,7 +57,7 @@ function newestFirst<T>(items: readonly T[], time: (item: T) => string): T[] {
 }
 
 /** Builds the demo catalog services over `seed`. */
-export function createMockCatalog({ seed, latencyMs }: MockCatalogOptions): MockCatalog {
+export function createMockCatalog({ seed, latencyMs, noteStore }: MockCatalogOptions): MockCatalog {
   /**
    * Waits the demo delay, then returns a deep copy of `value`.
    * Copies stop a page that edits a returned object from changing the demo data for everyone.
@@ -72,14 +77,6 @@ export function createMockCatalog({ seed, latencyMs }: MockCatalogOptions): Mock
     if (!course) throw new AppError('not_found', 'Course not found')
     // Found.
     return course
-  }
-
-  /** True when a note passes the filter. */
-  function matchesNoteFilter(filter: NoteFilter) {
-    // Each filter field narrows only when set.
-    return (note: Seed['notes'][number]) =>
-      (filter.courseId === undefined || note.courseId === filter.courseId) &&
-      (filter.classId === undefined || note.classId === filter.classId)
   }
 
   return {
@@ -123,11 +120,14 @@ export function createMockCatalog({ seed, latencyMs }: MockCatalogOptions): Mock
         return structuredClone(session)
       },
     },
-    notes: {
-      // Every seeded note belongs to the demo student; newest edit first.
-      listMyNotes: (filter = {}) =>
-        respond(newestFirst(seed.notes.filter(matchesNoteFilter(filter)), (n) => n.updatedAt)),
-    },
+    // The demo student's notes, kept between reloads when a store is given.
+    notes: createMockNoteService({
+      seedNotes: seed.notes,
+      classes: seed.classes,
+      studentId: DEMO_STUDENT_ID,
+      latencyMs,
+      ...(noteStore ? { store: noteStore } : {}),
+    }),
     summaries: {
       // SECURITY: filters to published classes again even though the seed holds only those, so
       // an edit to the seed can never leak a draft summary to students (section 4).

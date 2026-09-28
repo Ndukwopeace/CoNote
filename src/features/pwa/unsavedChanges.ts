@@ -1,6 +1,6 @@
 /**
  * A shared "a note has unsaved changes" flag (FR-PWA-5). The update toast reads it so an update
- * never reloads over unsaved writing. M4's note editor sets it; nothing sets it yet in M2.5.
+ * never reloads over unsaved writing. The note form sets it.
  */
 
 // Subscribes a component to a value that lives outside React.
@@ -31,10 +31,13 @@ function subscribe(listener: () => void) {
   }
 }
 
-/** The current value, read by React. */
-function getSnapshot() {
+/** The current value, outside React (tests, and React's snapshot below). */
+export function getHasUnsavedChanges() {
   return hasUnsavedChanges
 }
+
+/** The current value, read by React. */
+const getSnapshot = getHasUnsavedChanges
 
 /** True while a note has unsaved changes. Re-renders when that changes. */
 export function useHasUnsavedChanges() {
