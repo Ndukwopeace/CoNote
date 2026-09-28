@@ -95,6 +95,8 @@ Run by the pre-commit hook on staged files only.
 | `react-router` | Addresses and page navigation |
 | `@tanstack/react-query` | Fetching, caching and refreshing server data |
 | `zod` | Checking data shapes (environment, forms, stored sessions, service responses) |
+| `react-hook-form` | Form state and validation timing (errors on blur and on submit) without re-rendering the whole form on each keystroke (D26) |
+| `@hookform/resolvers` | Connects the zod schemas to react-hook-form, so the forms and the auth service share one set of rules (D26) |
 | `dompurify` | **SECURITY:** removes dangerous HTML from notes before display (XSS) |
 | `radix-ui` | Accessible building blocks: menus, tooltips, avatars (keyboard support and screen-reader roles) |
 | `lucide-react` | Icons |

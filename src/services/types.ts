@@ -4,7 +4,13 @@
  */
 
 // The auth data shapes the interface methods accept and return.
-import type { OAuthProvider, Session, SignInInput, SignUpInput } from '@/types/auth'
+import type {
+  OAuthProvider,
+  PasswordResetRequest,
+  Session,
+  SignInInput,
+  SignUpInput,
+} from '@/types/auth'
 
 /** Everything the app can ask of an authentication backend (mock today, Supabase later). */
 export interface AuthService {
@@ -18,9 +24,23 @@ export interface AuthService {
   signInWithProvider(provider: OAuthProvider): Promise<Session>
   /** Ends the session. */
   signOut(): Promise<void>
-  /** Sends a reset link. Must resolve the same way whether or not the account exists. */
-  requestPasswordReset(email: string): Promise<void>
-  /** Sets a new password for the signed-in (or recovering) user. */
+  /**
+   * Sends a reset link. Must resolve the same way whether or not the account exists.
+   * The demo also returns the link itself, because it sends no email.
+   */
+  requestPasswordReset(email: string): Promise<PasswordResetRequest>
+  /**
+   * True when `code` (from the reset link) is still valid. Used and superseded codes are
+   * refused. A missing code is always refused.
+   */
+  checkResetLink(code: string | null): Promise<boolean>
+  /**
+   * Sets a new password from a reset link. The code is checked again here, not only when the
+   * page opened, and is spent on success. Rejects with a validation error when the code is no
+   * longer valid or the password breaks the rules.
+   */
+  resetPassword(code: string, newPassword: string): Promise<void>
+  /** Changes the password of the signed-in student (Settings → Account, M5). */
   updatePassword(newPassword: string): Promise<void>
   /** Calls `listener` whenever the session changes. Returns an unsubscribe function. */
   onAuthChange(listener: (session: Session | null) => void): () => void

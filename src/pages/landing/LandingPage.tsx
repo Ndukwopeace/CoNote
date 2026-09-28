@@ -1,44 +1,51 @@
 /**
- * The public landing page. M1 has the hero only; M2 adds the rest (FR-LND).
+ * The public landing page at / (FR-LND-2 to FR-LND-6). The header and footer come from
+ * PublicLayout.
  */
 
-// Internal links.
-import { Link } from 'react-router'
+// Runs the scroll after the page has rendered.
+import { useEffect } from 'react'
+// The address, for its #anchor.
+import { useLocation } from 'react-router'
 
 // Sets the tab title.
 import { PageTitle } from '@/components/common/PageTitle'
-// Standard button.
-import { Button } from '@/components/ui/button'
-// Route constants.
-import { ROUTES } from '@/lib/routes'
 
-/** Hero only for now. The full landing page (features, how it works, about) arrives in M2. */
+// The page's sections, top to bottom.
+import { AboutSection } from './AboutSection'
+import { CallToActionSection } from './CallToActionSection'
+import { FeaturesSection } from './FeaturesSection'
+import { HeroSection } from './HeroSection'
+import { HowItWorksSection } from './HowItWorksSection'
+
+/** The landing page. */
 export function LandingPage() {
+  // The "#features"-style part of the address, or "".
+  const { hash } = useLocation()
+
+  // Scrolls to the section named in the address. The router doesn't do this itself, and the
+  // page is lazy-loaded, so the browser's own jump happens before the section exists.
+  useEffect(() => {
+    // No anchor: stay at the top.
+    if (hash === '') return
+    // Find the section by id; an unknown anchor finds nothing and nothing happens.
+    document.getElementById(hash.slice(1))?.scrollIntoView()
+  }, [hash])
+
   return (
-    // Centred, narrow column with generous vertical space.
-    <section className="mx-auto max-w-3xl px-4 py-20 text-center md:py-28">
+    <>
       {/* Tab title: the tagline. */}
       <PageTitle title="Your notes. Collective understanding." />
-      {/* The tagline as the main heading; text-balance evens out line lengths. */}
-      <h1 className="text-4xl font-extrabold tracking-tight text-balance md:text-6xl">
-        Your notes. <span className="text-primary">Collective understanding.</span>
-      </h1>
-      {/* The subtitle from the brief. */}
-      <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-        Capture your personal notes, organize your learning by course and class, and learn from
-        AI-powered summaries created from collective classroom knowledge.
-      </p>
-      {/* Calls to action: stacked on phones, side by side from 640 px. */}
-      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        {/* Main action: create an account. */}
-        <Button size="lg" asChild>
-          <Link to={ROUTES.signup}>Get started</Link>
-        </Button>
-        {/* Secondary action: sign in. */}
-        <Button size="lg" variant="outline" asChild>
-          <Link to={ROUTES.login}>Sign in</Link>
-        </Button>
-      </div>
-    </section>
+      {/* Tagline, subtitle, actions and preview. */}
+      <HeroSection />
+      {/* The six steps. */}
+      <HowItWorksSection />
+      {/* The four feature cards. */}
+      <FeaturesSection />
+      {/* Privacy and teacher approval. */}
+      <AboutSection />
+      {/* Closing call to action. */}
+      <CallToActionSection />
+    </>
   )
 }

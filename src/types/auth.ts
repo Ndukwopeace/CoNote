@@ -47,3 +47,12 @@ export interface SignUpInput {
   // Their chosen password.
   password: string
 }
+
+/** What a password reset request returns. */
+export interface PasswordResetRequest {
+  /**
+   * Demo mode only (FR-AUTH-7): the link the email would have contained, because no email is
+   * sent. Real services leave it out, so the UI shows the shortcut only when it exists.
+   */
+  demoResetPath?: string
+}

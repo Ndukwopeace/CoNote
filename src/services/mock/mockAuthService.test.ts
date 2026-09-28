@@ -11,6 +11,12 @@ import { runAuthServiceContract } from '../contracts/authService.contract'
 // The implementation under test.
 import { createMockAuthService } from './mockAuthService'
 
+/** The code inside a demo reset link. */
+function codeFrom({ demoResetPath }: { demoResetPath?: string }) {
+  // Parse the link against any origin; only the query string matters.
+  return new URL(demoResetPath ?? '', 'https://conote.test').searchParams.get('code') ?? ''
+}
+
 /** A fresh service on the test's storage, with no delay. */
 function createService() {
   return createMockAuthService({
@@ -123,10 +129,108 @@ describe('mock AuthService', () => {
   })
 
   // SECURITY: proves the reset form gives the same answer for unknown accounts (no enumeration).
-  it('accepts password reset requests without revealing whether the account exists', async () => {
+  it('answers a reset request the same way whether or not the account exists', async () => {
+    // Act: one request for the signed-in demo address, one for an address nobody uses.
+    const known = await createService().requestPasswordReset('victory@conote.demo')
+    const unknown = await createService().requestPasswordReset('nobody@example.com')
+
+    // Assert: both answers have the same shape, so nothing reveals which account exists.
+    expect(Object.keys(unknown)).toEqual(Object.keys(known))
+  })
+
+  // Proves the demo hands back a reset link, because it sends no email (FR-AUTH-7).
+  it('returns a demo reset link that opens the reset page with a working code', async () => {
+    // Arrange.
+    const auth = createService()
+
+    // Act: request a reset.
+    const { demoResetPath } = await auth.requestPasswordReset('v@example.com')
+
+    // Assert: a link to the reset page carrying a code...
+    expect(demoResetPath).toMatch(/^\/reset-password\?code=[\w-]+$/)
+    // ...and that code is accepted.
+    const code = new URL(demoResetPath ?? '', 'https://conote.test').searchParams.get('code')
+    await expect(auth.checkResetLink(code)).resolves.toBe(true)
+  })
+
+  // SECURITY: proves a reset link works once only, so an old link from an inbox can't be reused.
+  it('refuses a reset code once the password has been reset with it', async () => {
+    // Arrange: request a reset and read the code.
+    const auth = createService()
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
+
+    // Act: reset the password with it.
+    await auth.resetPassword(code, 'newpassword1')
+
+    // Assert: the link is now refused, both when checked and when used again.
+    await expect(auth.checkResetLink(code)).resolves.toBe(false)
+    await expect(auth.resetPassword(code, 'another1pass')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // SECURITY: proves only the most recent link works, so an older email can't be used instead.
+  it('refuses an older reset code after a newer one is requested', async () => {
+    // Arrange: two requests in a row.
+    const auth = createService()
+    const oldCode = codeFrom(await auth.requestPasswordReset('v@example.com'))
+    await auth.requestPasswordReset('v@example.com')
+
+    // Assert: the first code no longer works, for checking or for resetting.
+    await expect(auth.checkResetLink(oldCode)).resolves.toBe(false)
+    await expect(auth.resetPassword(oldCode, 'newpassword1')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // SECURITY: proves a page opened with a link that was later superseded can't reset the
+  // password; the code is checked again at the moment of the reset, not only when the page opened.
+  it('checks the code again when the password is reset', async () => {
+    // Arrange: the page checks a valid code...
+    const auth = createService()
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
+    await expect(auth.checkResetLink(code)).resolves.toBe(true)
+    // ...then a newer link is requested elsewhere.
+    await auth.requestPasswordReset('v@example.com')
+
+    // Assert: the old page's reset is refused.
+    await expect(auth.resetPassword(code, 'newpassword1')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // Proves a weak password doesn't spend the code, so the student can fix it and try again.
+  it('keeps the code when the new password breaks the rules', async () => {
+    // Arrange.
+    const auth = createService()
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
+
+    // Act: a weak password is refused.
+    await expect(auth.resetPassword(code, 'weak')).rejects.toMatchObject({ kind: 'validation' })
+
+    // Assert: the code still works.
+    await expect(auth.checkResetLink(code)).resolves.toBe(true)
+  })
+
+  // Proves the new-password rules apply to reset as well as sign-up (FR-AUTH-3): [password].
+  it.each([['abcdefgh'], ['12345678']])('rejects the weak new password %j', async (password) => {
+    await expect(createService().updatePassword(password)).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // Proves sign-up applies the full password rules, not just the length.
+  it('rejects a sign-up password without a number', async () => {
     await expect(
-      createService().requestPasswordReset('nobody@example.com'),
-    ).resolves.toBeUndefined()
+      createService().signUp({ fullName: 'Ada Obi', email: 'a@b.co', password: 'password' }),
+    ).rejects.toMatchObject({ kind: 'validation', message: 'Include at least one number.' })
+  })
+
+  // Proves sign-up applies the name length rule.
+  it('rejects a one-letter full name at sign-up', async () => {
+    await expect(
+      createService().signUp({ fullName: 'A', email: 'a@b.co', password: 'password1' }),
+    ).rejects.toMatchObject({ kind: 'validation' })
   })
 
   // Proves the minimum password length is enforced.

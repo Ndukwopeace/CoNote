@@ -10,7 +10,7 @@ import { render } from '@testing-library/react'
 // Simulates real user input (typing, clicking) with the right event order.
 import userEvent from '@testing-library/user-event'
 // A router that keeps its history in memory instead of the address bar.
-import { createMemoryRouter, type RouteObject } from 'react-router'
+import { createMemoryRouter, type InitialEntry, type RouteObject } from 'react-router'
 // Connects the router to React.
 import { RouterProvider } from 'react-router/dom'
 
@@ -29,8 +29,8 @@ import type { Session } from '@/types/auth'
 interface RenderOptions {
   // The routes to mount.
   routes: RouteObject[]
-  // The starting address.
-  path: string
+  // The starting address, or an address plus navigation state.
+  path: InitialEntry
   /** Signs this user in before the first render. */
   session?: Session
   // Replace particular services, e.g. one that fails on purpose.

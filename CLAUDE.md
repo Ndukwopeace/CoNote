@@ -37,6 +37,7 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - Routes live in `src/app/routes.tsx` and `src/lib/routes.ts`. Pages are lazy-loaded, so tests use `findBy…`.
 - Sign-out never navigates from the caller. `RequireStudent` reads `exitTo` from the auth state and does it, which avoids two competing redirects.
 - Radix `Slot` (`asChild`) turns a function `className` into a string. Don't pass `NavLink`'s function className through it; use `SidebarLink`.
+- Password fields have a "Show password" toggle. In Playwright, `getByLabel('Password')` also matches it, so pass `{ exact: true }`.
 - The shadcn registry is not reachable from every environment. The primitives in `src/components/ui/` follow the shadcn new-york source and can be edited directly.
 
 ## Conventions

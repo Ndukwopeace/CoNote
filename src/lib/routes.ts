@@ -41,6 +41,20 @@ export const ROUTES = {
   // `as const` keeps the exact strings as types, so typos are caught at compile time.
 } as const
 
+/**
+ * Section anchors on the landing page (FR-LND-1). The header links to `/#<id>`, so the links
+ * also work from the Terms and Privacy pages, which share the header.
+ */
+export const LANDING_SECTIONS = {
+  // The four feature cards.
+  features: 'features',
+  // The six steps.
+  howItWorks: 'how-it-works',
+  // Privacy and teacher approval.
+  about: 'about',
+  // Exact strings as types.
+} as const
+
 /** The Settings tabs, in display order. */
 export const SETTINGS_TABS = ['profile', 'account', 'notifications', 'privacy', 'help'] as const
 /** One of the tab names above, as a type. */
