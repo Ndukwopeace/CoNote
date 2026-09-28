@@ -3,6 +3,7 @@
 **Status:** Draft v0.1
 **Scope:** Student Portal only
 **Sources:** Original written brief (partial, cut off during Sign Up) and the wireframes in [`docs/wireframes/`](./wireframes)
+**Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys)
 
 Items marked **[Default]** are working decisions made to unblock the build. They can change later. Section 15 lists every one of them in a single table.
 
