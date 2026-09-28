@@ -104,7 +104,7 @@ export function ResetPasswordPage() {
 }
 
 /** The new password form, shown once the link's `code` has been checked. */
-function NewPasswordForm({ code }: { code: string }) {
+function NewPasswordForm({ code }: Readonly<{ code: string }>) {
   // The reset action, the sign-in status and sign-out.
   const { resetPassword, status, signOut } = useAuth()
   // Busy flag, server error and the request runner.
