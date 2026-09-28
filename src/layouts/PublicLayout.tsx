@@ -21,6 +21,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+// "Get the CoNote app" strip (FR-PWA-6, D34).
+import { InstallBanner } from '@/features/pwa/InstallBanner'
 // "You're offline" banner (FR-PWA-4).
 import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 // Route constants and the landing page's section anchors.
@@ -43,6 +45,8 @@ export function PublicLayout() {
     <div className="flex min-h-dvh flex-col">
       {/* Header bar; stays at the top while scrolling so the links are always reachable. */}
       <header className="sticky top-0 z-40 border-b bg-surface/95 backdrop-blur">
+        {/* Install offer across the very top; renders nothing where installing isn't possible. */}
+        <InstallBanner />
         {/* Content capped at 1152 px and centred. */}
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           {/* Logo linking home. */}
