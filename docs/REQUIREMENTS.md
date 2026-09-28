@@ -581,7 +581,7 @@ Taken from the wireframes:
 | D21 | Sign-out destination | Found while building M1 | Sign-out goes to the landing page. The guard does the redirect, so it never races a second one. Later visits to portal pages go to sign in as usual. |
 | D22 | Progressive web app | Asked for after M1; not in the brief | Three levels: installable with the app shell offline (M2.5), offline reading (M4/M5), offline writing and push (backend stage) |
 | D23 | Font hosting | Needed for offline use and a tighter CSP | Self-host Plus Jakarta Sans (SIL Open Font Licence) from M2.5; drop Google Fonts |
-| D24 | Blocked major upgrades | Dependabot opened ESLint 10, @eslint/js 10, TypeScript 7 and @types/node 26 (PRs #1–4, closed) | Ignored in `.github/dependabot.yml` until each blocker clears; minor and patch updates continue |
+| D24 | Blocked upgrades | Dependabot opened ESLint 10, @eslint/js 10, TypeScript 7 and @types/node 26 (PRs #1–4, closed) | Ignored in `.github/dependabot.yml` until each blocker clears: major versions of ESLint, @eslint/js and @types/node, and TypeScript 6.1 or later (typescript-eslint supports below 6.1). Other updates continue |
 
 ---
 
