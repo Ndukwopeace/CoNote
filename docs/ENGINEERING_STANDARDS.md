@@ -198,7 +198,7 @@ Every file is written to be read by someone learning the codebase. Comments are 
   - what would happen without it
 - **Tests are commented too.** Each test says what behaviour it proves and why that behaviour matters. Each Arrange, Act and Assert step is explained.
 - **Comments must stay true.** A change to a line updates its comment in the same commit. A stale comment is a bug, and reviewers reject it.
-- **Files that cannot hold comments** (`package.json`, `vercel.json`, `.size-limit.json`, `components.json`) are explained line by line in [`CONFIG_FILES.md`](./CONFIG_FILES.md). Changing one of those files means updating that document in the same PR.
+- **Files that cannot hold comments** (`package.json`, `vercel.json`, `.size-limit.json`, `.prettierrc.json`, `components.json`, `.nvmrc`) are explained line by line in [`CONFIG_FILES.md`](./CONFIG_FILES.md). Changing one of those files means updating that document in the same PR.
 
 ### 4.6 React
 
