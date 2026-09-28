@@ -352,6 +352,41 @@ flowchart TD
 
 **Note:** sign-out also clears unsent drafts and the Ask AI conversation, so the next person on a shared computer sees nothing of the previous student's (NFR-4).
 
+### F11 — Install the app
+
+```mermaid
+flowchart TD
+  A["Signed-in student opens the avatar menu"] --> B{"Install supported?"}
+  B -- "Chrome, Edge, Android" --> C["'Install app' item"] --> D["Browser install dialog"]
+  D -- "Install" --> E["CoNote on the home screen or dock; opens full-screen at /dashboard"]
+  D -- "Cancel" --> A
+  B -- "iOS Safari" --> F["'Install app' item"] --> G["Instructions: Share, then Add to Home Screen"]
+  B -- "Already installed or unsupported" --> H["No install item shown"]
+```
+
+**Requirements:** FR-PWA-1, FR-PWA-6.
+
+### F12 — Offline and updates
+
+```mermaid
+flowchart TD
+  A["Student opens CoNote"] --> B{"Online?"}
+  B -- "No" --> C["App shell loads from the cache; offline banner shown"]
+  C --> D["Pages move normally; data already opened stays readable (from M4/M5)"]
+  D -.-> E["Connection returns: banner disappears"]
+  B -- "Yes" --> F{"New version deployed?"}
+  F -- "No" --> G["Normal use"]
+  F -- "Yes" --> H{"Unsaved note open?"}
+  H -- "Yes" --> I["Wait until saved or discarded"] --> J
+  H -- "No" --> J["Toast: 'A new version is available' + Reload"]
+  J -- "Reload" --> K["New version running"]
+  J -- "Dismiss" --> G
+```
+
+**Requirements:** FR-PWA-3 to FR-PWA-5.
+
+**Note:** an update never replaces the running version silently, and never while a note has unsaved changes.
+
 ---
 
 ## Part 3 — User journeys
@@ -431,7 +466,7 @@ Each journey below is a table:
 
 | Stage | Does | Screen | Needs | Risk | Design response |
 |---|---|---|---|---|---|
-| Open | Opens the site from the home screen | Dashboard (phone) | Fast load on mobile data | Slow first paint | Code-split routes, LCP target (NFR-3) |
+| Open | Opens CoNote from the home screen | Dashboard (phone) | Fast load on mobile data, even with a weak signal | Slow first paint, or nothing at all offline | Installed app shell from the cache (FR-PWA-2); code-split routes and LCP target (NFR-3) |
 | Move around | Uses the bottom bar | Any | Thumb-reachable nav | Tiny targets | Bottom bar, 44 px targets (section 8, NFR-1) |
 | Read | Reads a summary | Summary (phone) | Readable text, no sideways scrolling | Side panel squeezes the text | AI panel becomes a floating button and bottom sheet (FR-SUM-4) |
 | Settings | Changes notification preferences | Avatar menu → Settings | To find Settings without a nav item | Can't find it | Settings in the avatar menu on phones (section 8) |

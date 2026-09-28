@@ -20,6 +20,7 @@ A change is done only when every applicable box is ticked. The pull request temp
 - [ ] Checked at 360 px and 1440 px wide in the Vercel preview
 - [ ] No new security findings (section 6): user HTML goes through `SafeHtml`, inputs are validated, no secrets
 - [ ] Every new dependency has a reason in the PR description (section 10)
+- [ ] Every statement commented; security lines start with `SECURITY:` and say what they block (section 4.5)
 - [ ] Docs updated if behaviour, routes or decisions changed. New decisions go in the decisions log (REQUIREMENTS section 15).
 - [ ] CI green on the pull request
 
@@ -175,10 +176,31 @@ These rules are enforced by ESLint (`no-restricted-imports` or `eslint-plugin-bo
 
 - **Components:** about 250 lines at most. **Functions:** about 40 lines. Nesting at most 3 levels deep. Past these limits, split.
 - **No magic strings or numbers.** Routes live in `lib/routes.ts`, limits in `lib/constants.ts`, query keys in `hooks/queryKeys.ts`.
-- **Comments explain *why*, not *what*.** Delete commented-out code; git keeps it.
+- **Comments follow section 4.5.** Delete commented-out code; git keeps it.
 - **Formatting belongs to Prettier.** Nobody argues about it in review.
 
-### 4.5 React
+### 4.5 Comments
+
+Every file is written to be read by someone learning the codebase. Comments are required, not optional.
+
+- **File header.** Every source and config file starts with a short comment saying what the file is for and where it fits.
+- **Every meaningful statement gets a comment.** That covers:
+  - each import line
+  - each declaration, condition, call and return
+  - each type field
+  - each JSX element that does something
+  - each config option
+
+  Only closing brackets, blank lines and pure formatting go without one.
+- **What and why.** A comment says what the line does *and* why it is there. "Sets x to 5" is not enough; "5 retries because the mock API fails 1 time in 10" is.
+- **`SECURITY:` comments.** Every line that protects something starts its comment with `SECURITY:` and says:
+  - which attack or leak it blocks (for example XSS, open redirect, clickjacking, data left on a shared computer)
+  - what would happen without it
+- **Tests are commented too.** Each test says what behaviour it proves and why that behaviour matters. Each Arrange, Act and Assert step is explained.
+- **Comments must stay true.** A change to a line updates its comment in the same commit. A stale comment is a bug, and reviewers reject it.
+- **Files that cannot hold comments** (`package.json`, `vercel.json`, `.size-limit.json`, `.prettierrc.json`, `components.json`, `.nvmrc`) are explained line by line in [`CONFIG_FILES.md`](./CONFIG_FILES.md). Changing one of those files means updating that document in the same PR.
+
+### 4.6 React
 
 - Function components and hooks only.
 - **Server data lives in TanStack Query.** It is never copied into `useState`.
@@ -241,6 +263,7 @@ These rules are enforced by ESLint (`no-restricted-imports` or `eslint-plugin-bo
   - session and query cache
   - drafts and AI conversation
   - every `conote:`-prefixed `localStorage` key except mock demo data (NFR-4)
+  - the persisted query cache in IndexedDB and every runtime service-worker cache (from M2.5; the precached app shell holds no student data and stays)
 - **Nothing sensitive in `localStorage`** except the Supabase session, which the Supabase SDK manages.
 - **Brute-force and rate limits** are enforced server-side by Supabase Auth. The UI does not pretend to enforce them.
 
@@ -252,11 +275,11 @@ These rules are enforced by ESLint (`no-restricted-imports` or `eslint-plugin-bo
 
 ### 6.6 HTTP security headers
 
-Set in `vercel.json` and verified after the first deploy:
+Set in `vercel.json` and verified after the first deploy. This is the policy from M2.5 onward, once the font is self-hosted and the service worker exists. M1 also allows Google Fonts (`fonts.googleapis.com` in `style-src`, `fonts.gstatic.com` in `font-src`).
 
 | Header | Value |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
@@ -265,6 +288,7 @@ Set in `vercel.json` and verified after the first deploy:
 **Notes:**
 
 - `style-src 'unsafe-inline'` is needed for the inline styles that Radix sets for positioning. Scripts get no such exception.
+- The service worker, `registerSW.js` and the manifest are served with `Cache-Control: no-cache`, so an update is never hidden behind a cached worker.
 - Vercel's preview toolbar injects scripts from `vercel.live`. Either allow `https://vercel.live` in `script-src` for Preview only, or turn the toolbar off. Production stays strict.
 
 ### 6.7 Supply chain
@@ -297,7 +321,7 @@ Set in `vercel.json` and verified after the first deploy:
 
 ## 8. Performance
 
-- **Budget:** at most 250 KB gzipped of initial JavaScript, enforced by `size-limit` in CI.
+- **Budget:** at most 250 KB gzipped of initial JavaScript, enforced by `size-limit` in CI. From M2.5, the service-worker precache stays under 2 MB.
 - **Code splitting:**
   - every route is lazy-loaded
   - the editor (Tiptap) and DOMPurify load only on pages that need them
@@ -346,7 +370,7 @@ Set in `vercel.json` and verified after the first deploy:
 - **`README.md`:** setup, scripts, environment variables and folder guide (completed in M6, started in M1).
 - **Requirement IDs** (FR-…, NFR-…) are referenced in PR descriptions and, where it helps, in test names.
 - **Decisions** that change behaviour or architecture get a row in the decisions log (REQUIREMENTS section 15) in the same pull request.
-- **Public functions in `lib/` and service interfaces** get a one-line TSDoc comment. Components and hooks get one only when the name isn't enough.
+- **Every exported function, component, hook and type** gets a TSDoc comment, in addition to the line comments required by section 4.5.
 
 ---
 

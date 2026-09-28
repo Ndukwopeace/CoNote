@@ -1,10 +1,22 @@
+/*
+ * Global stylesheet: loads Tailwind and the design tokens, maps the tokens to Tailwind class
+ * names, and sets the page-wide base styles.
+ */
+
+/* Tailwind CSS: utility classes such as flex, p-4 and text-sm. */
 @import 'tailwindcss';
+/* Enter and exit animations used by menus and tooltips. */
 @import 'tw-animate-css';
+/* CoNote's colour and shape tokens. */
 @import './tokens.css';
 
+/* Maps each token to a Tailwind name, e.g. --color-primary makes bg-primary and text-primary work.
+   "inline" makes classes read the CSS variable, so a token change applies everywhere at once. */
 @theme inline {
+  /* Default font, with system fallbacks if it fails to load. */
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
+  /* shadcn/ui colour names. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -13,6 +25,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  /* Extra brand shades. */
   --color-primary-dark: var(--brand-primary-dark);
   --color-primary-light: var(--brand-primary-light);
   --color-secondary: var(--secondary);
@@ -25,8 +38,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* Card and panel background. */
   --color-surface: var(--brand-surface);
 
+  /* Status colours and their badge pairs. */
   --color-success: var(--brand-success);
   --color-success-soft: var(--brand-success-soft);
   --color-success-strong: var(--brand-success-strong);
@@ -37,6 +52,7 @@
   --color-error-soft: var(--brand-error-soft);
   --color-error-strong: var(--brand-error-strong);
 
+  /* Course accents. */
   --color-course-1: var(--brand-accent-1);
   --color-course-1-soft: var(--brand-accent-1-soft);
   --color-course-2: var(--brand-accent-2);
@@ -46,22 +62,29 @@
   --color-course-4: var(--brand-accent-4);
   --color-course-4-soft: var(--brand-accent-4-soft);
 
+  /* Corner radii derived from the base radius. */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Base styles, applied before utility classes so utilities can override them. */
 @layer base {
+  /* Every element: default border colour and a soft focus outline colour. */
   * {
     @apply border-border outline-ring/50;
   }
+  /* Page background, so overscroll areas match. */
   html {
     @apply bg-background;
   }
+  /* Page font and colours; antialiased text renders thinner and crisper on Mac screens. */
   body {
     @apply bg-background font-sans text-foreground antialiased;
   }
+  /* Accessibility (NFR-2): when the device asks for reduced motion, make animations and
+       transitions effectively instant. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

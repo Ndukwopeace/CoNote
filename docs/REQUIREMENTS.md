@@ -1,6 +1,6 @@
 # CoNote Student Portal — Requirements
 
-**Status:** Draft v0.2 (adds the gaps found in `USER_FLOWS.md`)
+**Status:** Draft v0.3 (adds the installable app, M2.5)
 **Scope:** Student Portal only
 **Sources:** Original written brief (partial, cut off during Sign Up) and the wireframes in [`docs/wireframes/`](./wireframes)
 **Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys), [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md) (testing, architecture, security, review)
@@ -34,6 +34,8 @@ Rules that shape every screen:
 - Authentication: sign in, sign up, forgot password, reset password
 - Student portal: Dashboard, Courses, Course Details, Class, Notes (list, create, view, edit, delete), Summary view, Ask CoNote AI, Notifications, Settings (with Profile)
 - Responsive layouts for desktop, tablet and phone
+- An installable progressive web app (PWA): add to home screen, app shell available offline, update prompt (FR-PWA, milestone M2.5)
+- Offline reading of notes and summaries the student has already opened (FR-PWA-8, with M4 and M5)
 - A data-access layer that runs on mock data now and on Supabase later without page changes
 
 ### 2.2 Out of scope
@@ -44,7 +46,8 @@ Rules that shape every screen:
 - A live language model behind Ask CoNote AI. v1 uses canned replies. See FR-AI.
 - Student-to-student messaging of any kind
 - Payments and pricing
-- Native mobile apps
+- Native mobile apps. The installable PWA covers the home-screen use case.
+- Offline writing with background sync, and push notifications. These need the real backend and belong to the backend stage (see `MILESTONES.md`).
 - Dark mode. Tokens must make it possible later, but v1 does not ship it.
 
 The teacher/admin wireframe (`teacher-admin-reference.jpg`) is kept for reference only. It shows the summary lifecycle and the summary structure, and the student-side data types must match both.
@@ -92,6 +95,7 @@ There is one summary per class session. The backend moves it through these state
 | Client state | React context for the auth session. Local component state for everything else. No global store unless a real need appears. |
 | Forms | react-hook-form + zod (the shadcn Form pattern) |
 | Rich text | Tiptap. Content stored as HTML and sanitised with DOMPurify before display. **[Default]** |
+| PWA | `vite-plugin-pwa` (Workbox) generating the service worker and manifest, from M2.5 |
 | Hosting | Vercel, from the end of M1. A `vercel.json` rewrite sends every path to `index.html` so client-side routes survive a refresh. |
 | Backend (later) | Supabase: Auth, Postgres with Row Level Security, Edge Functions |
 | Tests | Vitest 5 + Testing Library; Playwright for end-to-end |
@@ -154,7 +158,7 @@ All colours come from tokens. No hex values appear in components.
 
 ### 6.2 Typography
 
-- **[Default]** Font: Plus Jakarta Sans from Google Fonts, falling back to `system-ui`. It matches the geometric look of the wireframes.
+- **[Default]** Font: Plus Jakarta Sans, falling back to `system-ui`. It matches the geometric look of the wireframes. Loaded from Google Fonts in M1; self-hosted from M2.5 so it works offline and no request goes to Google (decision D23).
 - Scale: 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 px. Body text is 14–16 px.
 
 ### 6.3 Shape and spacing
@@ -374,6 +378,39 @@ Classes are reached through a course, so they get no top-level item.
 
 ---
 
+### FR-PWA Installable app
+
+**Level 1 (milestone M2.5): installable, app shell offline.**
+
+- **FR-PWA-1 Manifest.**
+  - `name` "CoNote", `short_name` "CoNote", `description` "Your notes. Collective understanding."
+  - `id` and `scope` `/`; `start_url` `/dashboard` (a signed-out student lands on sign-in, then returns to the dashboard)
+  - `display` `standalone`; `theme_color` `#4F46E5`; `background_color` `#F8FAFC`
+  - Icons: 192 px and 512 px PNG, a 512 px maskable icon, and a 180 px `apple-touch-icon`, all made from the logo mark
+- **FR-PWA-2 Service worker.** Precaches the app shell: `index.html`, every JS and CSS chunk, the self-hosted font and the icons. Registered only in production builds.
+- **FR-PWA-3 Offline navigation.** Any in-app path opened offline is served from the cached `index.html`, so client-side routes still work.
+- **FR-PWA-4 Offline indicator.** When the browser reports it is offline, a banner under the top bar reads "You're offline. Some things may not load until you reconnect." It disappears on reconnect. Screen readers are told through `aria-live`.
+- **FR-PWA-5 Updates.**
+  - A new version never replaces the running one silently. A toast reads "A new version of CoNote is available" with a **Reload** button.
+  - On a note editor page with unsaved changes, the toast waits until the note is saved or discarded, so an update never throws away writing.
+  - The app checks for a new version when the window regains focus, and at most once an hour.
+- **FR-PWA-6 Install.**
+  - Where the browser supports an install prompt, an "Install app" item appears in the avatar menu. It is hidden once installed or where unsupported.
+  - On iOS Safari, the same item opens short instructions: Share, then "Add to Home Screen".
+- **FR-PWA-7 Sign-out and caches.** The precached app shell holds no student data and stays. Every runtime cache that holds student data (FR-PWA-8) is deleted on sign-out (NFR-4).
+
+**Level 2 (with M4 and M5): offline reading.**
+
+- **FR-PWA-8 Offline reading.** Notes and published summaries the student has opened stay readable offline.
+  - TanStack Query's cache for those queries is persisted to IndexedDB, keyed by student ID, with a maximum age of 7 days.
+  - Unpublished summaries and Ask AI conversations are never persisted.
+  - Everything persisted is deleted on sign-out.
+
+**Level 3 (backend stage, not scheduled): offline writing and push.**
+
+- Notes written offline are queued and synced when the connection returns, with conflict handling.
+- Push notifications for "summary published" and class reminders. On iOS these work only once the app is added to the home screen.
+
 ## 11. Cross-cutting states
 
 Every data-driven view must have:
@@ -505,10 +542,15 @@ Taken from the wireframes:
   - No secrets in the client beyond the Supabase anon key.
   - Route guards are for UX only; real enforcement is RLS.
   - Nothing in the student bundle references teacher or admin routes.
-  - Signing out clears the session, the TanStack Query cache, unsent note drafts and the Ask AI conversation. The next person on a shared computer sees none of the previous student's data, even with the Back button. Mock demo data (notes the student saved) stays, since it stands in for a server.
+  - Signing out clears the session, the TanStack Query cache and its persisted copy, runtime service-worker caches, unsent note drafts and the Ask AI conversation. The next person on a shared computer sees none of the previous student's data, even with the Back button or offline. Mock demo data (notes the student saved) stays, since it stands in for a server.
 - **NFR-5 Code quality:** as defined in `ENGINEERING_STANDARDS.md` sections 3 and 4. In short: TypeScript strict with extra flags, zero ESLint errors, no `any`, enforced import boundaries, components under about 250 lines.
 - **NFR-6 Testing:** test-driven development as defined in `ENGINEERING_STANDARDS.md` section 2. It covers unit, component, contract and end-to-end tests, with an 80% coverage floor on logic folders.
 - **NFR-7 Browsers:** the latest two versions of Chrome, Edge, Firefox and Safari (desktop and iOS).
+- **NFR-8 Installable app:** from M2.5,
+  - Lighthouse reports the app as installable (valid manifest, service worker, icons)
+  - with the network off, a previously visited student can open the app and move between pages
+  - the precache stays under 2 MB
+  - a Playwright test covers offline navigation and the update prompt
 
 ---
 
@@ -537,6 +579,8 @@ Taken from the wireframes:
 | D19 | Draft lifetime | Found in user flows | Restore/discard banner; drafts expire after 7 days |
 | D20 | Library versions | Versions moved on since the plan was written | React 19, React Router 8, Vite 8, TypeScript 6, Node 22 LTS. ESLint stays on 9 until `eslint-plugin-jsx-a11y` supports 10. |
 | D21 | Sign-out destination | Found while building M1 | Sign-out goes to the landing page. The guard does the redirect, so it never races a second one. Later visits to portal pages go to sign in as usual. |
+| D22 | Progressive web app | Asked for after M1; not in the brief | Three levels: installable with the app shell offline (M2.5), offline reading (M4/M5), offline writing and push (backend stage) |
+| D23 | Font hosting | Needed for offline use and a tighter CSP | Self-host Plus Jakarta Sans (SIL Open Font Licence) from M2.5; drop Google Fonts |
 
 ---
 
@@ -548,6 +592,7 @@ The full task lists and completion checks are in [`MILESTONES.md`](./MILESTONES.
 |---|---|---|
 | M1 | Project setup | Vite + TS + Tailwind + shadcn set up; tokens in place; router with all routes stubbed; layouts responsive; mock auth and guard working |
 | M2 | Public pages | Landing, sign in, sign up, forgot and reset password complete with validation |
+| M2.5 | Installable app (PWA) | Installable from the browser; app shell works offline; update prompt; font self-hosted; CSP updated |
 | M3 | Courses and classes | Dashboard, Courses, Course Details, Class and `/classes` render from mock services, with loading, empty and error states |
 | M4 | Notes | Create, read, edit and delete with the editor, tags, drafts, filters and search |
 | M5 | Summaries, AI, notifications, settings | Summary view, Ask AI (mock), Notifications, all Settings tabs |

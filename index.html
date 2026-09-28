@@ -1,21 +1,34 @@
 <!doctype html>
+<!-- The single HTML page. Vite injects the built scripts; React renders everything into #root. -->
+<!-- lang="en" tells screen readers and translators the page language. -->
 <html lang="en">
   <head>
+    <!-- Text encoding, so every character displays correctly. -->
     <meta charset="UTF-8" />
+    <!-- Browser tab icon. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Use the device's real width on phones instead of a zoomed-out desktop view. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Summary shown by search engines and link previews. -->
     <meta name="description" content="CoNote: your notes, collective understanding." />
+    <!-- Colours the mobile browser's address bar in the brand colour. -->
     <meta name="theme-color" content="#4F46E5" />
+    <!-- Open the font servers' connections early so the font loads sooner.
+         M2.5 replaces Google Fonts with a self-hosted copy (decision D23). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Plus Jakarta Sans. display=swap shows fallback text at once instead of blank text. -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     />
+    <!-- Default tab title; each page replaces it with its own. -->
     <title>CoNote</title>
   </head>
   <body>
+    <!-- React mounts the app here (src/main.tsx). -->
     <div id="root"></div>
+    <!-- The app's entry point. type="module" loads it as an ES module; it runs after parsing. -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
