@@ -172,8 +172,8 @@ describe('UpdatePrompt', () => {
     expect(screen.getByText('A new version of CoNote is available')).toBeInTheDocument()
   })
 
-  // Proves the app looks for updates on focus, at most once an hour (FR-PWA-5).
-  it('checks for a new version on focus at most once an hour', () => {
+  // Proves the app looks for updates on focus, at most once per interval (FR-PWA-5).
+  it('checks for a new version on focus at most once per interval', () => {
     // Arrange: a fake registration and a controllable clock.
     const registration = { update: vi.fn(() => Promise.resolve()) }
     const clock = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
@@ -191,7 +191,7 @@ describe('UpdatePrompt', () => {
     // Assert: too soon, no check.
     expect(registration.update).not.toHaveBeenCalled()
 
-    // Act: focus an hour after registering.
+    // Act: focus a full interval after registering.
     clock.mockReturnValue(1_000_000 + UPDATE_CHECK_INTERVAL_MS)
     act(() => {
       window.dispatchEvent(new Event('focus'))
@@ -212,6 +212,55 @@ function installPromptEvent() {
   // Both, so tests can dispatch the event and check the prompt.
   return { event, prompt }
 }
+
+describe('UpdatePrompt on iPhone', () => {
+  /** Sets what document.visibilityState reports, then fires the change, as iOS does. */
+  function setVisibility(state: DocumentVisibilityState) {
+    // The value the component reads.
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state)
+    // The event iOS sends when a home-screen app is left or reopened.
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+  }
+
+  // Proves returning to the app checks for a new version even without a focus event, which
+  // iOS home-screen apps often don't send (D37).
+  it('checks when the app becomes visible again', () => {
+    // Arrange: registered a full interval ago.
+    const registration = { update: vi.fn(() => Promise.resolve()) }
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    render(<UpdatePrompt />)
+    act(() => {
+      sw.options?.onRegisteredSW?.('/sw.js', registration)
+    })
+    clock.mockReturnValue(1_000_000 + UPDATE_CHECK_INTERVAL_MS)
+
+    // Act: the student comes back to the app.
+    setVisibility('visible')
+
+    // Assert: one check.
+    expect(registration.update).toHaveBeenCalledTimes(1)
+  })
+
+  // Proves leaving the app doesn't trigger a check; only coming back does.
+  it('does not check when the app is hidden', () => {
+    // Arrange: registered a full interval ago.
+    const registration = { update: vi.fn(() => Promise.resolve()) }
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    render(<UpdatePrompt />)
+    act(() => {
+      sw.options?.onRegisteredSW?.('/sw.js', registration)
+    })
+    clock.mockReturnValue(1_000_000 + UPDATE_CHECK_INTERVAL_MS)
+
+    // Act: the student leaves the app.
+    setVisibility('hidden')
+
+    // Assert: no check.
+    expect(registration.update).not.toHaveBeenCalled()
+  })
+})
 
 describe('useInstallOption', () => {
   // Proves the item stays hidden until the browser offers installation (FR-PWA-6).

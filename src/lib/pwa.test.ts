@@ -15,6 +15,13 @@ import {
   shouldShowUpdatePrompt,
 } from './pwa'
 
+describe('UPDATE_CHECK_INTERVAL_MS', () => {
+  // Proves the agreed limit (FR-PWA-5, D37): at most one check every 15 minutes.
+  it('is 15 minutes', () => {
+    expect(UPDATE_CHECK_INTERVAL_MS).toBe(15 * 60 * 1000)
+  })
+})
+
 describe('shouldCheckForUpdate', () => {
   // A fixed "now" for readable arithmetic.
   const now = 10 * UPDATE_CHECK_INTERVAL_MS
@@ -24,11 +31,11 @@ describe('shouldCheckForUpdate', () => {
     expect(shouldCheckForUpdate(null, now)).toBe(true)
   })
 
-  // Proves checks are limited to once an hour (FR-PWA-5).
-  it('waits an hour between checks', () => {
-    // A minute short of an hour: no.
+  // Proves checks are limited to one per interval (FR-PWA-5).
+  it('waits a full interval between checks', () => {
+    // A minute short of the interval: no.
     expect(shouldCheckForUpdate(now - UPDATE_CHECK_INTERVAL_MS + 60_000, now)).toBe(false)
-    // Exactly an hour: yes.
+    // Exactly the interval: yes.
     expect(shouldCheckForUpdate(now - UPDATE_CHECK_INTERVAL_MS, now)).toBe(true)
   })
 
