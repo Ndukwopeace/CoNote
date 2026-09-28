@@ -36,8 +36,24 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
   - top bar with search box, bell and avatar menu
 - Service interfaces plus the data-source switch (`VITE_DATA_SOURCE`)
 - Mock auth service, `AuthProvider`, and the `RequireStudent` guard with the `?redirect=` return
+- First deployment to Vercel (see "Deployment" below)
 
-**Done when:** a visitor can "log in" and click through every (empty) portal page at 360 px, 768 px and 1440 px wide. Signing out returns to the landing page. Portal URLs redirect to login when signed out.
+**Done when:** a visitor can "log in" and click through every (empty) portal page at 360 px, 768 px and 1440 px wide. Signing out returns to the landing page. Portal URLs redirect to login when signed out. All of this works on the live Vercel URL, including opening a deep link such as `/courses` directly or refreshing on it.
+
+### Deployment
+
+Hosting is on Vercel, starting at the end of M1. Every later milestone ships to the same project.
+
+- **Build settings:** framework preset "Vite", build command `npm run build`, output directory `dist`.
+- **Client-side routes:** add a `vercel.json` that rewrites every path to `/index.html`. Without it, refreshing on `/dashboard` or opening a shared link returns a Vercel 404.
+
+  ```json
+  { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+  ```
+
+- **Environment variables:** set `VITE_DATA_SOURCE=mock` for Production and Preview. The Supabase variables are not needed until the backend stage. Vite bakes `VITE_*` values in at build time, so changing one needs a redeploy.
+- **Branches:** production deploys from the default branch. Every other pushed branch gets its own preview URL, so each milestone can be reviewed before it is merged.
+- **Demo data on the live site:** it is stored per visitor, per browser. Two people testing the same URL do not see each other's notes.
 
 ---
 

@@ -91,6 +91,7 @@ There is one summary per class session. The backend moves it through these state
 | Client state | React context for the auth session. Local component state for everything else. No global store unless a real need appears. |
 | Forms | react-hook-form + zod (the shadcn Form pattern) |
 | Rich text | Tiptap. Content stored as HTML and sanitised with DOMPurify before display. **[Default]** |
+| Hosting | Vercel, from the end of M1. A `vercel.json` rewrite sends every path to `index.html` so client-side routes survive a refresh. |
 | Backend (later) | Supabase: Auth, Postgres with Row Level Security, Edge Functions |
 | Tests | Vitest + Testing Library |
 | Quality | ESLint, Prettier, `tsc --noEmit` |
