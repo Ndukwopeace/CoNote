@@ -58,7 +58,7 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
 A GitHub Actions workflow at `.github/workflows/ci.yml` checks every change. It is added in M1, once `package.json` exists; before that it would have nothing to run.
 
 - **Triggers:** every pull request, and every push to the default branch.
-- **Environment:** `ubuntu-latest`, Node 20 LTS, with the version pinned in `.nvmrc` so CI, Vercel and local machines match. The npm cache is keyed on `package-lock.json`.
+- **Environment:** `ubuntu-latest`, Node 22 LTS, with the version pinned in `.nvmrc` so CI, Vercel and local machines match. The npm cache is keyed on `package-lock.json`.
 - **Steps, in order:**
   1. `npm ci`
   2. `npm run lint` (ESLint, zero errors)
