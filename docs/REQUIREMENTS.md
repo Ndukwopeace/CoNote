@@ -1,6 +1,6 @@
 # CoNote Student Portal — Requirements
 
-**Status:** Draft v0.1
+**Status:** Draft v0.2 (adds the gaps found in `USER_FLOWS.md`)
 **Scope:** Student Portal only
 **Sources:** Original written brief (partial, cut off during Sign Up) and the wireframes in [`docs/wireframes/`](./wireframes)
 **Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys)
@@ -229,7 +229,7 @@ Classes are reached through a course, so they get no top-level item.
 
 **Top bar on every portal page:** global search, a notification bell with the unread count, and an avatar menu (Profile, Settings, Sign out).
 
-**Global search** — **[Default]** v1 matches course code and title, class title and note title. Results are grouped by type in a dropdown.
+**Global search** — **[Default]** v1 matches course code and title, class title and note title. It does not search inside note text. Results are grouped by type in a dropdown. Full-text search of note bodies is planned for the backend stage (see `MILESTONES.md`), where Postgres full-text search is available.
 
 ---
 
@@ -260,8 +260,10 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-AUTH-3 Validation:** email format; password at least 8 characters with a letter and a number; confirm must match; full name 2–80 characters. Errors show inline under each field on blur and on submit.
 - **FR-AUTH-4 Forgot password:** an email field. The page always shows "If an account exists for that email, we sent a reset link", so it never reveals whether an account exists.
 - **FR-AUTH-5 Reset password:** new password and confirm. On success, go to `/login` with a success toast.
+  - If the link is expired or already used, show "This reset link has expired" and a button back to `/forgot-password` to request a new one. The password fields are not shown.
 - **FR-AUTH-6** Buttons show a loading state and are disabled while a request is in flight. Server errors appear in an alert above the form.
 - **FR-AUTH-7 Mock mode:** any valid email and password signs in as the demo student. Google and Microsoft sign in as the demo student straight away.
+  - Mock mode sends no email. After a reset request, the confirmation screen also shows a "Continue to reset (demo)" link to `/reset-password`. The link appears only in mock mode.
 - **FR-AUTH-8 Supabase mode:** email/password auth plus the `google` and `azure` OAuth providers. "Remember me" off means the session is kept in `sessionStorage`.
 
 ---
@@ -316,6 +318,9 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-NTE-3 Tags:** presets "Key concept", "Question", "Example" and "Aha moment", plus custom tags (up to 10 tags, up to 30 characters each).
 - **FR-NTE-4** The body is required (at least 1 character of text). Maximum 20,000 characters.
 - **FR-NTE-5** Cancel with unsaved changes asks for confirmation. **[Default]** Unsaved drafts are also kept in `localStorage` per class, so an accidental reload loses nothing.
+  - **Restoring a draft:** when the editor opens and a saved draft exists for that class (or for that note, when editing), a banner above the editor reads "You have an unsaved draft from {relative time}" with **Restore** and **Discard** buttons. Restore loads the draft into the form; Discard deletes it and keeps the form as it was.
+  - A draft is deleted after a successful save, or when the student discards changes on Cancel.
+  - Drafts older than 7 days are deleted without prompting.
 - **FR-NTE-6** Save shows a toast and returns to the Class page on the Notes tab.
 - **FR-NTE-7 Notes page:**
   - tabs My Notes and Summaries
@@ -342,6 +347,7 @@ Classes are reached through a course, so they get no top-level item.
 
 - **FR-AI-1** A chat page with a message list, suggested prompts on an empty conversation, and an input. Enter sends; Shift+Enter adds a new line.
 - **FR-AI-2** A context picker: All my courses, a course, or a class. It is preset from the query string when the page is opened from a course, class or summary.
+  - Changing the context starts a new conversation, so one conversation never mixes material from two contexts. If the current conversation has messages, the student confirms first: "Changing the context starts a new conversation."
 - **FR-AI-3** **[Default]** Intended grounding: the AI answers from teacher-approved summaries and the student's own notes in the chosen context. It never reads other students' notes directly.
 - **FR-AI-4** A disclaimer under the input: "Answers are based on approved summaries and your notes. Check important details with your teacher."
 - **FR-AI-5** A typing indicator while waiting. Errors show inline with a Retry button.
@@ -499,6 +505,7 @@ Taken from the wireframes:
   - No secrets in the client beyond the Supabase anon key.
   - Route guards are for UX only; real enforcement is RLS.
   - Nothing in the student bundle references teacher or admin routes.
+  - Signing out clears the session, the TanStack Query cache, unsent note drafts and the Ask AI conversation. The next person on a shared computer sees none of the previous student's data, even with the Back button. Mock demo data (notes the student saved) stays, since it stands in for a server.
 - **NFR-5 Code quality:** TypeScript strict, zero ESLint errors, no `any` in domain code, and no component file over about 250 lines.
 - **NFR-6 Testing:** unit tests for the mock services and for form validation schemas; component tests for the note editor form, the summary state card and the auth guard.
 - **NFR-7 Browsers:** the latest two versions of Chrome, Edge, Firefox and Safari (desktop and iOS).
@@ -525,6 +532,9 @@ Taken from the wireframes:
 | D14 | Border colour and course accents | Not in the brief | Added as tokens (section 6.1) |
 | D15 | Font | Not specified | Plus Jakarta Sans |
 | D16 | Rich-text engine | Not specified | Tiptap, HTML storage, DOMPurify |
+| D17 | Changing Ask AI context | Found in user flows | Starts a new conversation, after a confirm if messages exist |
+| D18 | Search depth | Found in user journeys | Titles only in v1; full-text search in the backend stage |
+| D19 | Draft lifetime | Found in user flows | Restore/discard banner; drafts expire after 7 days |
 
 ---
 

@@ -301,7 +301,7 @@ flowchart TD
 **Notes:**
 - In v1 replies are canned (FR-AI-6).
 - The conversation is lost when the page is left (FR-AI-8).
-- Changing context starts a new conversation, so answers never mix material from two contexts.
+- Changing context starts a new conversation, after a confirm if messages exist (FR-AI-2).
 
 ### F8 — Act on a notification
 
@@ -346,11 +346,11 @@ flowchart TD
 ```mermaid
 flowchart TD
   A["Avatar menu or Settings, Account: Sign out"] --> B["Session cleared; TanStack Query cache cleared"]
-  B --> C["/ Landing"]
+  B --> B2["Unsent drafts and Ask AI conversation cleared"] --> C["/ Landing"]
   C --> D["Back button to a portal page goes to /login"]
 ```
 
-**Note:** clearing the query cache stops the next person on a shared computer from seeing cached notes.
+**Note:** sign-out also clears unsent drafts and the Ask AI conversation, so the next person on a shared computer sees nothing of the previous student's (NFR-4).
 
 ---
 
@@ -421,7 +421,7 @@ Each journey below is a table:
 |---|---|---|---|---|---|
 | Gather | Filters Notes by SWE 311 | Notes page | Everything for one course together | Notes scattered by class | Course filter and sort (FR-NTE-7) |
 | Summaries | Opens the Summaries tab | Notes → Summaries | All approved summaries in order | Missing classes go unnoticed | Unpublished classes show their status on the Course Classes tab (FR-CRS-4) |
-| Find | Searches "validation" | Global search | A specific topic fast | Search only covers titles | v1 matches titles (decision noted in section 8). Full-text search is a later improvement. |
+| Find | Searches "validation" | Global search | A specific topic fast | Search only covers titles | v1 matches titles (section 8, D18). Full-text search comes with the backend. |
 | Test self | Asks AI with context "SWE 311" | Ask AI | Practice questions across the course | Context left on "All courses" | Context picker is visible above the chat (FR-AI-2) |
 | Keep a copy | Downloads notes | Settings → Privacy | An offline copy before the exam | No export exists | JSON export (FR-SET-4) |
 
@@ -440,11 +440,13 @@ Each journey below is a table:
 
 ## Gaps these flows exposed
 
-These came up while mapping the flows and are not yet covered in `REQUIREMENTS.md`:
+These came up while mapping the flows. All six are now in `REQUIREMENTS.md` (Draft v0.2):
 
-1. **Expired reset link** (F3). Needs a message and a way to request a new link. Suggested addition to FR-AUTH-5.
-2. **Draft restore prompt** (F4). FR-NTE-5 says drafts are saved but not how they come back. Suggested: an offer to restore or discard when the editor opens.
-3. **Mock reset flow** (F3). No email exists in mock mode, so the confirmation screen needs a demo shortcut to `/reset-password`.
-4. **Changing AI context** (F7). Suggested rule: changing context starts a new conversation.
-5. **Cache clear on sign-out** (F10). Needed for shared computers. Suggested addition to NFR-4.
-6. **Full-text note search** (J4). v1 searches titles only. Worth adding to the backend stage, where Postgres full-text search is available.
+| # | Gap | Found in | Now covered by |
+|---|---|---|---|
+| 1 | Expired or used reset link | F3 | FR-AUTH-5 |
+| 2 | How a saved draft comes back | F4 | FR-NTE-5, decision D19 |
+| 3 | No email in mock mode, so no way to reach the reset page | F3 | FR-AUTH-7 |
+| 4 | Changing Ask AI context mid-conversation | F7 | FR-AI-2, decision D17 |
+| 5 | Leftover data after sign-out on a shared computer | F10 | NFR-4 |
+| 6 | Search does not look inside note text | J4 | Section 8, decision D18, backend stage in `MILESTONES.md` |

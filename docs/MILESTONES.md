@@ -36,6 +36,7 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
   - top bar with search box, bell and avatar menu
 - Service interfaces plus the data-source switch (`VITE_DATA_SOURCE`)
 - Mock auth service, `AuthProvider`, and the `RequireStudent` guard with the `?redirect=` return
+- Sign-out that clears the session, query cache, drafts and AI conversation (NFR-4)
 - GitHub Actions CI workflow (see "Continuous integration" below)
 - First deployment to Vercel (see "Deployment" below)
 
@@ -87,7 +88,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
   - hero with the dashboard preview
   - six-step How It Works
   - features grid, About, call-to-action band and footer
-- Sign in, sign up, forgot password and reset password pages
+- Sign in, sign up, forgot password and reset password pages, including the expired-link state and the mock-only reset shortcut (FR-AUTH-5, FR-AUTH-7)
 - zod validation schemas with inline errors
 - Loading and disabled states on submit
 - Google and Microsoft buttons (mock sign-in)
@@ -129,7 +130,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
   - class picker when not opened from a class
   - validation
   - unsaved-changes prompt
-  - draft autosave to `localStorage`
+  - draft autosave to `localStorage`, with a Restore/Discard banner when the editor reopens (FR-NTE-5)
 - Read view, with the HTML sanitised by DOMPurify
 - Notes page: My Notes tab, course filter, search, sort, row menu (Open, Edit, Delete)
 - Delete confirmation
@@ -153,7 +154,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
   - "mark as viewed"
 - Ask AI side panel on the summary (a bottom sheet on phones)
 - Ask CoNote AI page:
-  - context picker
+  - context picker; changing it starts a new conversation (FR-AI-2)
   - suggested prompts
   - Enter to send
   - typing indicator
@@ -196,6 +197,7 @@ Not requested in the brief. It could be inserted after M2 if real accounts are w
 - Supabase project, and the tables from section 12.2 with Row Level Security
 - Real email/password, Google and Microsoft (`azure`) sign-in
 - Supabase implementations of the Course, Class, Note, Profile and Notification services
+- Full-text search of note bodies using Postgres full-text search (REQUIREMENTS section 8)
 - Later still: a server function that calls a language model for Ask AI, and the summary-generation pipeline (which belongs with the teacher portal)
 
 Adding this early makes every later milestone somewhat slower, because each screen then needs real data and real rules behind it.
