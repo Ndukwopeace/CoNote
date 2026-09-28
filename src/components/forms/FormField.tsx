@@ -36,7 +36,14 @@ interface FormFieldProps {
 }
 
 /** A label, the input the caller renders, and the error underneath. */
-export function FormField({ id, label, error, labelAside, className, children }: FormFieldProps) {
+export function FormField({
+  id,
+  label,
+  error,
+  labelAside,
+  className,
+  children,
+}: Readonly<FormFieldProps>) {
   // The error paragraph's id.
   const errorId = `${id}-error`
   // Wiring for the input: always the id, plus the error attributes only while there is an error.

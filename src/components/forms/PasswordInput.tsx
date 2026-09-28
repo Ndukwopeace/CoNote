@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 type PasswordInputProps = Omit<ComponentProps<'input'>, 'type'>
 
 /** A password input with a show/hide button inside its right edge. */
-export function PasswordInput({ className, ...props }: PasswordInputProps) {
+export function PasswordInput({ className, ...props }: Readonly<PasswordInputProps>) {
   // Whether the characters are currently visible. Hidden by default.
   const [visible, setVisible] = useState(false)
 

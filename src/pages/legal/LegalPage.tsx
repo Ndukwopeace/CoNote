@@ -25,7 +25,7 @@ interface LegalPageProps {
 }
 
 /** A readable column with a draft notice and the sections. */
-export function LegalPage({ title, sections }: LegalPageProps) {
+export function LegalPage({ title, sections }: Readonly<LegalPageProps>) {
   return (
     // Narrow column for comfortable reading.
     <article className="mx-auto max-w-3xl px-4 py-12">

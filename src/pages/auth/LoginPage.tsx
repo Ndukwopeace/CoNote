@@ -101,7 +101,8 @@ export function LoginPage() {
           {/* Wrapping the checkbox in its label makes the text clickable too. */}
           <label className="flex items-center gap-2">
             <input type="checkbox" className="size-4 accent-primary" {...register('remember')} />
-            Remember me
+            {/* The text in its own element, so the space next to the box is explicit. */}
+            <span>Remember me</span>
           </label>
           {/* Forgotten password. */}
           <Link to={ROUTES.forgotPassword} className="font-medium text-primary hover:underline">

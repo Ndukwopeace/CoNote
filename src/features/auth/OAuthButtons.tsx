@@ -25,7 +25,7 @@ const PROVIDERS: { id: OAuthProvider; name: string }[] = [
 ]
 
 /** A divider line and one button per provider. */
-export function OAuthButtons({ disabled, onSelect }: OAuthButtonsProps) {
+export function OAuthButtons({ disabled, onSelect }: Readonly<OAuthButtonsProps>) {
   return (
     <div className="mt-6">
       {/* "or continue with", centred on a horizontal rule. The rules are decorative. */}

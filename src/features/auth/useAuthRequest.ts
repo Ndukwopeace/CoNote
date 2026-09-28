@@ -31,11 +31,11 @@ export function useAuthRequest() {
       const value = await action()
       // Hand the result back to the page.
       return { ok: true, value }
-    } catch (caught) {
+    } catch (error_) {
       // SECURITY: only the student-facing wording is shown, never a raw error, which could leak
       // internal details. Sign-in errors never say whether the email or the password was wrong,
       // so the form can't be used to discover accounts.
-      setError(errorMessage(toAppError(caught)))
+      setError(errorMessage(toAppError(error_)))
       // The page knows it failed; the message is already on screen.
       return { ok: false }
     } finally {

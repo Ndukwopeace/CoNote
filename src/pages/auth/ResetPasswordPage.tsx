@@ -50,13 +50,14 @@ export function ResetPasswordPage() {
     // Still checking: say so, instead of flashing the form or the expired message.
     case 'checking':
       return (
-        <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+        // <output> has the built-in "status" role, so the check is announced politely.
+        <output className="flex items-center gap-2 text-sm text-muted-foreground">
           {/* Tab title while checking. */}
           <PageTitle title="Reset password" />
           {/* Decorative spinner; the text says what's happening. */}
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
           Checking your reset link…
-        </div>
+        </output>
       )
     // The check failed: the link may be fine, so don't call it expired. Offer a retry.
     case 'error':
