@@ -527,14 +527,16 @@ Taken from the wireframes:
 
 ## 16. Build milestones
 
+The full task lists and completion checks are in [`MILESTONES.md`](./MILESTONES.md).
+
 | # | Milestone | Done when |
 |---|---|---|
-| M1 | Scaffold | Vite + TS + Tailwind + shadcn set up; tokens in place; router with all routes stubbed; layouts responsive; mock auth and guard working |
+| M1 | Project setup | Vite + TS + Tailwind + shadcn set up; tokens in place; router with all routes stubbed; layouts responsive; mock auth and guard working |
 | M2 | Public pages | Landing, sign in, sign up, forgot and reset password complete with validation |
 | M3 | Courses and classes | Dashboard, Courses, Course Details, Class and `/classes` render from mock services, with loading, empty and error states |
 | M4 | Notes | Create, read, edit and delete with the editor, tags, drafts, filters and search |
 | M5 | Summaries, AI, notifications, settings | Summary view, Ask AI (mock), Notifications, all Settings tabs |
-| M6 | Hardening | Accessibility pass, responsive pass at 360/768/1024/1440, tests green, lint and typecheck clean, README with setup steps |
+| M6 | Finishing | Accessibility pass, responsive pass at 360/768/1024/1440, tests green, lint and typecheck clean, README with setup steps |
 
 ---
 
