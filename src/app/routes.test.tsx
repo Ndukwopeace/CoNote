@@ -28,12 +28,12 @@ describe('app routes: portal pages', () => {
   // Proves every portal address reaches its page, identified by its one h1.
   it.each([
     // [address, expected h1]
-    ['/dashboard', 'Home'],
+    ['/dashboard', /^Good (morning|afternoon|evening), Victory$/],
     ['/classes', 'All classes'],
     ['/courses', 'My Courses'],
-    ['/courses/swe-311', 'Course details'],
-    ['/courses/swe-311/classes/c2', 'Class'],
-    ['/courses/swe-311/classes/c2/summary', 'Class summary'],
+    ['/courses/swe-311', 'Software Engineering'],
+    ['/courses/swe-311/classes/swe-311-c2', 'Software Requirements'],
+    ['/courses/swe-311/classes/swe-311-c2/summary', 'Class summary'],
     ['/notes', 'Notes'],
     ['/notes/new', 'New note'],
     ['/notes/n1', 'Note'],
@@ -56,7 +56,12 @@ describe('app routes: portal pages', () => {
     renderApp('/dashboard')
 
     // Assert: greeting by first name.
-    expect(await screen.findByText(/Welcome, Victory/)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /Good (morning|afternoon|evening), Victory/,
+      }),
+    ).toBeInTheDocument()
   })
 
   // Proves the old /profile address still works (decision D7).
@@ -114,7 +119,9 @@ describe('app routes: public pages', () => {
     renderApp('/')
 
     // Assert: on the dashboard.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+    ).toBeInTheDocument()
   })
 
   it.each([
@@ -191,7 +198,9 @@ describe('app routes: signing in', () => {
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
     // Assert: on the dashboard.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+    ).toBeInTheDocument()
   })
 })
 
@@ -238,7 +247,7 @@ describe('app routes: the installed app (decision D36)', () => {
     // Arrange: signed in, in the installed app.
     setStandalone(true)
     const { user, router } = renderApp('/dashboard')
-    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / })
 
     // Act: sign out from the account menu.
     await user.click(screen.getByRole('button', { name: /Account menu/ }))

@@ -22,6 +22,8 @@ import type { AuthService } from '../types'
 
 // Fake network delay.
 import { simulateLatency } from './latency'
+// The demo student's ID, shared with the demo data so seeded notes belong to this account.
+import { DEMO_STUDENT_ID } from './seed/constants'
 
 /**
  * The signed-in identity. Kept in sessionStorage only, so it never outlives the browser session.
@@ -44,7 +46,7 @@ const RESET_CODE_KEY = storageKey('reset-code')
 // The demo account every sign-in becomes.
 const DEMO_STUDENT = {
   // Stable ID so demo data can belong to this student.
-  id: 'student-victory',
+  id: DEMO_STUDENT_ID,
   // Name from the wireframes.
   fullName: 'Victory Okafor',
   // Used for OAuth sign-ins and remembered visits, where no email was typed.

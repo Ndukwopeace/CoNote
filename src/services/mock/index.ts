@@ -7,6 +7,10 @@ import type { Services } from '../types'
 
 // The demo authentication service.
 import { createMockAuthService } from './mockAuthService'
+// The demo courses, classes, notes, summaries and notifications.
+import { createMockCatalog } from './mockCatalog'
+// The demo data, built relative to the current time.
+import { createSeed } from './seed'
 
 // A short delay on every demo call so loading states are visible, as they will be with a server.
 const DEMO_LATENCY_MS = 300
@@ -24,5 +28,7 @@ export function createMockServices(): Services {
       // Delay per call.
       latencyMs: DEMO_LATENCY_MS,
     }),
+    // Everything else, over demo data dated from the moment the app opened (section 13).
+    ...createMockCatalog({ seed: createSeed(new Date()), latencyMs: DEMO_LATENCY_MS }),
   }
 }

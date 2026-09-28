@@ -20,6 +20,9 @@ import { AppProviders } from '@/app/AppProviders'
 import { storageKey } from '@/lib/storage'
 // The demo auth service, used here as the test fake.
 import { createMockAuthService } from '@/services/mock/mockAuthService'
+// The demo catalog services and their data, used as the test fakes.
+import { createMockCatalog } from '@/services/mock/mockCatalog'
+import { createSeed } from '@/services/mock/seed'
 // Services type.
 import type { Services } from '@/services/types'
 // Session type.
@@ -46,6 +49,8 @@ export function createTestServices(overrides: Partial<Services> = {}): Services 
       sessionStore: window.sessionStorage,
       latencyMs: 0,
     }),
+    // Courses, classes, notes, summaries and notifications over fresh demo data, instant.
+    ...createMockCatalog({ seed: createSeed(new Date()), latencyMs: 0 }),
     // The test's replacements win.
     ...overrides,
   }

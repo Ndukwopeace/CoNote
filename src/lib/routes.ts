@@ -84,6 +84,8 @@ export const routeTo = {
   // The summary of one class.
   summary: (courseId: string, classId: string) =>
     `/courses/${encodeURIComponent(courseId)}/classes/${encodeURIComponent(classId)}/summary`,
+  // Write a new note for one class (FR-CLS-2 "Add Note").
+  newNote: (classId: string) => `/notes/new?classId=${encodeURIComponent(classId)}`,
   // Read one note.
   note: (noteId: string) => `/notes/${encodeURIComponent(noteId)}`,
   // Edit one note.

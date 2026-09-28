@@ -9,6 +9,9 @@ import { expect, test } from '@playwright/test'
 // Shared helpers.
 import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
 
+/** The dashboard's heading: a time-of-day greeting for the demo student (FR-DSH-1). */
+const GREETING = /^Good (morning|afternoon|evening), Victory$/
+
 /**
  * M1 smoke test (docs/MILESTONES.md): sign in, visit every portal page, sign out.
  * Runs against the production build with the production security headers.
@@ -33,7 +36,7 @@ test('a student signs in, visits every portal page and signs out', async ({ page
 
   // Arrives on the dashboard.
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: GREETING })).toBeVisible()
   await expectNoAxeViolations(page)
 
   // Every destination in the visible navigation: [link text, page heading, expected address].
@@ -41,7 +44,7 @@ test('a student signs in, visits every portal page and signs out', async ({ page
     ['Courses', 'My Courses', /\/courses$/],
     ['Notes', 'Notes', /\/notes$/],
     ['Ask AI', 'Ask CoNote AI', /\/ask-ai$/],
-    ['Home', 'Home', /\/dashboard$/],
+    ['Home', GREETING, /\/dashboard$/],
   ] as const
   // Click through each and check address, heading and accessibility.
   for (const [link, heading, url] of destinations) {

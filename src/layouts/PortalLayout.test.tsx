@@ -126,17 +126,16 @@ describe('PortalLayout', () => {
     )
   })
 
-  // Proves the bell reaches Notifications, now that it isn't a phone tab.
-  it('links the bell to Notifications', async () => {
+  // Proves the bell reaches Notifications and shows the unread count from the service (FR-NTF).
+  it('links the bell to Notifications with the unread count', async () => {
     // Act.
     renderPortal()
 
-    // Assert: the top bar's bell, whose name with nothing unread is just "Notifications".
+    // Assert: the top bar's bell carries the demo data's three unread notifications.
     const topBar = await screen.findByRole('banner')
-    expect(within(topBar).getByRole('link', { name: 'Notifications' })).toHaveAttribute(
-      'href',
-      '/notifications',
-    )
+    expect(
+      await within(topBar).findByRole('link', { name: 'Notifications, 3 unread' }),
+    ).toHaveAttribute('href', '/notifications')
   })
 
   // Proves screen readers are told which page is current.
