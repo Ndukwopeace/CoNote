@@ -29,7 +29,7 @@ function toState(session: Session | null, exitTo: string | null = null): AuthSta
 }
 
 /** Provides sign-in state and actions to everything inside it. */
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   // The injected auth service (mock or, later, Supabase).
   const { auth } = useServices()
   // The query cache, so sign-out can empty it.

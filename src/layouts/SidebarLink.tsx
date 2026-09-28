@@ -23,7 +23,12 @@ type SidebarLinkProps = Omit<ComponentProps<typeof Link>, 'className'> & {
  * A nav link with a plain string className. NavLink's function className cannot pass through
  * Radix's Slot (used by TooltipTrigger asChild), which would turn it into text.
  */
-export function SidebarLink({ to, className, activeClassName, ...props }: SidebarLinkProps) {
+export function SidebarLink({
+  to,
+  className,
+  activeClassName,
+  ...props
+}: Readonly<SidebarLinkProps>) {
   // The link's full path, resolved against the current route.
   const resolved = useResolvedPath(to)
   // `end: false` also matches child pages, so "Notes" stays highlighted on /notes/n1.

@@ -27,7 +27,7 @@ import { initials } from '@/lib/initials'
 import { ROUTES, routeTo } from '@/lib/routes'
 
 /** The account menu. Receives the name and email to display. */
-export function UserMenu({ fullName, email }: { fullName: string; email: string }) {
+export function UserMenu({ fullName, email }: Readonly<{ fullName: string; email: string }>) {
   // Only sign-out is needed from the auth context.
   const { signOut } = useAuth()
 

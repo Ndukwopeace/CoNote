@@ -21,7 +21,7 @@ import { ROUTES } from '@/lib/routes'
 import { UserMenu } from './UserMenu'
 
 /** Top bar for portal pages. Receives the student's name and email for the account menu. */
-export function TopBar({ fullName, email }: { fullName: string; email: string }) {
+export function TopBar({ fullName, email }: Readonly<{ fullName: string; email: string }>) {
   return (
     // Stays at the top while scrolling; slightly see-through with a blur behind it.
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-surface/95 px-4 backdrop-blur md:px-8">

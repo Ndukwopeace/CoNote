@@ -12,7 +12,10 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /** The round frame. */
-function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+function Avatar({
+  className,
+  ...props
+}: Readonly<React.ComponentProps<typeof AvatarPrimitive.Root>>) {
   return (
     <AvatarPrimitive.Root
       // Marker for styling and debugging.
@@ -26,7 +29,10 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
 }
 
 /** The picture, when there is one. */
-function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+function AvatarImage({
+  className,
+  ...props
+}: Readonly<React.ComponentProps<typeof AvatarPrimitive.Image>>) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
@@ -41,7 +47,7 @@ function AvatarImage({ className, ...props }: React.ComponentProps<typeof Avatar
 function AvatarFallback({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: Readonly<React.ComponentProps<typeof AvatarPrimitive.Fallback>>) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"

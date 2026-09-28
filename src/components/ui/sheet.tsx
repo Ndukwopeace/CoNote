@@ -15,17 +15,17 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /** The sheet's state holder: wraps the trigger and the content. */
-function Sheet(props: React.ComponentProps<typeof SheetPrimitive.Root>) {
+function Sheet(props: Readonly<React.ComponentProps<typeof SheetPrimitive.Root>>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
 /** The button that opens the sheet. */
-function SheetTrigger(props: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
+function SheetTrigger(props: Readonly<React.ComponentProps<typeof SheetPrimitive.Trigger>>) {
   return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
 }
 
 /** Wraps anything that should close the sheet when clicked, such as a link inside it. */
-function SheetClose(props: React.ComponentProps<typeof SheetPrimitive.Close>) {
+function SheetClose(props: Readonly<React.ComponentProps<typeof SheetPrimitive.Close>>) {
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
 }
 
@@ -33,7 +33,7 @@ function SheetClose(props: React.ComponentProps<typeof SheetPrimitive.Close>) {
 function SheetOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+}: Readonly<React.ComponentProps<typeof SheetPrimitive.Overlay>>) {
   return (
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
@@ -52,7 +52,7 @@ function SheetContent({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof SheetPrimitive.Content>>) {
   return (
     // Rendered at the end of <body>, so no parent's overflow or stacking can clip it.
     <SheetPrimitive.Portal>
@@ -82,7 +82,10 @@ function SheetContent({
 }
 
 /** The sheet's title; Radix uses it as the dialog's accessible name. */
-function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Title>) {
+function SheetTitle({
+  className,
+  ...props
+}: Readonly<React.ComponentProps<typeof SheetPrimitive.Title>>) {
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
@@ -96,7 +99,7 @@ function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPr
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+}: Readonly<React.ComponentProps<typeof SheetPrimitive.Description>>) {
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"

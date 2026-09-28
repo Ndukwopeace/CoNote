@@ -52,7 +52,9 @@ function Badge({
   asChild = false,
   // Every other span attribute.
   ...props
-}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+}: Readonly<
+  React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean }
+>) {
   // Slot or a real <span>.
   const Comp = asChild ? Slot.Root : 'span'
 

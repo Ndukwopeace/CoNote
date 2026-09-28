@@ -21,7 +21,7 @@ import { RequireStudent } from './RequireStudent'
 import { useAuth } from './useAuth'
 
 /** Shows which page rendered and the full address, so tests can assert where they ended up. */
-function LocationProbe({ label }: { label: string }) {
+function LocationProbe({ label }: Readonly<{ label: string }>) {
   // The current address.
   const location = useLocation()
   return (

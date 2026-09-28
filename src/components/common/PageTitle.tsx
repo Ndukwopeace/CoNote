@@ -3,7 +3,7 @@
  */
 
 /** Sets the browser tab title. React 19 hoists <title> into the document head. */
-export function PageTitle({ title }: { title: string }) {
+export function PageTitle({ title }: Readonly<{ title: string }>) {
   // "Notes · CoNote": page first, so tabs stay distinguishable when several are open.
   return <title>{`${title} · CoNote`}</title>
 }

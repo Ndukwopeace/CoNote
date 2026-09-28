@@ -12,14 +12,16 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /** One menu: holds the open/closed state. */
-function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+function DropdownMenu({
+  ...props
+}: Readonly<React.ComponentProps<typeof DropdownMenuPrimitive.Root>>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
 }
 
 /** The button that opens the menu. */
 function DropdownMenuTrigger({
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+}: Readonly<React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>>) {
   return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
 }
 
@@ -29,7 +31,7 @@ function DropdownMenuContent({
   // 4 px gap below the trigger.
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof DropdownMenuPrimitive.Content>>) {
   return (
     // Portal: rendered at the end of <body> so no container clips it.
     <DropdownMenuPrimitive.Portal>
@@ -48,7 +50,9 @@ function DropdownMenuContent({
 }
 
 /** Groups related items. */
-function DropdownMenuGroup({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
+function DropdownMenuGroup({
+  ...props
+}: Readonly<React.ComponentProps<typeof DropdownMenuPrimitive.Group>>) {
   return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
 }
 
@@ -60,10 +64,12 @@ function DropdownMenuItem({
   // Normal or red.
   variant = 'default',
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
-  inset?: boolean
-  variant?: 'default' | 'destructive'
-}) {
+}: Readonly<
+  React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean
+    variant?: 'default' | 'destructive'
+  }
+>) {
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -86,9 +92,11 @@ function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
-  inset?: boolean
-}) {
+}: Readonly<
+  React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean
+  }
+>) {
   return (
     <DropdownMenuPrimitive.Label
       data-slot="dropdown-menu-label"
@@ -103,7 +111,7 @@ function DropdownMenuLabel({
 function DropdownMenuSeparator({
   className,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+}: Readonly<React.ComponentProps<typeof DropdownMenuPrimitive.Separator>>) {
   return (
     <DropdownMenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
