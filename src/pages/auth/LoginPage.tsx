@@ -1,6 +1,6 @@
 /**
  * The sign-in page at /login (FR-AUTH-1). Email and password with inline validation, "Remember
- * me", the forgotten-password link and the Google and Microsoft buttons.
+ * me", the forgotten-password link and the Google button.
  */
 
 // Connects zod schemas to react-hook-form.
@@ -22,7 +22,7 @@ import { PasswordInput } from '@/components/forms/PasswordInput'
 import { Button } from '@/components/ui/button'
 // Standard text input.
 import { Input } from '@/components/ui/input'
-// Google and Microsoft buttons.
+// The Google button.
 import { OAuthButtons } from '@/features/auth/OAuthButtons'
 // Sign-in actions.
 import { useAuth } from '@/features/auth/useAuth'
@@ -115,7 +115,7 @@ export function LoginPage() {
         </Button>
       </form>
 
-      {/* Google and Microsoft, with the same busy and error handling as the form. */}
+      {/* Google, with the same busy and error handling as the form. */}
       <OAuthButtons
         disabled={isPending}
         onSelect={(provider) => void run(() => signInWithProvider(provider))}

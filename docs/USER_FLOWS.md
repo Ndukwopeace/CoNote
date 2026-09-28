@@ -151,7 +151,7 @@ flowchart TD
   H -- "Email already used" --> I["Alert above form<br/>with link to Sign in"] --> D
   H -- "Network error" --> J["Alert: try again"] --> D
   H -- "OK" --> K["Account created, role = student"]
-  C -- "Google or Microsoft" --> L["Provider consent screen"]
+  C -- "Google" --> L["Google consent screen"]
   L --> M{"Approved?"}
   M -- "No" --> B
   M -- "Yes" --> K
@@ -175,7 +175,7 @@ flowchart TD
   E -- "Yes" --> G{"Credentials correct?"}
   G -- "No" --> H["Alert: email or password is incorrect"] --> C
   G -- "Yes" --> I["Session stored<br/>Remember me on: localStorage<br/>off: sessionStorage"]
-  D -- "Google or Microsoft" --> I
+  D -- "Google" --> I
   I --> R
   R -- "No" --> X["'This portal is for students' + Sign out"]
   R -- "Yes" --> Y{"redirect param?"}
@@ -419,7 +419,7 @@ Each journey below is a table:
 | Stage | Does | Screen | Needs | Risk | Design response |
 |---|---|---|---|---|---|
 | Discover | Opens a link from a classmate | Landing | To understand what CoNote is in under a minute | Thinks it's a shared-notes site and worries about privacy | Hero line, six steps including "Teacher Reviews", About section on privacy (FR-LND-2, 3, 5) |
-| Sign up | Picks Google | Sign up | A fast start | Abandons a long form | Google and Microsoft buttons above the fold (FR-AUTH-2) |
+| Sign up | Picks Google | Sign up | A fast start | Abandons a long form | "Continue with Google" above the fold (FR-AUTH-2) |
 | Land | Sees the dashboard | Dashboard | To see their courses | Not yet enrolled: an empty page with no explanation | Empty state explains that a teacher or admin adds courses (FR-DSH-6) |
 | Orient | Opens SWE 311 | Courses → Course Details | To find today's lesson | Unclear difference between course and class | Classes tab lists numbered, dated lessons (FR-CRS-4) |
 | Write | Opens class 2 and taps Add Note | Class → New note | To feel safe writing freely | Fears classmates will read it | Privacy banner on the Notes tab and in the editor (FR-CLS-3) |

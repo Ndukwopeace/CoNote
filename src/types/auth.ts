@@ -25,8 +25,8 @@ export interface Session {
   user: SessionUser
 }
 
-/** The sign-in providers offered (decision D3). */
-export type OAuthProvider = 'google' | 'microsoft'
+/** The sign-in providers offered: Google only (decision D38, which replaced D3). */
+export type OAuthProvider = 'google'
 
 /** What the sign-in form sends. */
 export interface SignInInput {

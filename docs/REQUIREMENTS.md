@@ -261,16 +261,16 @@ Classes are reached through a course, so they get no top-level item.
 
 ### FR-AUTH Authentication
 
-- **FR-AUTH-1 Sign in** (`/login`): email, password (show/hide toggle), "Remember me", "Forgot password?" link, Sign In button, "or continue with" Google and Microsoft buttons, and the line "Don't have an account? Sign up".
-- **FR-AUTH-2 Sign up** (`/signup`): full name, email, password, confirm password, a checkbox "I agree to the Terms of Service and Privacy Policy" (required), Sign Up button, Google and Microsoft buttons, and the line "Already have an account? Sign in". New accounts get the `student` role.
+- **FR-AUTH-1 Sign in** (`/login`): email, password (show/hide toggle), "Remember me", "Forgot password?" link, Sign In button, "or continue with" and a "Continue with Google" button (the official four-colour Google mark, following Google's sign-in branding), and the line "Don't have an account? Sign up".
+- **FR-AUTH-2 Sign up** (`/signup`): full name, email, password, confirm password, a checkbox "I agree to the Terms of Service and Privacy Policy" (required), Sign Up button, the "Continue with Google" button, and the line "Already have an account? Sign in". New accounts get the `student` role.
 - **FR-AUTH-3 Validation:** email format; password at least 8 characters with a letter and a number; confirm must match; full name 2–80 characters. Errors show inline under each field on blur and on submit.
 - **FR-AUTH-4 Forgot password:** an email field. The page always shows "If an account exists for that email, we sent a reset link", so it never reveals whether an account exists.
 - **FR-AUTH-5 Reset password:** new password and confirm. On success, go to `/login` with a success toast.
   - If the link is expired or already used, show "This reset link has expired" and a button back to `/forgot-password` to request a new one. The password fields are not shown.
 - **FR-AUTH-6** Buttons show a loading state and are disabled while a request is in flight. Server errors appear in an alert above the form.
-- **FR-AUTH-7 Mock mode:** any valid email and password signs in as the demo student. Google and Microsoft sign in as the demo student straight away.
+- **FR-AUTH-7 Mock mode:** any valid email and password signs in as the demo student. Google signs in as the demo student straight away.
   - Mock mode sends no email. After a reset request, the confirmation screen also shows a "Continue to reset (demo)" link to `/reset-password`. The link appears only in mock mode.
-- **FR-AUTH-8 Supabase mode:** email/password auth plus the `google` and `azure` OAuth providers. "Remember me" off means the session is kept in `sessionStorage`.
+- **FR-AUTH-8 Supabase mode:** email/password auth plus the `google` OAuth provider. "Remember me" off means the session is kept in `sessionStorage`.
 
 ---
 
@@ -373,7 +373,7 @@ Classes are reached through a course, so they get no top-level item.
 ### FR-SET Settings and Profile
 
 - **FR-SET-1 Profile:** avatar (upload and preview, JPG or PNG, max 2 MB), full name, email (read-only; changed under Account), department, level/year, phone. Save Changes shows a toast.
-- **FR-SET-2 Account:** change password (current, new, confirm), connected sign-in providers (Google, Microsoft), sign out, and "Request account deletion" (confirm dialog; mock shows a toast).
+- **FR-SET-2 Account:** change password (current, new, confirm), connected sign-in provider (Google), sign out, and "Request account deletion" (confirm dialog; mock shows a toast).
 - **FR-SET-3 Notifications:** in-app and email toggles for "New summary published", "Class reminders" and "Announcements".
 - **FR-SET-4 Privacy:** a plain-language explanation of who can see what (section 1 rules). **[Default]** "Download my notes" exports JSON.
 - **FR-SET-5 Help & Support:** an FAQ accordion (at least 5 questions), a contact email, the app version, and "Reset demo data" in mock mode only.
@@ -566,7 +566,7 @@ Taken from the wireframes:
 |---|---|---|---|
 | D1 | Ask CoNote AI | Wireframes only | Build the full UI with canned replies. Real model later. |
 | D2 | AI grounding | Not specified | Approved summaries plus the student's own notes |
-| D3 | Social sign-in | Brief: Google. Wireframe: Google and Microsoft | Google and Microsoft |
+| D3 | Social sign-in | Brief: Google. Wireframe: Google and Microsoft | Google and Microsoft. **Replaced by D38.** |
 | D4 | Landing nav | Brief: About. Wireframe: Pricing | About |
 | D5 | How-it-works steps | Brief: 6. Wireframe: 5 | 6, with the teacher review step kept |
 | D6 | Sidebar items | Brief and wireframes differ | Dashboard, Courses, Notes, Ask AI, Notifications, Settings |
@@ -601,6 +601,7 @@ Taken from the wireframes:
 | D35 | Phone navigation | UX review after M2.5: five tabs felt packed; Notifications appeared twice (tab and bell) | Four tabs: Home, Courses, Notes, Ask AI (about 98 px each on a 390 px phone). Notifications moves to the top-bar bell with an unread badge. "Dashboard" is renamed "Home" in the nav and page heading; the address stays `/dashboard`. The phone top bar keeps its logo; the search placeholder is "Find courses & notes", the browser's own clear button is hidden (M5 adds one) and items sit 8 px apart on phones, so it fits at 360 px. |
 | D36 | What the installed app contains | Asked for after the D35 review: the app should hold sign-in and the portal, not the public website | In the installed app (display mode `standalone`, or iOS `navigator.standalone`), `/` redirects to `/login` (`SkipLandingInApp`). This also makes sign-out there end on sign-in instead of the landing page (D21 still applies in the browser). Terms and Privacy stay reachable, since sign-up needs them, and open in a new tab. The precache is shared with the website, so the landing page's code is still cached for offline browser visits. |
 | D37 | Update checks on iPhone | Found on a real iPhone after M2.5: a new version took several app restarts to appear | iOS home-screen apps often send no focus event when reopened, so the app also checks when the page becomes visible again (`visibilitychange`). The limit drops from once an hour to once every 15 minutes, so new deploys reach students sooner. Each check downloads nothing unless a new version exists. |
+| D38 | Social sign-in (revised) | Asked for after M2: drop Microsoft, show the real Google logo | Google only, as the brief first said. One full-width "Continue with Google" button with the official four-colour "G" (inline SVG), white with a grey border as Google's branding asks. The `OAuthProvider` type is now `'google'` alone, so Microsoft can't come back by accident. |
 
 ---
 
