@@ -47,7 +47,7 @@ export async function signIn(page: Page, { remember = true } = {}) {
   // Email.
   await page.getByLabel('Email address').fill('victory@example.com')
   // Password.
-  await page.getByLabel('Password').fill('password1')
+  await page.getByLabel('Password', { exact: true }).fill('password1')
   // Tick "Remember me" unless the test says otherwise.
   if (remember) await page.getByLabel('Remember me').check()
   // Submit.

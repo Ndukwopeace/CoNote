@@ -1,90 +1,60 @@
 /**
- * The sign-in page (FR-AUTH-1). M1 version: working, with light validation; M2 adds the full
- * form library and inline field errors.
+ * The sign-in page at /login (FR-AUTH-1). Email and password with inline validation, "Remember
+ * me", the forgotten-password link and the Google and Microsoft buttons.
  */
 
-// State for the error message and busy flag; the submit event type.
-import { useState, type SubmitEvent } from 'react'
-// Links to other pages.
-import { Link } from 'react-router'
+// Connects zod schemas to react-hook-form.
+import { zodResolver } from '@hookform/resolvers/zod'
+// Form state, validation timing and field registration.
+import { useForm } from 'react-hook-form'
+// Links, and the navigation state that may carry a notice.
+import { Link, useLocation } from 'react-router'
 
 // Sets the tab title.
 import { PageTitle } from '@/components/common/PageTitle'
+// Labelled field with its inline error.
+import { FormField } from '@/components/forms/FormField'
+// Error and success boxes above the form.
+import { FormMessage } from '@/components/forms/FormMessage'
+// Password input with the show/hide toggle.
+import { PasswordInput } from '@/components/forms/PasswordInput'
 // Standard button.
 import { Button } from '@/components/ui/button'
-// Text input.
+// Standard text input.
 import { Input } from '@/components/ui/input'
+// Google and Microsoft buttons.
+import { OAuthButtons } from '@/features/auth/OAuthButtons'
 // Sign-in actions.
 import { useAuth } from '@/features/auth/useAuth'
-// Student-facing error wording.
-import { errorMessage } from '@/lib/errorMessages'
-// Normalises thrown values.
-import { toAppError } from '@/lib/errors'
+// Busy and error handling shared by the auth forms.
+import { useAuthRequest } from '@/features/auth/useAuthRequest'
+// Reads the one-off notice, e.g. after a password reset.
+import { readAuthNotice } from '@/lib/authNotice'
+// The sign-in rules and the form's value type.
+import { signInSchema, type SignInValues } from '@/lib/authSchemas'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
-// "google" or "microsoft".
-import type { OAuthProvider } from '@/types/auth'
 
-/** Reads a text field from submitted form data; anything that isn't text becomes "". */
-function textField(form: FormData, name: string) {
-  // Raw value: a string, a File, or null.
-  const value = form.get(name)
-  // Only accept text.
-  return typeof value === 'string' ? value : ''
-}
+/** Empty starting values, so every field is controlled from the first render. */
+const EMPTY: SignInValues = { email: '', password: '', remember: false }
 
 /**
- * Working sign-in for M1. M2 replaces the form handling with react-hook-form + zod.
- * No navigation here: RedirectIfSignedIn moves the student on once the session exists.
+ * Sign in. There is no navigation here: RedirectIfSignedIn moves the student on once the
+ * session exists, to ?redirect= if it is safe or the dashboard otherwise.
  */
 export function LoginPage() {
   // The two sign-in actions this page uses.
   const { signIn, signInWithProvider } = useAuth()
-  // The error to show above the form, or null.
-  const [error, setError] = useState<string | null>(null)
-  // True while a sign-in request is in flight.
-  const [isPending, setIsPending] = useState(false)
-
-  /** Runs a sign-in attempt with shared error and busy handling. */
-  async function run(action: () => Promise<unknown>) {
-    // Clear any old error.
-    setError(null)
-    // Disable the buttons so the form can't be submitted twice.
-    setIsPending(true)
-    try {
-      // Attempt the sign-in. On success the guard navigates away, so nothing else happens here.
-      await action()
-    } catch (caught) {
-      // SECURITY: show only the safe, student-facing wording. Sign-in never says whether the
-      // email or the password was wrong, so the form can't be used to discover accounts.
-      setError(errorMessage(toAppError(caught)))
-      // Re-enable the form so the student can try again.
-      setIsPending(false)
-    }
-  }
-
-  /** Handles the email and password form. */
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    // Stop the browser's full-page form submission; the app handles it.
-    event.preventDefault()
-    // Read every field of the submitted form.
-    const form = new FormData(event.currentTarget)
-    // Try to sign in with the typed values.
-    void run(() =>
-      signIn({
-        email: textField(form, 'email'),
-        password: textField(form, 'password'),
-        // Checked checkboxes submit "on".
-        remember: form.get('remember') === 'on',
-      }),
-    )
-  }
-
-  /** Handles the Google and Microsoft buttons. */
-  function handleProvider(provider: OAuthProvider) {
-    // Same error and busy handling as the form.
-    void run(() => signInWithProvider(provider))
-  }
+  // Busy flag, server error and the request runner.
+  const { error, isPending, run } = useAuthRequest()
+  // The notice sent by another page, if any; only known notices come back (see readAuthNotice).
+  const notice = readAuthNotice(useLocation().state)
+  // The form. Errors appear when a field loses focus and on submit (FR-AUTH-3).
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(signInSchema), mode: 'onTouched', defaultValues: EMPTY })
 
   return (
     <div>
@@ -95,47 +65,42 @@ export function LoginPage() {
       {/* Subheading. */}
       <p className="mt-1 text-sm text-muted-foreground">Sign in to continue to CoNote.</p>
 
-      {/* The error, when there is one. role="alert" makes screen readers announce it. */}
+      {/* The notice from the previous page, when there is one. */}
+      {notice && (
+        <FormMessage tone="success" className="mt-4">
+          {notice}
+        </FormMessage>
+      )}
+      {/* The server error, when there is one (FR-AUTH-6). */}
       {error && (
-        <p
-          role="alert"
-          className="mt-4 rounded-md bg-error-soft px-3 py-2 text-sm text-error-strong"
-        >
+        <FormMessage tone="error" className="mt-4">
           {error}
-        </p>
+        </FormMessage>
       )}
 
-      {/* noValidate: the app reports errors itself, in the same style everywhere. */}
-      <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-4">
-        {/* Email field. */}
-        <div className="space-y-1.5">
-          {/* htmlFor ties the label to the input, for screen readers and bigger click targets. */}
-          <label htmlFor="email" className="text-sm font-medium">
-            Email address
-          </label>
+      {/* noValidate: the app reports errors itself, the same way on every browser. handleSubmit
+          checks the schema first and calls the function only with valid, trimmed values. */}
+      <form
+        noValidate
+        onSubmit={(event) => void handleSubmit((values) => run(() => signIn(values)))(event)}
+        className="mt-6 space-y-4"
+      >
+        {/* Email. */}
+        <FormField id="email" label="Email address" error={errors.email?.message}>
           {/* autoComplete lets password managers fill it in. */}
-          <Input id="email" name="email" type="email" autoComplete="email" required />
-        </div>
-        {/* Password field. */}
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          {/* type="password" hides the characters; "current-password" tells password managers
-              this is a sign-in, not a new password. */}
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </div>
+          {(field) => <Input {...field} type="email" autoComplete="email" {...register('email')} />}
+        </FormField>
+        {/* Password. "current-password" tells password managers this is a sign-in. */}
+        <FormField id="password" label="Password" error={errors.password?.message}>
+          {(field) => (
+            <PasswordInput {...field} autoComplete="current-password" {...register('password')} />
+          )}
+        </FormField>
         {/* "Remember me" and the forgotten-password link on one row. */}
         <div className="flex items-center justify-between text-sm">
           {/* Wrapping the checkbox in its label makes the text clickable too. */}
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="remember" className="size-4 accent-primary" />
+            <input type="checkbox" className="size-4 accent-primary" {...register('remember')} />
             Remember me
           </label>
           {/* Forgotten password. */}
@@ -143,39 +108,17 @@ export function LoginPage() {
             Forgot password?
           </Link>
         </div>
-        {/* Submit; disabled while a request is in flight to prevent double submission. */}
+        {/* Submit; disabled and relabelled while a request is in flight (FR-AUTH-6). */}
         <Button type="submit" className="w-full" disabled={isPending}>
-          Sign in
+          {isPending ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
 
-      {/* Divider text. */}
-      <p className="my-6 text-center text-xs text-muted-foreground">or continue with</p>
-      {/* Provider buttons: stacked on phones, side by side from 640 px. */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {/* The visible text is just "Google"; aria-label gives screen readers the full action. */}
-        <Button
-          variant="outline"
-          aria-label="Continue with Google"
-          disabled={isPending}
-          onClick={() => {
-            handleProvider('google')
-          }}
-        >
-          Google
-        </Button>
-        {/* Same for Microsoft. */}
-        <Button
-          variant="outline"
-          aria-label="Continue with Microsoft"
-          disabled={isPending}
-          onClick={() => {
-            handleProvider('microsoft')
-          }}
-        >
-          Microsoft
-        </Button>
-      </div>
+      {/* Google and Microsoft, with the same busy and error handling as the form. */}
+      <OAuthButtons
+        disabled={isPending}
+        onSelect={(provider) => void run(() => signInWithProvider(provider))}
+      />
 
       {/* Link to sign-up for new students. */}
       <p className="mt-6 text-center text-sm text-muted-foreground">

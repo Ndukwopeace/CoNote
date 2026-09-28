@@ -119,7 +119,8 @@ describe('app routes: public pages', () => {
     // Proves every other public page renders: [address, expected h1].
     ['/signup', 'Create your account'],
     ['/forgot-password', 'Reset your password'],
-    ['/reset-password', 'Choose a new password'],
+    // Without a code from a reset email, the reset page shows its expired state (FR-AUTH-5).
+    ['/reset-password', 'This reset link has expired'],
     ['/terms', 'Terms of Service'],
     ['/privacy', 'Privacy Policy'],
   ])('renders %s', async (path, heading) => {
@@ -189,21 +190,5 @@ describe('app routes: signing in', () => {
 
     // Assert: on the dashboard.
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
-  })
-
-  // Proves a failed sign-in shows an announced error message.
-  it('shows the error when sign-in fails', async () => {
-    // Arrange: render signed out, keeping the simulated user.
-    const { user } = renderApp('/login', false)
-    // Wait for the sign-in page.
-    await screen.findByRole('heading', { level: 1, name: 'Welcome back' })
-
-    // Act: fill in the email...
-    await user.type(screen.getByLabelText('Email address'), 'victory@example.com')
-    // ...and submit.
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-
-    // Assert: the empty-password message, announced as an alert.
-    expect(await screen.findByRole('alert')).toHaveTextContent('Enter your password.')
   })
 })

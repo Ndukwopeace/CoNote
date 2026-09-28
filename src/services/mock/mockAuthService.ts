@@ -6,8 +6,12 @@
 // zod checks stored data and email formats.
 import { z } from 'zod'
 
+// The same name and password rules the forms use (FR-AUTH-3).
+import { fullNameSchema, newPasswordSchema } from '@/lib/authSchemas'
 // The error type every service throws.
 import { AppError } from '@/lib/errors'
+// The reset page's address, for the demo reset link.
+import { ROUTES } from '@/lib/routes'
 // Builds "conote:"-prefixed storage keys.
 import { storageKey } from '@/lib/storage'
 // The session shape returned to the app.
@@ -31,8 +35,11 @@ const SESSION_KEY = storageKey('session')
  * SECURITY: nothing personal is written to long-lived storage.
  */
 const REMEMBER_KEY = storageKey('remember')
-// Same minimum as the sign-up form rules (FR-AUTH-3).
-const MIN_PASSWORD_LENGTH = 8
+/**
+ * The outstanding demo reset code. Kept in sessionStorage so it survives the jump from the
+ * forgot page to the reset page, and disappears when the browser closes.
+ */
+const RESET_CODE_KEY = storageKey('reset-code')
 
 // The demo account every sign-in becomes.
 const DEMO_STUDENT = {
@@ -66,6 +73,21 @@ const sessionSchema = z.object({
 
 // Rule for a well-formed email address.
 const emailSchema = z.email()
+
+/**
+ * Throws a validation error carrying the first rule `value` breaks, so the student sees the
+ * same message the form would have shown.
+ */
+function assertRule(schema: z.ZodType, value: unknown) {
+  // Check without throwing zod's own error type.
+  const result = schema.safeParse(value)
+  // Passed: nothing to do.
+  if (result.success) return
+  // The first broken rule's message, or a generic one if zod gave none.
+  const message = result.error.issues[0]?.message ?? 'Check this field and try again.'
+  // The app's own error type, with a message that is safe to show.
+  throw new AppError('validation', message)
+}
 
 /** What the factory needs: two storage areas (injected so tests can use their own) and a delay. */
 interface MockAuthOptions {
@@ -175,12 +197,10 @@ export function createMockAuthService({
       await simulateLatency(latencyMs)
       // Reject badly formed emails.
       assertEmail(email)
-      // A name made only of spaces counts as empty.
-      if (fullName.trim().length === 0) throw new AppError('validation', 'Enter your full name.')
-      // Enforce the minimum password length.
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        throw new AppError('validation', 'Use at least 8 characters for your password.')
-      }
+      // SECURITY: the name and password rules are enforced here too, so a request that skips
+      // the form (for example, sent from the browser console) can't create a weak password.
+      assertRule(fullNameSchema, fullName)
+      assertRule(newPasswordSchema, password)
       // New accounts are remembered, as most sign-up flows do.
       return store(demoSession(email, fullName.trim()), true)
     },
@@ -209,15 +229,31 @@ export function createMockAuthService({
       // Only the format is checked. SECURITY: the result never depends on whether an account
       // exists, so the form can't be used to find out who has an account (account enumeration).
       assertEmail(email)
+      // SECURITY: an unguessable code, so nobody can open the reset page by making one up.
+      // A new request replaces the old code, so only the latest link works.
+      const code = crypto.randomUUID()
+      // Remember it for checkResetLink.
+      sessionStore.setItem(RESET_CODE_KEY, code)
+      // No email is sent in the demo, so hand the link back for the confirmation screen.
+      return { demoResetPath: `${ROUTES.resetPassword}?code=${code}` }
+    },
+
+    async checkResetLink(code) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // The code this browser was last given, or null once used.
+      const expected = sessionStore.getItem(RESET_CODE_KEY)
+      // SECURITY: a missing, made-up, old or used code is refused.
+      return code !== null && code !== '' && code === expected
     },
 
     async updatePassword(newPassword) {
       // Behave like a network call.
       await simulateLatency(latencyMs)
-      // Enforce the same minimum length as sign-up.
-      if (newPassword.length < MIN_PASSWORD_LENGTH) {
-        throw new AppError('validation', 'Use at least 8 characters for your password.')
-      }
+      // SECURITY: the same strength rules as sign-up, enforced here and not only in the form.
+      assertRule(newPasswordSchema, newPassword)
+      // SECURITY: spend the reset code, so the same link can't be used a second time.
+      sessionStore.removeItem(RESET_CODE_KEY)
     },
 
     onAuthChange(listener) {

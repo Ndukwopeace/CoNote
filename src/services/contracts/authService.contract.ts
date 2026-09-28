@@ -122,6 +122,25 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       expect(listener).not.toHaveBeenCalled()
     })
 
+    // Proves a reset request resolves without an error for any well-formed email.
+    it('accepts a reset request for any well-formed email', async () => {
+      // An address with no account must still succeed (no account enumeration).
+      await expect(create().requestPasswordReset('nobody@example.com')).resolves.toBeTypeOf(
+        'object',
+      )
+    })
+
+    // SECURITY: proves a missing or made-up reset code is refused, so the reset page can't be
+    // used without a real link from the email.
+    it.each([[null], [''], ['made-up-code']])('refuses the reset code %j', async (code) => {
+      await expect(create().checkResetLink(code)).resolves.toBe(false)
+    })
+
+    // Proves weak new passwords are refused by the service, not only by the form.
+    it('rejects a new password that breaks the password rules', async () => {
+      await expect(create().updatePassword('short')).rejects.toMatchObject({ kind: 'validation' })
+    })
+
     // Proves sign-up creates a student with the given name.
     it('creates a student account on sign-up', async () => {
       // Arrange: a fresh service.

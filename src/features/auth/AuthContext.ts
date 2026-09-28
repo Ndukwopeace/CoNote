@@ -6,7 +6,13 @@
 import { createContext } from 'react'
 
 // Auth data shapes used by the actions below.
-import type { OAuthProvider, Session, SignInInput, SignUpInput } from '@/types/auth'
+import type {
+  OAuthProvider,
+  PasswordResetRequest,
+  Session,
+  SignInInput,
+  SignUpInput,
+} from '@/types/auth'
 
 /** Where sign-in stands. Exactly one of three states, so screens can't mix them up. */
 export type AuthState =
@@ -33,8 +39,8 @@ export type AuthContextValue = AuthState & {
   signUp: (input: SignUpInput) => Promise<Session>
   // Sign in with Google or Microsoft.
   signInWithProvider: (provider: OAuthProvider) => Promise<Session>
-  // Send a password reset link.
-  requestPasswordReset: (email: string) => Promise<void>
+  // Send a password reset link; the demo also returns the link (FR-AUTH-7).
+  requestPasswordReset: (email: string) => Promise<PasswordResetRequest>
   // Set a new password.
   updatePassword: (newPassword: string) => Promise<void>
   /**

@@ -484,7 +484,7 @@ interface AiMessage { id: ID; role: 'user' | 'assistant'; content: string; creat
 
 ```ts
 AuthService         signIn, signUp, signInWithProvider, signOut, requestPasswordReset,
-                    updatePassword, getSession, onAuthChange
+                    checkResetLink, updatePassword, getSession, onAuthChange
 ProfileService      getMe, updateMe, uploadAvatar
 CourseService       listMyCourses, getCourse
 ClassService        listClasses(courseId), listMyClasses(range), getClass
@@ -494,6 +494,8 @@ NotificationService list, markRead, markAllRead, unreadCount
 AiService           askAi(context, messages) → AsyncIterable<string> | Promise<string>
 SearchService       search(query)
 ```
+
+`requestPasswordReset(email)` returns `{ demoResetPath? }`. Only the mock fills it in, so the forgot page shows the demo link without checking which data source is running (FR-AUTH-7). `checkResetLink(code)` returns whether a reset link is still valid; missing, made-up, used and superseded codes are refused (FR-AUTH-5). In Supabase this maps to exchanging the link's code for a recovery session.
 
 ### 12.2 Supabase notes (for the later integration)
 
@@ -582,6 +584,10 @@ Taken from the wireframes:
 | D22 | Progressive web app | Asked for after M1; not in the brief | Three levels: installable with the app shell offline (M2.5), offline reading (M4/M5), offline writing and push (backend stage) |
 | D23 | Font hosting | Needed for offline use and a tighter CSP | Self-host Plus Jakarta Sans (SIL Open Font Licence) from M2.5; drop Google Fonts |
 | D24 | Blocked upgrades | Dependabot opened ESLint 10, @eslint/js 10, TypeScript 7 and @types/node 26 (PRs #1–4, closed) | Ignored in `.github/dependabot.yml` until each blocker clears: major versions of ESLint, @eslint/js and @types/node, and TypeScript 6.1 or later (typescript-eslint supports below 6.1). Other updates continue |
+| D25 | Reset success message | FR-AUTH-5 says "toast"; no toast library exists yet | The reset page sends a notice key in navigation state, and the sign-in page shows the fixed message in a `role="status"` box. Only known keys are shown, so injected state can't put text on screen. No new dependency. |
+| D26 | Form handling | Needed for FR-AUTH-3 inline errors | `react-hook-form` with `@hookform/resolvers` and the shared zod schemas in `lib/authSchemas.ts`. The mock auth service checks the same schemas, so the rules hold even when the form is skipped. Errors show on blur and on submit. |
+| D27 | Reset links | Found while building M2 | A reset code works once, and only the latest one works. The reset page checks the code before showing any field. |
+| D28 | Landing dashboard preview | Open question 5 | Drawn with styled boxes (`DashboardPreview.tsx`), so no image file is needed and it follows the design tokens. Can be swapped for a real screenshot later. |
 
 ---
 
@@ -607,5 +613,5 @@ The full task lists and completion checks are in [`MILESTONES.md`](./MILESTONES.
 2. Is there a deadline after which a class's notes stop feeding the AI? It may deserve a "Notes close in 2 days" hint on the Class page.
 3. Should students see *how many* classmates contributed notes before a summary is published?
 4. Which institutions or email domains may sign up? Is sign-up open to anyone?
-5. Is there a real dashboard preview image for the landing page, or should one be built from components?
+5. ~~Is there a real dashboard preview image for the landing page?~~ Built from components for now (D28).
 6. Will she provide a logo file, or should a text-and-icon logo be made from Lucide?

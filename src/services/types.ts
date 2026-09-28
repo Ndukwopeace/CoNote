@@ -4,7 +4,13 @@
  */
 
 // The auth data shapes the interface methods accept and return.
-import type { OAuthProvider, Session, SignInInput, SignUpInput } from '@/types/auth'
+import type {
+  OAuthProvider,
+  PasswordResetRequest,
+  Session,
+  SignInInput,
+  SignUpInput,
+} from '@/types/auth'
 
 /** Everything the app can ask of an authentication backend (mock today, Supabase later). */
 export interface AuthService {
@@ -18,9 +24,17 @@ export interface AuthService {
   signInWithProvider(provider: OAuthProvider): Promise<Session>
   /** Ends the session. */
   signOut(): Promise<void>
-  /** Sends a reset link. Must resolve the same way whether or not the account exists. */
-  requestPasswordReset(email: string): Promise<void>
-  /** Sets a new password for the signed-in (or recovering) user. */
+  /**
+   * Sends a reset link. Must resolve the same way whether or not the account exists.
+   * The demo also returns the link itself, because it sends no email.
+   */
+  requestPasswordReset(email: string): Promise<PasswordResetRequest>
+  /**
+   * True when `code` (from the reset link) is still valid. Used and superseded codes are
+   * refused. A missing code is always refused.
+   */
+  checkResetLink(code: string | null): Promise<boolean>
+  /** Sets a new password for the signed-in (or recovering) user and spends the reset code. */
   updatePassword(newPassword: string): Promise<void>
   /** Calls `listener` whenever the session changes. Returns an unsubscribe function. */
   onAuthChange(listener: (session: Session | null) => void): () => void
