@@ -46,24 +46,33 @@ export function UpdatePrompt() {
   // Whether a note is being edited with unsaved changes.
   const hasUnsavedChanges = useHasUnsavedChanges()
 
-  // When the window regains focus, look for a new version, at most once an hour.
+  // When the student comes back to the app, look for a new version, at most once per interval.
   useEffect(() => {
-    /** Runs on every focus. */
-    function onFocus() {
+    /** Checks for a new version unless one was checked recently. */
+    function checkForUpdate() {
       // The current time.
       const now = Date.now()
       // Too soon, or not registered yet: skip.
       if (!registration.current || !shouldCheckForUpdate(lastCheckedAt.current, now)) return
-      // Record the check first, so a quick second focus doesn't check twice.
+      // Record the check first, so a second event straight after doesn't check twice.
       lastCheckedAt.current = now
       // Ask the server; a failure (e.g. offline) just means no update this time.
       registration.current.update().catch(() => undefined)
     }
-    // Listen for focus.
-    window.addEventListener('focus', onFocus)
+    /** Runs when the page is shown or hidden; only coming back should check. */
+    function onVisibilityChange() {
+      // Leaving the app is not a reason to check.
+      if (document.visibilityState === 'visible') checkForUpdate()
+    }
+    // Desktop browsers send focus when the window is selected again.
+    window.addEventListener('focus', checkForUpdate)
+    // iOS home-screen apps often send no focus event when reopened, but they do report the page
+    // becoming visible again (D37).
+    document.addEventListener('visibilitychange', onVisibilityChange)
     // Stop on unmount.
     return () => {
-      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('focus', checkForUpdate)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
 

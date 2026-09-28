@@ -4,8 +4,11 @@
  * clear on sign-out. Pure functions, so the hooks that use them stay thin.
  */
 
-/** How often, at most, the app asks the server for a new version (FR-PWA-5): one hour. */
-export const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000
+/**
+ * How often, at most, the app asks the server for a new version (FR-PWA-5): 15 minutes (D37).
+ * Each check is a small request that downloads nothing unless a new version exists.
+ */
+export const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000
 
 /**
  * Every runtime cache that may hold student data is named with this prefix (FR-PWA-7).
