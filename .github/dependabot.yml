@@ -15,6 +15,23 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Major versions the project can't take yet (decision D24). Each package still gets its
+    # minor and patch updates, including security fixes. Remove an entry once its blocker clears.
+    ignore:
+      # ESLint 10: eslint-plugin-jsx-a11y does not support it yet (decision D20).
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      # @eslint/js 10 requires ESLint 10, so it has the same blocker.
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint supports TypeScript below 6.1 only. 6.1 is a minor release, so this blocks
+      # a version range rather than major updates: 6.1 and later (including 7) are skipped, and
+      # 6.0.x patches still arrive.
+      - dependency-name: typescript
+        versions: ['>= 6.1.0']
+      # Node's type definitions must match the Node version in .nvmrc (22); upgrade both together.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   # The GitHub Actions used by the workflows (updates their pinned commits).
   - package-ecosystem: github-actions
