@@ -95,6 +95,7 @@ There is one summary per class session. The backend moves it through these state
 | Backend (later) | Supabase: Auth, Postgres with Row Level Security, Edge Functions |
 | Tests | Vitest + Testing Library |
 | Quality | ESLint, Prettier, `tsc --noEmit` |
+| CI | GitHub Actions: lint, format check, typecheck, tests and build on every pull request and push to the default branch. See `MILESTONES.md`. |
 
 ### 5.1 Folder structure
 

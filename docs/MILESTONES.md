@@ -36,9 +36,30 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
   - top bar with search box, bell and avatar menu
 - Service interfaces plus the data-source switch (`VITE_DATA_SOURCE`)
 - Mock auth service, `AuthProvider`, and the `RequireStudent` guard with the `?redirect=` return
+- GitHub Actions CI workflow (see "Continuous integration" below)
 - First deployment to Vercel (see "Deployment" below)
 
-**Done when:** a visitor can "log in" and click through every (empty) portal page at 360 px, 768 px and 1440 px wide. Signing out returns to the landing page. Portal URLs redirect to login when signed out. All of this works on the live Vercel URL, including opening a deep link such as `/courses` directly or refreshing on it.
+**Done when:** a visitor can "log in" and click through every (empty) portal page at 360 px, 768 px and 1440 px wide. Signing out returns to the landing page. Portal URLs redirect to login when signed out. All of this works on the live Vercel URL, including opening a deep link such as `/courses` directly or refreshing on it. CI passes on the pull request that carries M1.
+
+### Continuous integration
+
+A GitHub Actions workflow at `.github/workflows/ci.yml` checks every change. It is added in M1, once `package.json` exists; before that it would have nothing to run.
+
+- **Triggers:** every pull request, and every push to the default branch.
+- **Environment:** `ubuntu-latest`, Node 20 LTS, with the version pinned in `.nvmrc` so CI, Vercel and local machines match. The npm cache is keyed on `package-lock.json`.
+- **Steps, in order:**
+  1. `npm ci`
+  2. `npm run lint` (ESLint, zero errors)
+  3. `npm run format:check` (Prettier)
+  4. `npm run typecheck` (`tsc --noEmit`)
+  5. `npm test -- --run` (Vitest, no watch mode)
+  6. `npm run build`, with `VITE_DATA_SOURCE=mock`
+- **Concurrency:** a new push to the same branch cancels the run still in progress for that branch.
+- **Branch protection:** once the first run is green, require the CI check to pass before merging into the default branch. This is a repository setting, changed by the repo owner in GitHub.
+- **CI does not deploy.** Vercel's GitHub integration builds and deploys on its own. CI only decides whether a change is safe to merge.
+- **Later additions:**
+  - M6: a Playwright smoke test that loads the landing page, logs in with the mock account, and opens each portal page
+  - Backend stage: Supabase secrets stored as GitHub Actions secrets, never in the workflow file
 
 ### Deployment
 
@@ -160,7 +181,8 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
   - reduced-motion support
 - Responsive pass at 360, 768, 1024 and 1440 px
 - Code-split routes; check bundle size and landing-page load time
-- Lint, typecheck and tests all passing
+- Lint, typecheck and tests all passing in CI
+- Playwright smoke test added to the CI workflow
 - `README.md`: setup, scripts, environment variables, folder guide, and how to switch to Supabase
 
 **Done when:** the app is ready to demo or hand over, and a new developer can run it from the README alone.
