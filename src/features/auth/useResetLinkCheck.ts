@@ -32,8 +32,12 @@ export type ResetLinkState =
 export function useResetLinkCheck(code: string | null) {
   // The auth service.
   const { auth } = useServices()
-  // Starts in "checking", so neither the form nor the expired message flashes first.
-  const [state, setState] = useState<ResetLinkState>({ status: 'checking' })
+  /**
+   * The latest answer, tagged with the code it is about. An answer for a different code counts
+   * as "checking", so when the address changes to a new code the old link's form disappears
+   * at once instead of staying usable while the new code is checked.
+   */
+  const [answer, setAnswer] = useState<{ code: string | null; state: ResetLinkState } | null>(null)
   // Bumped by retry() to run the effect again.
   const [attempt, setAttempt] = useState(0)
 
@@ -46,13 +50,15 @@ export function useResetLinkCheck(code: string | null) {
       .checkResetLink(code)
       .then((valid) => {
         // Show the form or the expired message.
-        if (active) setState({ status: valid ? 'valid' : 'expired' })
+        if (active) setAnswer({ code, state: { status: valid ? 'valid' : 'expired' } })
       })
       .catch((error: unknown) => {
         // Tell developers.
         reportError(error, { where: 'useResetLinkCheck' })
         // Tell the student, in safe wording, and offer a retry.
-        if (active) setState({ status: 'error', message: errorMessage(toAppError(error)) })
+        if (active) {
+          setAnswer({ code, state: { status: 'error', message: errorMessage(toAppError(error)) } })
+        }
       })
     // Clean-up: forget this attempt.
     return () => {
@@ -63,11 +69,15 @@ export function useResetLinkCheck(code: string | null) {
   /** Checks again after an error. */
   const retry = useCallback(() => {
     // Back to the loading state...
-    setState({ status: 'checking' })
+    setAnswer(null)
     // ...and run the effect again.
     setAttempt((current) => current + 1)
   }, [])
 
+  // SECURITY: only an answer about the current code counts; anything else is still checking,
+  // so no field shows for a code that hasn't been checked (FR-AUTH-5).
+  const state: ResetLinkState =
+    answer !== null && answer.code === code ? answer.state : { status: 'checking' }
   // The state and the retry.
   return { state, retry }
 }

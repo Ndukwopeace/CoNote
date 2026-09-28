@@ -3,7 +3,7 @@
  */
 
 // Queries the rendered page.
-import { screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 // Vitest building blocks.
 import { describe, expect, it } from 'vitest'
 
@@ -15,6 +15,8 @@ import { expectNoAxeViolations } from '@/test/axe'
 import { authWith, offlineAuth } from '@/test/authServices'
 // Render helper and the demo services.
 import { createTestServices, renderWithRouter } from '@/test/renderWithRouter'
+// Session factory, for a student who is still signed in.
+import { makeSession } from '@/test/factories'
 // Services type.
 import type { Services } from '@/services/types'
 
@@ -127,5 +129,62 @@ describe('ResetPasswordPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Your password has been updated.')
     // SECURITY: the code is gone from the address, so it isn't left in the browser history.
     expect(router.state.location.search).toBe('')
+  })
+
+  // Proves a new code in the address is checked before any field shows; the old link's form
+  // must not stay on screen (or be submittable) while the new code is checked.
+  it('hides the form while a different code is checked', async () => {
+    // Arrange: code "a" is valid; any other code is never answered.
+    const { router } = renderReset('/reset-password?code=a', {
+      auth: authWith({
+        checkResetLink: (code) =>
+          code === 'a' ? Promise.resolve(true) : new Promise<boolean>(() => undefined),
+      }),
+    })
+    await screen.findByLabelText('New password')
+
+    // Act: the address changes to another code.
+    await act(() => router.navigate('/reset-password?code=b'))
+
+    // Assert: checking again, with no fields.
+    expect(await screen.findByText('Checking your reset link…')).toBeInTheDocument()
+    expect(screen.queryByLabelText('New password')).toBeNull()
+  })
+
+  // Proves the success notice reaches a student who was still signed in on this device; the
+  // reset signs them out, so the sign-in page shows instead of redirecting to the dashboard.
+  it('signs out a signed-in student after the reset and shows the notice', async () => {
+    // Arrange: signed in, with a valid reset link.
+    const path = await demoResetPath()
+    const { user } = renderWithRouter({ routes, path, session: makeSession() })
+    await screen.findByLabelText('New password')
+
+    // Act.
+    await user.type(screen.getByLabelText('New password'), 'newpassword1')
+    await user.type(screen.getByLabelText('Confirm new password'), 'newpassword1')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    // Assert: on sign in with the notice, not the dashboard.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Welcome back' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Your password has been updated.')
+  })
+
+  // Proves a link that stopped working after the page opened shows the service's message.
+  it('reports a link that expired after the page opened', async () => {
+    // Arrange: the page opens with a valid link, then a newer link is requested elsewhere.
+    const { user } = renderReset(await demoResetPath())
+    await screen.findByLabelText('New password')
+    await createTestServices().auth.requestPasswordReset('victory@example.com')
+
+    // Act.
+    await user.type(screen.getByLabelText('New password'), 'newpassword1')
+    await user.type(screen.getByLabelText('Confirm new password'), 'newpassword1')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    // Assert: the expiry is explained, and the student stays on the page.
+    expect(await screen.findByRole('alert')).toHaveTextContent('This reset link has expired')
+    expect(screen.getByRole('heading', { level: 1, name: 'Choose a new password' })).toBeVisible()
   })
 })

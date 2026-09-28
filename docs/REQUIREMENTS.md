@@ -484,7 +484,7 @@ interface AiMessage { id: ID; role: 'user' | 'assistant'; content: string; creat
 
 ```ts
 AuthService         signIn, signUp, signInWithProvider, signOut, requestPasswordReset,
-                    checkResetLink, updatePassword, getSession, onAuthChange
+                    checkResetLink, resetPassword, updatePassword, getSession, onAuthChange
 ProfileService      getMe, updateMe, uploadAvatar
 CourseService       listMyCourses, getCourse
 ClassService        listClasses(courseId), listMyClasses(range), getClass
@@ -495,7 +495,7 @@ AiService           askAi(context, messages) → AsyncIterable<string> | Promise
 SearchService       search(query)
 ```
 
-`requestPasswordReset(email)` returns `{ demoResetPath? }`. Only the mock fills it in, so the forgot page shows the demo link without checking which data source is running (FR-AUTH-7). `checkResetLink(code)` returns whether a reset link is still valid; missing, made-up, used and superseded codes are refused (FR-AUTH-5). In Supabase this maps to exchanging the link's code for a recovery session.
+`requestPasswordReset(email)` returns `{ demoResetPath? }`. Only the mock fills it in, so the forgot page shows the demo link without checking which data source is running (FR-AUTH-7). `checkResetLink(code)` returns whether a reset link is still valid; missing, made-up, used and superseded codes are refused (FR-AUTH-5). `resetPassword(code, newPassword)` checks the code again at the moment of the reset and spends it; `updatePassword` is only for a signed-in student changing their password (M5). In Supabase, `resetPassword` maps to exchanging the code for a recovery session and then updating the user.
 
 ### 12.2 Supabase notes (for the later integration)
 
@@ -586,7 +586,7 @@ Taken from the wireframes:
 | D24 | Blocked upgrades | Dependabot opened ESLint 10, @eslint/js 10, TypeScript 7 and @types/node 26 (PRs #1–4, closed) | Ignored in `.github/dependabot.yml` until each blocker clears: major versions of ESLint, @eslint/js and @types/node, and TypeScript 6.1 or later (typescript-eslint supports below 6.1). Other updates continue |
 | D25 | Reset success message | FR-AUTH-5 says "toast"; no toast library exists yet | The reset page sends a notice key in navigation state, and the sign-in page shows the fixed message in a `role="status"` box. Only known keys are shown, so injected state can't put text on screen. No new dependency. |
 | D26 | Form handling | Needed for FR-AUTH-3 inline errors | `react-hook-form` with `@hookform/resolvers` and the shared zod schemas in `lib/authSchemas.ts`. The mock auth service checks the same schemas, so the rules hold even when the form is skipped. Errors show on blur and on submit. |
-| D27 | Reset links | Found while building M2 | A reset code works once, and only the latest one works. The reset page checks the code before showing any field. |
+| D27 | Reset links | Found while building M2 | A reset code works once, and only the latest one works. The reset page checks the code before showing any field, and the service checks it again when the password is saved. A successful reset signs out any session on the device, so the sign-in page and its notice show. |
 | D28 | Landing dashboard preview | Open question 5 | Drawn with styled boxes (`DashboardPreview.tsx`), so no image file is needed and it follows the design tokens. Can be swapped for a real screenshot later. |
 
 ---

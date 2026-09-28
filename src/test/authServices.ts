@@ -30,6 +30,7 @@ export function hangingAuth(): AuthService {
     signUp: never,
     signInWithProvider: never,
     requestPasswordReset: never,
+    resetPassword: never,
     updatePassword: never,
   })
 }
@@ -44,6 +45,7 @@ export function offlineAuth(): AuthService {
     signInWithProvider: fail,
     requestPasswordReset: fail,
     checkResetLink: fail,
+    resetPassword: fail,
     updatePassword: fail,
   })
 }

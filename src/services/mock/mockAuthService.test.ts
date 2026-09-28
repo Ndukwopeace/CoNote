@@ -11,6 +11,12 @@ import { runAuthServiceContract } from '../contracts/authService.contract'
 // The implementation under test.
 import { createMockAuthService } from './mockAuthService'
 
+/** The code inside a demo reset link. */
+function codeFrom({ demoResetPath }: { demoResetPath?: string }) {
+  // Parse the link against any origin; only the query string matters.
+  return new URL(demoResetPath ?? '', 'https://conote.test').searchParams.get('code') ?? ''
+}
+
 /** A fresh service on the test's storage, with no delay. */
 function createService() {
   return createMockAuthService({
@@ -148,31 +154,62 @@ describe('mock AuthService', () => {
   })
 
   // SECURITY: proves a reset link works once only, so an old link from an inbox can't be reused.
-  it('refuses a reset code once the password has been changed with it', async () => {
+  it('refuses a reset code once the password has been reset with it', async () => {
     // Arrange: request a reset and read the code.
     const auth = createService()
-    const { demoResetPath } = await auth.requestPasswordReset('v@example.com')
-    const code = new URL(demoResetPath ?? '', 'https://conote.test').searchParams.get('code')
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
 
-    // Act: set the new password.
-    await auth.updatePassword('newpassword1')
+    // Act: reset the password with it.
+    await auth.resetPassword(code, 'newpassword1')
 
-    // Assert: the same link is now refused.
+    // Assert: the link is now refused, both when checked and when used again.
     await expect(auth.checkResetLink(code)).resolves.toBe(false)
+    await expect(auth.resetPassword(code, 'another1pass')).rejects.toMatchObject({
+      kind: 'validation',
+    })
   })
 
   // SECURITY: proves only the most recent link works, so an older email can't be used instead.
   it('refuses an older reset code after a newer one is requested', async () => {
     // Arrange: two requests in a row.
     const auth = createService()
-    const first = await auth.requestPasswordReset('v@example.com')
+    const oldCode = codeFrom(await auth.requestPasswordReset('v@example.com'))
     await auth.requestPasswordReset('v@example.com')
-    const oldCode = new URL(first.demoResetPath ?? '', 'https://conote.test').searchParams.get(
-      'code',
-    )
 
-    // Assert: the first code no longer works.
+    // Assert: the first code no longer works, for checking or for resetting.
     await expect(auth.checkResetLink(oldCode)).resolves.toBe(false)
+    await expect(auth.resetPassword(oldCode, 'newpassword1')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // SECURITY: proves a page opened with a link that was later superseded can't reset the
+  // password; the code is checked again at the moment of the reset, not only when the page opened.
+  it('checks the code again when the password is reset', async () => {
+    // Arrange: the page checks a valid code...
+    const auth = createService()
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
+    await expect(auth.checkResetLink(code)).resolves.toBe(true)
+    // ...then a newer link is requested elsewhere.
+    await auth.requestPasswordReset('v@example.com')
+
+    // Assert: the old page's reset is refused.
+    await expect(auth.resetPassword(code, 'newpassword1')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+
+  // Proves a weak password doesn't spend the code, so the student can fix it and try again.
+  it('keeps the code when the new password breaks the rules', async () => {
+    // Arrange.
+    const auth = createService()
+    const code = codeFrom(await auth.requestPasswordReset('v@example.com'))
+
+    // Act: a weak password is refused.
+    await expect(auth.resetPassword(code, 'weak')).rejects.toMatchObject({ kind: 'validation' })
+
+    // Assert: the code still works.
+    await expect(auth.checkResetLink(code)).resolves.toBe(true)
   })
 
   // Proves the new-password rules apply to reset as well as sign-up (FR-AUTH-3): [password].

@@ -41,7 +41,9 @@ export type AuthContextValue = AuthState & {
   signInWithProvider: (provider: OAuthProvider) => Promise<Session>
   // Send a password reset link; the demo also returns the link (FR-AUTH-7).
   requestPasswordReset: (email: string) => Promise<PasswordResetRequest>
-  // Set a new password.
+  // Set a new password from a reset link; the code is checked again (FR-AUTH-5).
+  resetPassword: (code: string, newPassword: string) => Promise<void>
+  // Set a new password while signed in.
   updatePassword: (newPassword: string) => Promise<void>
   /**
    * Signs out, clears everything stored for this student (REQUIREMENTS.md NFR-4) and sends

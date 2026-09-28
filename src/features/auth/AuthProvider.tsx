@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp: (input) => auth.signUp(input),
       signInWithProvider: (provider) => auth.signInWithProvider(provider),
       requestPasswordReset: (email) => auth.requestPasswordReset(email),
+      resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),
       updatePassword: (newPassword) => auth.updatePassword(newPassword),
       signOut: async () => {
         // Mark this as a chosen sign-out, so the guard sends the student to the landing page.

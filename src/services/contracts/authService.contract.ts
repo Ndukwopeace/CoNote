@@ -136,6 +136,13 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       await expect(create().checkResetLink(code)).resolves.toBe(false)
     })
 
+    // SECURITY: proves a made-up code can't reset a password (account takeover).
+    it('refuses to reset a password with a made-up code', async () => {
+      await expect(create().resetPassword('made-up-code', 'password1')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+    })
+
     // Proves weak new passwords are refused by the service, not only by the form.
     it('rejects a new password that breaks the password rules', async () => {
       await expect(create().updatePassword('short')).rejects.toMatchObject({ kind: 'validation' })

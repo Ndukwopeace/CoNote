@@ -247,13 +247,26 @@ export function createMockAuthService({
       return code !== null && code !== '' && code === expected
     },
 
+    async resetPassword(code, newPassword) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // SECURITY: the same strength rules as sign-up, enforced here and not only in the form.
+      // Checked first, so a weak password doesn't spend the code and the student can retry.
+      assertRule(newPasswordSchema, newPassword)
+      // SECURITY: check the code again now, not only when the page opened. A page left open on
+      // an old link, or a link already used in another tab, can't change the password.
+      if (code === '' || code !== sessionStore.getItem(RESET_CODE_KEY)) {
+        throw new AppError('validation', 'This reset link has expired. Request a new one.')
+      }
+      // SECURITY: spend the code, so the same link can't be used a second time.
+      sessionStore.removeItem(RESET_CODE_KEY)
+    },
+
     async updatePassword(newPassword) {
       // Behave like a network call.
       await simulateLatency(latencyMs)
       // SECURITY: the same strength rules as sign-up, enforced here and not only in the form.
       assertRule(newPasswordSchema, newPassword)
-      // SECURITY: spend the reset code, so the same link can't be used a second time.
-      sessionStore.removeItem(RESET_CODE_KEY)
     },
 
     onAuthChange(listener) {

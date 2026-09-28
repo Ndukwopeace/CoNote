@@ -41,9 +41,9 @@ const EMPTY: ResetPasswordValues = { password: '', confirmPassword: '' }
 /** Set a new password from a reset link. */
 export function ResetPasswordPage() {
   // The code from the link, or null when the address has none.
-  const [searchParams] = useSearchParams()
+  const code = useSearchParams()[0].get('code')
   // Whether the code works, plus a retry for failed checks.
-  const { state, retry } = useResetLinkCheck(searchParams.get('code'))
+  const { state, retry } = useResetLinkCheck(code)
 
   // Pick the body for the current state.
   switch (state.status) {
@@ -95,16 +95,17 @@ export function ResetPasswordPage() {
           </Button>
         </div>
       )
-    // The code works: show the form.
+    // The code works: show the form. `valid` is only reached with a code, so "" never occurs.
+    // The key gives each code a fresh form, so typed passwords don't carry over between links.
     case 'valid':
-      return <NewPasswordForm />
+      return <NewPasswordForm key={code} code={code ?? ''} />
   }
 }
 
-/** The new password form, shown once the link has been checked. */
-function NewPasswordForm() {
-  // The update action.
-  const { updatePassword } = useAuth()
+/** The new password form, shown once the link's `code` has been checked. */
+function NewPasswordForm({ code }: { code: string }) {
+  // The reset action, the sign-in status and sign-out.
+  const { resetPassword, status, signOut } = useAuth()
   // Busy flag, server error and the request runner.
   const { error, isPending, run } = useAuthRequest()
   // Navigation after success.
@@ -122,10 +123,14 @@ function NewPasswordForm() {
 
   /** Saves the password and, on success, goes to sign in with a notice. */
   async function save({ password }: { password: string }) {
-    // Ask the service; failures are already shown by the runner.
-    const result = await run(() => updatePassword(password))
+    // Ask the service, which checks the code again; failures are already shown by the runner.
+    const result = await run(() => resetPassword(code, password))
     // Stay here after a failure so the student can try again.
     if (!result.ok) return
+    // A session left on this device would make the sign-in page skip to the dashboard and lose
+    // the notice. SECURITY: ending it also means whoever used the old password is signed out
+    // here. signOut never rejects.
+    if (status === 'signedIn') await signOut()
     // SECURITY: replace, so the page with the code in its address leaves the history and
     // the Back button can't reopen it.
     void navigate(ROUTES.login, { replace: true, state: authNoticeState('passwordUpdated') })

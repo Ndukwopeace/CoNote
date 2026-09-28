@@ -34,7 +34,13 @@ export interface AuthService {
    * refused. A missing code is always refused.
    */
   checkResetLink(code: string | null): Promise<boolean>
-  /** Sets a new password for the signed-in (or recovering) user and spends the reset code. */
+  /**
+   * Sets a new password from a reset link. The code is checked again here, not only when the
+   * page opened, and is spent on success. Rejects with a validation error when the code is no
+   * longer valid or the password breaks the rules.
+   */
+  resetPassword(code: string, newPassword: string): Promise<void>
+  /** Changes the password of the signed-in student (Settings → Account, M5). */
   updatePassword(newPassword: string): Promise<void>
   /** Calls `listener` whenever the session changes. Returns an unsubscribe function. */
   onAuthChange(listener: (session: Session | null) => void): () => void
