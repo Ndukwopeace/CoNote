@@ -37,7 +37,7 @@ export function createTestQueryClient() {
 
 /** Renders `routes` at `path` inside the real app providers, with fake services injected. */
 export function renderWithRouter({ routes, path, session, services }: RenderOptions) {
-  if (session) window.localStorage.setItem(storageKey('session'), JSON.stringify(session))
+  if (session) window.sessionStorage.setItem(storageKey('session'), JSON.stringify(session))
 
   const testServices = createTestServices(services)
   const queryClient = createTestQueryClient()

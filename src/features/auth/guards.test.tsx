@@ -82,6 +82,18 @@ describe('RedirectIfSignedIn', () => {
     expect(await screen.findByText('login page at /login')).toBeInTheDocument()
   })
 
+  it.each(['teacher', 'admin'] as const)(
+    'shows a signed-in %s the students-only notice instead of the page',
+    async (role) => {
+      renderWithRouter({ routes, path: '/login', session: makeSession({ role }) })
+
+      expect(
+        await screen.findByRole('heading', { name: 'This portal is for students' }),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/login page/)).not.toBeInTheDocument()
+    },
+  )
+
   it('sends a signed-in student to the dashboard', async () => {
     renderWithRouter({ routes, path: '/login', session: makeSession() })
 

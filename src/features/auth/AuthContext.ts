@@ -24,7 +24,8 @@ export type AuthContextValue = AuthState & {
   /**
    * Signs out, clears everything stored for this student (REQUIREMENTS.md NFR-4) and sends
    * them to the landing page. Callers must not navigate themselves: the guards do it, so
-   * two redirects never race.
+   * two redirects never race. Never rejects: a failure is reported, and local data is still
+   * cleared.
    */
   signOut: () => Promise<void>
   /** Called once the post-sign-out page has rendered, so later visits behave normally. */

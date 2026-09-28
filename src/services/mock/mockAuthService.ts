@@ -8,7 +8,13 @@ import type { AuthService } from '../types'
 
 import { simulateLatency } from './latency'
 
+/** The signed-in identity. Kept in sessionStorage only, so it never outlives the browser session. */
 const SESSION_KEY = storageKey('session')
+/**
+ * "Remember me" marker in localStorage. Deliberately holds no email or name
+ * (ENGINEERING_STANDARDS.md 6.4); a remembered visit restores the demo student.
+ */
+const REMEMBER_KEY = storageKey('remember')
 const MIN_PASSWORD_LENGTH = 8
 
 const DEMO_STUDENT = {
@@ -56,7 +62,8 @@ function assertEmail(email: string) {
 
 /**
  * Demo authentication (REQUIREMENTS.md FR-AUTH-7). Any valid email and non-empty password
- * signs in as the demo student. "Remember me" decides between localStorage and sessionStorage.
+ * signs in as the demo student. The identity lives in sessionStorage; "Remember me" adds an
+ * opaque marker to localStorage so the demo student is restored in a later browser session.
  */
 export function createMockAuthService({
   localStore,
@@ -70,9 +77,9 @@ export function createMockAuthService({
   }
 
   function store(session: Session, remember: boolean) {
-    localStore.removeItem(SESSION_KEY)
-    sessionStore.removeItem(SESSION_KEY)
-    ;(remember ? localStore : sessionStore).setItem(SESSION_KEY, JSON.stringify(session))
+    sessionStore.setItem(SESSION_KEY, JSON.stringify(session))
+    if (remember) localStore.setItem(REMEMBER_KEY, '1')
+    else localStore.removeItem(REMEMBER_KEY)
     emit(session)
     return session
   }
@@ -84,7 +91,9 @@ export function createMockAuthService({
   return {
     async getSession() {
       await simulateLatency(latencyMs)
-      return readSession(localStore) ?? readSession(sessionStore)
+      const current = readSession(sessionStore)
+      if (current) return current
+      return localStore.getItem(REMEMBER_KEY) === null ? null : demoSession(DEMO_STUDENT.email)
     },
 
     async signIn({ email, password, remember }) {
@@ -111,7 +120,7 @@ export function createMockAuthService({
 
     async signOut() {
       await simulateLatency(latencyMs)
-      localStore.removeItem(SESSION_KEY)
+      localStore.removeItem(REMEMBER_KEY)
       sessionStore.removeItem(SESSION_KEY)
       emit(null)
     },

@@ -52,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingExit.current = ROUTES.landing
         try {
           await auth.signOut()
+        } catch (error) {
+          reportError(error, { where: 'AuthProvider.signOut' })
         } finally {
           pendingExit.current = null
           queryClient.clear()

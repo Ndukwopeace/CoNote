@@ -18,18 +18,30 @@ runAuthServiceContract('mock', {
 })
 
 describe('mock AuthService', () => {
-  it('keeps a remembered session in localStorage so it survives closing the browser', async () => {
+  it('remembers a session in localStorage without storing the email or name there', async () => {
     await createService().signIn({ email: 'v@example.com', password: 'x', remember: true })
 
-    expect(window.localStorage.getItem('conote:session')).not.toBeNull()
-    expect(window.sessionStorage.getItem('conote:session')).toBeNull()
+    const persisted = Object.keys(window.localStorage).map((key) =>
+      window.localStorage.getItem(key),
+    )
+    expect(persisted).not.toHaveLength(0)
+    expect(persisted.join(' ')).not.toMatch(/v@example\.com|Victory|Okafor/)
+  })
+
+  it('restores a remembered session as the demo student after the browser restarts', async () => {
+    await createService().signIn({ email: 'v@example.com', password: 'x', remember: true })
+    window.sessionStorage.clear()
+
+    await expect(createService().getSession()).resolves.toMatchObject({
+      user: { role: 'student', fullName: 'Victory Okafor' },
+    })
   })
 
   it('keeps a session without "remember me" in sessionStorage only', async () => {
     await createService().signIn({ email: 'v@example.com', password: 'x', remember: false })
 
     expect(window.sessionStorage.getItem('conote:session')).not.toBeNull()
-    expect(window.localStorage.getItem('conote:session')).toBeNull()
+    expect(window.localStorage.length).toBe(0)
   })
 
   it('restores a stored session in a new service instance', async () => {
@@ -41,13 +53,13 @@ describe('mock AuthService', () => {
   })
 
   it('treats a corrupted stored session as signed out', async () => {
-    window.localStorage.setItem('conote:session', '{not json')
+    window.sessionStorage.setItem('conote:session', '{not json')
 
     await expect(createService().getSession()).resolves.toBeNull()
   })
 
   it('treats a stored session with the wrong shape as signed out', async () => {
-    window.localStorage.setItem('conote:session', JSON.stringify({ user: { id: 1 } }))
+    window.sessionStorage.setItem('conote:session', JSON.stringify({ user: { id: 1 } }))
 
     await expect(createService().getSession()).resolves.toBeNull()
   })

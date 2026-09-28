@@ -12,20 +12,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/features/auth/useAuth'
 import { initials } from '@/lib/initials'
-import { reportError } from '@/lib/reportError'
 import { ROUTES, routeTo } from '@/lib/routes'
 
 export function UserMenu({ fullName, email }: { fullName: string; email: string }) {
   const { signOut } = useAuth()
-
-  // No navigation here: the route guard sends the student to the landing page.
-  async function handleSignOut() {
-    try {
-      await signOut()
-    } catch (error) {
-      reportError(error, { where: 'UserMenu.signOut' })
-    }
-  }
 
   return (
     <DropdownMenu>
@@ -56,7 +46,8 @@ export function UserMenu({ fullName, email }: { fullName: string; email: string 
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => void handleSignOut()}>
+        {/* No navigation here: the route guard sends the student to the landing page. */}
+        <DropdownMenuItem variant="destructive" onSelect={() => void signOut()}>
           <LogOut aria-hidden="true" />
           Sign out
         </DropdownMenuItem>

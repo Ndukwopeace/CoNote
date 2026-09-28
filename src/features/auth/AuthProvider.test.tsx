@@ -1,11 +1,16 @@
 import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { AppError } from '@/lib/errors'
+import { reportError } from '@/lib/reportError'
 
 import { storageKey } from '@/lib/storage'
 import { makeSession } from '@/test/factories'
-import { renderWithRouter } from '@/test/renderWithRouter'
+import { createTestServices, renderWithRouter } from '@/test/renderWithRouter'
 
 import { useAuth } from './useAuth'
+
+vi.mock('@/lib/reportError', () => ({ reportError: vi.fn() }))
 
 function AuthProbe() {
   const { status, session, signIn, signOut } = useAuth()
@@ -77,5 +82,50 @@ describe('AuthProvider', () => {
 
     await screen.findByText('status: signedOut')
     expect(window.localStorage.getItem(storageKey('mock', 'notes'))).toBe('[]')
+  })
+})
+
+describe('AuthProvider when sign-out fails', () => {
+  function failingAuth() {
+    const { auth } = createTestServices()
+    return {
+      ...auth,
+      signOut: () => Promise.reject(new AppError('network', 'offline')),
+    }
+  }
+
+  it('reports the failure instead of leaving an unhandled rejection', async () => {
+    const { user } = renderWithRouter({
+      routes,
+      path: '/',
+      session: makeSession(),
+      services: { auth: failingAuth() },
+    })
+    await screen.findByText('status: signedIn')
+
+    await user.click(screen.getByRole('button', { name: 'sign out' }))
+
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith(expect.any(AppError), {
+        where: 'AuthProvider.signOut',
+      })
+    })
+  })
+
+  it('still clears data stored on this device', async () => {
+    const { user } = renderWithRouter({
+      routes,
+      path: '/',
+      session: makeSession(),
+      services: { auth: failingAuth() },
+    })
+    await screen.findByText('status: signedIn')
+    window.localStorage.setItem(storageKey('draft', 'class-1'), 'draft text')
+
+    await user.click(screen.getByRole('button', { name: 'sign out' }))
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(storageKey('draft', 'class-1'))).toBeNull()
+    })
   })
 })
