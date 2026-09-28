@@ -16,7 +16,7 @@ function TooltipProvider({
   // Show immediately; the icon rail needs labels without a wait.
   delayDuration = 0,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+}: Readonly<React.ComponentProps<typeof TooltipPrimitive.Provider>>) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
@@ -27,12 +27,14 @@ function TooltipProvider({
 }
 
 /** One tooltip: wraps a trigger and its content. */
-function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+function Tooltip({ ...props }: Readonly<React.ComponentProps<typeof TooltipPrimitive.Root>>) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
 }
 
 /** The element that shows the tooltip on hover or keyboard focus. */
-function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+function TooltipTrigger({
+  ...props
+}: Readonly<React.ComponentProps<typeof TooltipPrimitive.Trigger>>) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 }
 
@@ -43,7 +45,7 @@ function TooltipContent({
   sideOffset = 4,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof TooltipPrimitive.Content>>) {
   return (
     // Portal: rendered at the end of <body>, so it isn't clipped by scrolling containers.
     <TooltipPrimitive.Portal>

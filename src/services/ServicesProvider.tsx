@@ -17,10 +17,10 @@ export function ServicesProvider({
   services,
   // The part of the app that can use them.
   children,
-}: {
+}: Readonly<{
   services: Services
   children: ReactNode
-}) {
+}>) {
   // React 19 lets a context object be used directly as its provider.
   return <ServicesContext value={services}>{children}</ServicesContext>
 }

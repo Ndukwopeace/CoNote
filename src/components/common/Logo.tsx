@@ -7,7 +7,10 @@
 import { cn } from '@/lib/utils'
 
 /** The CoNote mark and wordmark. `compact` shows only the mark. */
-export function Logo({ compact = false, className }: { compact?: boolean; className?: string }) {
+export function Logo({
+  compact = false,
+  className,
+}: Readonly<{ compact?: boolean; className?: string }>) {
   return (
     // Mark and word side by side; callers can add or override classes.
     <span

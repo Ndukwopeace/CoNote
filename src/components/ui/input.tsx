@@ -9,7 +9,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /** A styled <input>. Accepts every normal input attribute. */
-function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+function Input({ className, type, ...props }: Readonly<React.ComponentProps<'input'>>) {
   return (
     <input
       // text, email, password, search…

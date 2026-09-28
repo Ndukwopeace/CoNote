@@ -28,7 +28,7 @@ interface AppProvidersProps {
 }
 
 /** Every app-wide provider, in one place, so tests render exactly what production renders. */
-export function AppProviders({ services, queryClient, children }: AppProvidersProps) {
+export function AppProviders({ services, queryClient, children }: Readonly<AppProvidersProps>) {
   return (
     // Outermost: services, because AuthProvider needs them.
     <ServicesProvider services={services}>

@@ -26,7 +26,7 @@ import { SidebarLink } from './SidebarLink'
  * Tablet (768–1023 px): icon rail; labels move into tooltips but stay readable by screen readers.
  * Hidden on phones, where BottomNav takes over.
  */
-export function Sidebar({ fullName }: { fullName: string }) {
+export function Sidebar({ fullName }: Readonly<{ fullName: string }>) {
   return (
     // Fixed to the left edge. Hidden on phones; 64 px wide from 768 px; 240 px from 1024 px.
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col border-r bg-surface md:flex lg:w-60">

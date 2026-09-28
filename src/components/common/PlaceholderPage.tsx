@@ -23,7 +23,12 @@ interface PlaceholderPageProps {
 }
 
 /** Stands in for a page until its milestone lands, so routing can be tested end to end. */
-export function PlaceholderPage({ title, milestone, description, children }: PlaceholderPageProps) {
+export function PlaceholderPage({
+  title,
+  milestone,
+  description,
+  children,
+}: Readonly<PlaceholderPageProps>) {
   return (
     // Left-aligned column, as in the wireframes.
     <section className="w-full max-w-5xl">

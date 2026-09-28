@@ -66,10 +66,12 @@ function Button({
   asChild = false,
   // Every other button attribute (onClick, type, disabled, aria-*…).
   ...props
-}: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+}: Readonly<
+  React.ComponentProps<'button'> &
+    VariantProps<typeof buttonVariants> & {
+      asChild?: boolean
+    }
+>) {
   // Which element to render: Slot (merges into the child) or a real <button>.
   const Comp = asChild ? Slot.Root : 'button'
 
