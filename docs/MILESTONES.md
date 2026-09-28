@@ -1,6 +1,6 @@
 # CoNote Student Portal — Build Milestones
 
-These milestones break the work in [`REQUIREMENTS.md`](./REQUIREMENTS.md) into six stages. Every milestone follows [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md), and nothing counts as done until its Definition of Done is met. Each stage ends with something that can be opened in a browser and checked. They are a planning aid added during review; they were not part of the original brief.
+These milestones break the work in [`REQUIREMENTS.md`](./REQUIREMENTS.md) into seven stages (M1 to M6, plus M2.5). Every milestone follows [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md), and nothing counts as done until its Definition of Done is met. Each stage ends with something that can be opened in a browser and checked. They are a planning aid added during review; they were not part of the original brief.
 
 ## How this build handles the backend
 
@@ -115,6 +115,40 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
 
 ---
 
+## M2.5 — Installable app (PWA)
+
+**Covers:** FR-PWA-1 to FR-PWA-7, NFR-8, decisions D22 and D23.
+
+Added after M1 at the team's request. It comes straight after M2 so the icons use the final branding. It lands before the feature milestones so that every later milestone is built and tested with the service worker already in place.
+
+- `vite-plugin-pwa` in `generateSW` mode with `registerType: 'prompt'`. Its PR states the reason, size and licence (standards section 10).
+- Manifest and icons from FR-PWA-1: 192, 512, maskable 512 and a 180 px `apple-touch-icon`, generated from the logo mark and committed as files
+- Precache the app shell and a navigation fallback to `index.html` (FR-PWA-2, FR-PWA-3)
+- Self-host Plus Jakarta Sans (D23): remove the Google Fonts `<link>` from `index.html` and the Google domains from the CSP
+- `vercel.json`:
+  - CSP gains `worker-src 'self'` and `manifest-src 'self'`
+  - `Cache-Control: no-cache` on `/sw.js`, `/registerSW.js` and `/manifest.webmanifest`, so browsers always check for a new version
+- Offline banner (FR-PWA-4)
+- Update toast that waits while a note has unsaved changes (FR-PWA-5). In M2.5 the "unsaved changes" signal is a small shared flag that M4's editor will set.
+- "Install app" item in the avatar menu, with iOS instructions (FR-PWA-6)
+- `clearUserData` extended to delete runtime caches on sign-out (FR-PWA-7). In M2.5 there are none yet, so this is the hook M4 and M5 will use.
+- **Tests first for:**
+  - the update-toast rules
+  - the install-item visibility rules
+  - the offline banner
+  - cache clearing on sign-out
+  - a Playwright test that loads the app, goes offline, and still navigates between pages
+- Size budget: the precache stays under 2 MB (NFR-8); `size-limit` still guards the entry chunk
+
+**Done when:**
+- Chrome offers to install CoNote, and the installed app opens full-screen at the dashboard.
+- With the network off, a returning student can open it and move between pages.
+- A new deploy shows the update toast instead of swapping versions silently.
+- The CSP still reports no violations in the browser tests.
+- Lighthouse marks the app installable.
+
+---
+
 ## M3 — Courses and classes
 
 **Covers:** FR-DSH-1 to FR-DSH-6, FR-CRS-1 to FR-CRS-4, FR-CLS-1 to FR-CLS-6, section 11, section 13.
@@ -153,6 +187,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
 - Optimistic updates with rollback
 - Notes wired into the Course Details and Class Notes tabs
 - Notice when editing a note on a class whose summary is already published
+- Offline reading for notes (FR-PWA-8): persist note queries to IndexedDB, wipe them on sign-out; set the "unsaved changes" flag the update toast reads (FR-PWA-5)
 - Component tests for the note form
 
 **Done when:** a student can write a note for a class, find it from the class, the course and the Notes page, edit it, reload the browser without losing it, and delete it.
@@ -180,6 +215,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
 - Notifications: four tabs, unread dots, mark as read, mark all read, live unread count in the nav
 - Settings: Profile, Account, Notifications, Privacy (JSON export), Help & Support (FAQ, reset demo data)
 - Global search in the top bar
+- Offline reading for published summaries (FR-PWA-8); unpublished summaries and Ask AI conversations are never persisted
 - Component tests for the summary state card and the auth guard
 
 **Done when:** every screen in `wireframes/student-portal.jpg` exists and works on demo data. A summary that is not published never shows its content.
@@ -215,6 +251,7 @@ Not requested in the brief. It could be inserted after M2 if real accounts are w
 - Real email/password, Google and Microsoft (`azure`) sign-in
 - Supabase implementations of the Course, Class, Note, Profile and Notification services
 - Full-text search of note bodies using Postgres full-text search (REQUIREMENTS section 8)
+- PWA level 3 (D22): notes written offline are queued and synced with conflict handling; push notifications for published summaries and class reminders
 - Later still: a server function that calls a language model for Ask AI, and the summary-generation pipeline (which belongs with the teacher portal)
 
 Adding this early makes every later milestone somewhat slower, because each screen then needs real data and real rules behind it.
