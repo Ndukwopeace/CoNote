@@ -38,6 +38,8 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - Sign-out never navigates from the caller. `RequireStudent` reads `exitTo` from the auth state and does it, which avoids two competing redirects.
 - Radix `Slot` (`asChild`) turns a function `className` into a string. Don't pass `NavLink`'s function className through it; use `SidebarLink`.
 - Password fields have a "Show password" toggle. In Playwright, `getByLabel('Password')` also matches it, so pass `{ exact: true }`.
+- The service worker registers only in production builds (the plugin's hook is a no-op in `npm run dev` and in Vitest). Test offline behaviour with Playwright (`e2e/pwa.spec.ts`).
+- Any runtime cache that may hold student data must be named with `RUNTIME_CACHE_PREFIX` from `lib/pwa.ts`, or sign-out won't delete it.
 - The shadcn registry is not reachable from every environment. The primitives in `src/components/ui/` follow the shadcn new-york source and can be edited directly.
 
 ## Conventions

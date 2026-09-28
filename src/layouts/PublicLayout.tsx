@@ -21,6 +21,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+// "You're offline" banner (FR-PWA-4).
+import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 // Route constants and the landing page's section anchors.
 import { LANDING_SECTIONS, ROUTES } from '@/lib/routes'
 
@@ -120,6 +122,8 @@ export function PublicLayout() {
       </header>
       {/* The page itself; flex-1 makes it take the spare height. */}
       <main id="main" className="flex-1">
+        {/* Under the header while the connection is down (FR-PWA-4). */}
+        <OfflineBanner />
         <Outlet />
       </main>
       {/* Footer (FR-LND-6). */}

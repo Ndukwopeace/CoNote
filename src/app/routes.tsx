@@ -20,6 +20,8 @@ import { AuthLayout } from '@/layouts/AuthLayout'
 import { PortalLayout } from '@/layouts/PortalLayout'
 // Header and footer for public pages.
 import { PublicLayout } from '@/layouts/PublicLayout'
+// Every page plus the update toast.
+import { RootLayout } from '@/layouts/RootLayout'
 // Route builders.
 import { routeTo } from '@/lib/routes'
 
@@ -107,6 +109,8 @@ const portalRoutes: RouteObject[] = [
 /** The full route table (REQUIREMENTS.md section 7). Shared by the app and the tests. */
 export const routes: RouteObject[] = [
   {
+    // Every page, plus the app-wide update toast (FR-PWA-5).
+    element: <RootLayout />,
     // Last-resort error screen for anything the inner boundaries miss.
     errorElement: <RouteErrorBoundary />,
     // Shown while the first page's code is loading.

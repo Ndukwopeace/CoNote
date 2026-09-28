@@ -14,7 +14,7 @@
    "inline" makes classes read the CSS variable, so a token change applies everywhere at once. */
 @theme inline {
   /* Default font, with system fallbacks if it fails to load. */
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
   /* shadcn/ui colour names. */
   --color-background: var(--background);

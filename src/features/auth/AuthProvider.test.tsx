@@ -109,6 +109,52 @@ describe('AuthProvider', () => {
     expect(window.sessionStorage.getItem(storageKey('ai', 'conversation'))).toBeNull()
   })
 
+  // SECURITY: proves sign-out also deletes cached responses that may hold student data
+  // (FR-PWA-7), while keeping the app shell so the app still opens offline.
+  it('deletes runtime caches on sign-out and keeps the app shell', async () => {
+    // Arrange: a fake Cache API holding the app shell and a runtime cache.
+    const deleteCache = vi.fn(() => Promise.resolve(true))
+    vi.stubGlobal('caches', {
+      keys: () => Promise.resolve(['workbox-precache-v2-/', 'conote-runtime-notes']),
+      delete: deleteCache,
+    })
+    const { user } = renderWithRouter({ routes, path: '/', session: makeSession() })
+    await screen.findByText('status: signedIn')
+
+    // Act.
+    await user.click(screen.getByRole('button', { name: 'sign out' }))
+
+    // Assert: only the runtime cache was deleted.
+    await waitFor(() => {
+      expect(deleteCache).toHaveBeenCalledWith('conote-runtime-notes')
+    })
+    expect(deleteCache).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  // Proves a broken Cache API is reported but doesn't stop sign-out.
+  it('still signs out when the caches cannot be cleared', async () => {
+    // Arrange: a Cache API that fails.
+    vi.stubGlobal('caches', {
+      keys: () => Promise.reject(new Error('blocked')),
+      delete: vi.fn(),
+    })
+    const { user } = renderWithRouter({ routes, path: '/', session: makeSession() })
+    await screen.findByText('status: signedIn')
+
+    // Act.
+    await user.click(screen.getByRole('button', { name: 'sign out' }))
+
+    // Assert: signed out, and the failure was reported.
+    expect(await screen.findByText('status: signedOut')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        where: 'AuthProvider.clearRuntimeCaches',
+      })
+    })
+    vi.unstubAllGlobals()
+  })
+
   // Proves demo data (the stand-in server) survives sign-out.
   it('keeps mock demo data on sign-out', async () => {
     // Arrange: signed in, with demo data stored.

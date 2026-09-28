@@ -275,7 +275,7 @@ Every file is written to be read by someone learning the codebase. Comments are 
 
 ### 6.6 HTTP security headers
 
-Set in `vercel.json` and verified after the first deploy. This is the policy from M2.5 onward, once the font is self-hosted and the service worker exists. M1 also allows Google Fonts (`fonts.googleapis.com` in `style-src`, `fonts.gstatic.com` in `font-src`).
+Set in `vercel.json` and verified after the first deploy. This is the policy since M2.5, which self-hosted the font and added the service worker. Before that, M1 and M2 also allowed Google Fonts.
 
 | Header | Value |
 |---|---|
@@ -288,7 +288,8 @@ Set in `vercel.json` and verified after the first deploy. This is the policy fro
 **Notes:**
 
 - `style-src 'unsafe-inline'` is needed for the inline styles that Radix sets for positioning. Scripts get no such exception.
-- The service worker, `registerSW.js` and the manifest are served with `Cache-Control: no-cache`, so an update is never hidden behind a cached worker.
+- The service worker (`sw.js`) and the manifest are served with `Cache-Control: no-cache`, so an update is never hidden behind a cached worker. The app registers the worker from its own bundle, so there is no separate `registerSW.js`.
+- Font files are never inlined as `data:` URLs (`build.assetsInlineLimit` in `vite.config.ts`), because `font-src 'self'` blocks them.
 - Vercel's preview toolbar injects scripts from `vercel.live`. Either allow `https://vercel.live` in `script-src` for Preview only, or turn the toolbar off. Production stays strict.
 
 ### 6.7 Supply chain

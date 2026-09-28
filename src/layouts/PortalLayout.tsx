@@ -10,6 +10,8 @@ import { Outlet } from 'react-router'
 import { FullPageLoader } from '@/components/common/FullPageLoader'
 // Sign-in state, for the student's name and email.
 import { useAuth } from '@/features/auth/useAuth'
+// "You're offline" banner (FR-PWA-4).
+import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 
 // Phone navigation.
 import { BottomNav } from './BottomNav'
@@ -45,6 +47,11 @@ export function PortalLayout() {
         {/* Main content. tabIndex={-1} lets the skip link move focus here. Extra bottom
             padding on phones keeps content clear of the bottom bar. */}
         <main id="main" tabIndex={-1} className="px-4 py-6 pb-24 outline-none md:px-8 md:pb-10">
+          {/* Under the top bar while the connection is down (FR-PWA-4). Inside <main>, so the
+              message sits in a landmark; negative margins run it edge to edge. */}
+          <div className="-mx-4 -mt-6 mb-6 md:-mx-8">
+            <OfflineBanner />
+          </div>
           {/* The current page. */}
           <Outlet />
         </main>
