@@ -23,14 +23,20 @@ A React + TypeScript + Vite web app for the **student side only** of CoNote. Stu
 
 ## Commands
 
-Added in M1. Fill this in once `package.json` exists:
+- `npm run dev`: dev server
+- `npm test -- --run --coverage`: unit and component tests with the coverage floor
+- `npm run lint`, `npm run format:check`, `npm run typecheck`
+- `npm run build`, then `npm run size`
+- `npm run e2e`: Playwright against the production build. In this cloud environment, set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 
-- `npm run dev`
-- `npm test`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run build`
-- `npm run e2e`
+Run all of these before pushing. CI runs the same set plus `npm audit` and gitleaks.
+
+## Gotchas
+
+- Routes live in `src/app/routes.tsx` and `src/lib/routes.ts`. Pages are lazy-loaded, so tests use `findBy…`.
+- Sign-out never navigates from the caller. `RequireStudent` reads `exitTo` from the auth state and does it, which avoids two competing redirects.
+- Radix `Slot` (`asChild`) turns a function `className` into a string. Don't pass `NavLink`'s function className through it; use `SidebarLink`.
+- The shadcn registry is not reachable from every environment. The primitives in `src/components/ui/` follow the shadcn new-york source and can be edited directly.
 
 ## Conventions
 

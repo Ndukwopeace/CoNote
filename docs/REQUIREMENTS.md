@@ -82,20 +82,20 @@ There is one summary per class session. The backend moves it through these state
 
 | Concern | Choice |
 |---|---|
-| Framework | React 18 + TypeScript (strict mode) |
-| Build | Vite |
+| Framework | React 19 + TypeScript 6 (strict mode) |
+| Build | Vite 8 |
 | Styling | Tailwind CSS with design tokens as CSS variables |
 | Components | shadcn/ui (Radix primitives) |
 | Icons | Lucide |
-| Routing | React Router v6 (data routers) |
+| Routing | React Router 8 (data router, `createBrowserRouter`, lazy routes) |
 | Server state | TanStack Query |
 | Client state | React context for the auth session. Local component state for everything else. No global store unless a real need appears. |
 | Forms | react-hook-form + zod (the shadcn Form pattern) |
 | Rich text | Tiptap. Content stored as HTML and sanitised with DOMPurify before display. **[Default]** |
 | Hosting | Vercel, from the end of M1. A `vercel.json` rewrite sends every path to `index.html` so client-side routes survive a refresh. |
 | Backend (later) | Supabase: Auth, Postgres with Row Level Security, Edge Functions |
-| Tests | Vitest + Testing Library |
-| Quality | ESLint, Prettier, `tsc --noEmit` |
+| Tests | Vitest 5 + Testing Library; Playwright for end-to-end |
+| Quality | ESLint 9 (flat config), Prettier, `tsc -b` |
 | CI | GitHub Actions: lint, format check, typecheck, tests and build on every pull request and push to the default branch. See `MILESTONES.md`. |
 
 ### 5.1 Folder structure
@@ -535,6 +535,8 @@ Taken from the wireframes:
 | D17 | Changing Ask AI context | Found in user flows | Starts a new conversation, after a confirm if messages exist |
 | D18 | Search depth | Found in user journeys | Titles only in v1; full-text search in the backend stage |
 | D19 | Draft lifetime | Found in user flows | Restore/discard banner; drafts expire after 7 days |
+| D20 | Library versions | Versions moved on since the plan was written | React 19, React Router 8, Vite 8, TypeScript 6, Node 22 LTS. ESLint stays on 9 until `eslint-plugin-jsx-a11y` supports 10. |
+| D21 | Sign-out destination | Found while building M1 | Sign-out goes to the landing page. The guard does the redirect, so it never races a second one. Later visits to portal pages go to sign in as usual. |
 
 ---
 
