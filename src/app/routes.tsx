@@ -12,6 +12,8 @@ import { FullPageLoader } from '@/components/common/FullPageLoader'
 import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary'
 // Guard for public pages (sends signed-in students on).
 import { RedirectIfSignedIn } from '@/features/auth/RedirectIfSignedIn'
+// Skips the landing page inside the installed app (D36).
+import { SkipLandingInApp } from '@/features/pwa/SkipLandingInApp'
 // Guard for portal pages (students only).
 import { RequireStudent } from '@/features/auth/RequireStudent'
 // Centred card for sign in and password pages.
@@ -125,10 +127,16 @@ export const routes: RouteObject[] = [
             element: <PublicLayout />,
             children: [
               {
-                index: true,
-                lazy: async () => ({
-                  Component: (await import('@/pages/landing/LandingPage')).LandingPage,
-                }),
+                // The installed app goes to sign in instead; the website shows the page (D36).
+                element: <SkipLandingInApp />,
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/pages/landing/LandingPage')).LandingPage,
+                    }),
+                  },
+                ],
               },
             ],
           },

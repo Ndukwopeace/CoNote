@@ -44,7 +44,8 @@ export function PublicLayout() {
     // A column that fills the screen, so the footer stays at the bottom on short pages.
     <div className="flex min-h-dvh flex-col">
       {/* Header bar; stays at the top while scrolling so the links are always reachable. */}
-      <header className="sticky top-0 z-40 border-b bg-surface/95 backdrop-blur">
+      {/* Top padding keeps it below the iPhone status bar where iOS reports one; zero elsewhere. */}
+      <header className="sticky top-0 z-40 border-b bg-surface/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         {/* Install offer across the very top; renders nothing where installing isn't possible. */}
         <InstallBanner />
         {/* Content capped at 1152 px and centred. */}

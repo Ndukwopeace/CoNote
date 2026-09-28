@@ -218,7 +218,7 @@ A visitor who is not signed in and opens a portal route goes to `/login?redirect
 
 | Item | Icon (Lucide) | Route |
 |---|---|---|
-| Dashboard | `LayoutDashboard` | `/dashboard` |
+| Home (the dashboard) | `LayoutDashboard` | `/dashboard` |
 | Courses | `BookOpen` | `/courses` |
 | Notes | `NotebookPen` | `/notes` |
 | Ask AI | `Sparkles` | `/ask-ai` |
@@ -229,9 +229,11 @@ Classes are reached through a course, so they get no top-level item.
 
 **Desktop (≥ 1024 px):** a fixed left sidebar, 240 px wide, with the logo at the top and the student's name and avatar at the bottom.
 **Tablet (768–1023 px):** the sidebar collapses to an icon rail with tooltips.
-**Phone (< 768 px):** a bottom tab bar with Dashboard, Courses, Notes, Ask AI and Notifications. Settings moves to the avatar menu.
+**Phone (< 768 px):** a bottom tab bar with four tabs: Home, Courses, Notes and Ask AI (D35). The current tab has a filled pill behind its icon and a bolder label, so it is not shown by colour alone. Notifications is reached through the top-bar bell and Settings through the avatar menu. The bar, headers and sidebar keep clear of the iPhone notch and home indicator (`viewport-fit=cover` with `env(safe-area-inset-*)` padding).
 
-**Top bar on every portal page:** global search, a notification bell with the unread count, and an avatar menu (Profile, Settings, Sign out).
+**Top bar on every portal page:** the CoNote logo (phones only, linking Home), global search (placeholder "Find courses & notes", which fits from 360 px), a notification bell with the unread count (a badge showing 1–9, then "9+"; the exact count is in the link's accessible name), and an avatar menu (Profile, Settings, Install app where possible, Sign out).
+
+**Placeholders:** pages not built yet say "Coming soon", never an internal milestone name.
 
 **Global search** — **[Default]** v1 matches course code and title, class title and note title. It does not search inside note text. Results are grouped by type in a dropdown. Full-text search of note bodies is planned for the backend stage (see `MILESTONES.md`), where Postgres full-text search is available.
 
@@ -386,6 +388,7 @@ Classes are reached through a course, so they get no top-level item.
   - `name` "CoNote", `short_name` "CoNote", `description` "Your notes. Collective understanding."
   - `id` and `scope` `/`; `start_url` `/dashboard` (a signed-out student lands on sign-in, then returns to the dashboard)
   - `display` `standalone`; `theme_color` `#4F46E5`; `background_color` `#F8FAFC`
+  - The installed app shows sign-in and the portal only. Opening `/` in it goes to sign-in, and sign-out ends on sign-in. The landing page stays on the website. The Terms and Privacy links on sign-up open in a new browser tab (D36).
   - Icons: 192 px and 512 px PNG, a 512 px maskable icon, and a 180 px `apple-touch-icon`, all made from the logo mark
 - **FR-PWA-2 Service worker.** Precaches the app shell: `index.html`, every JS and CSS chunk, the self-hosted font and the icons. Registered only in production builds.
 - **FR-PWA-3 Offline navigation.** Any in-app path opened offline is served from the cached `index.html`, so client-side routes still work.
@@ -595,6 +598,8 @@ Taken from the wireframes:
 | D32 | Offline banner placement | FR-PWA-4 says "under the top bar"; public and auth pages have no top bar | Shown at the top of the main content on every layout, as a polite live region, so it sits inside a landmark and is announced without interrupting. |
 | D33 | Runtime cache names | FR-PWA-7 needs to find student-data caches | Every runtime cache is named `conote-runtime-…` (`RUNTIME_CACHE_PREFIX` in `lib/pwa.ts`); sign-out deletes those and keeps the precache. M4 and M5 must use the prefix. |
 | D34 | Install offer for visitors | Asked for after M2.5: a way to get the app from the public page | A strip at the top of the public pages with an **Install app** button. It installs through the browser (Chrome and Edge dialog; iOS Add to Home Screen steps), since a web app has no file to download. Hidden where installing isn't possible or CoNote is already installed. Dismissable; the dismissal is kept in `localStorage` and holds no personal data. |
+| D35 | Phone navigation | UX review after M2.5: five tabs felt packed; Notifications appeared twice (tab and bell) | Four tabs: Home, Courses, Notes, Ask AI (about 98 px each on a 390 px phone). Notifications moves to the top-bar bell with an unread badge. "Dashboard" is renamed "Home" in the nav and page heading; the address stays `/dashboard`. The phone top bar keeps its logo; the search placeholder is "Find courses & notes", the browser's own clear button is hidden (M5 adds one) and items sit 8 px apart on phones, so it fits at 360 px. |
+| D36 | What the installed app contains | Asked for after the D35 review: the app should hold sign-in and the portal, not the public website | In the installed app (display mode `standalone`, or iOS `navigator.standalone`), `/` redirects to `/login` (`SkipLandingInApp`). This also makes sign-out there end on sign-in instead of the landing page (D21 still applies in the browser). Terms and Privacy stay reachable, since sign-up needs them, and open in a new tab. The precache is shared with the website, so the landing page's code is still cached for offline browser visits. |
 
 ---
 

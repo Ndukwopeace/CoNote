@@ -103,12 +103,14 @@ Every portal page also reaches the six primary nav items and the top-bar control
 
 **Primary nav** (sidebar on desktop, icon rail on tablet, bottom bar on phone):
 
-- Dashboard
+- Home (the dashboard)
 - Courses
 - Notes
 - Ask AI
-- Notifications
-- Settings (on phones this sits in the avatar menu, since the bottom bar holds five items)
+- Notifications (on phones: the top-bar bell, with its unread badge)
+- Settings (on phones: the avatar menu)
+
+The phone bottom bar holds the first four only, so each tab has room for its label (D35).
 
 **Top bar:**
 

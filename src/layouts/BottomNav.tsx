@@ -11,38 +11,50 @@ import { cn } from '@/lib/utils'
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
 
-/** Phone navigation (< 768 px): five destinations within thumb reach. */
+/** Phone navigation (< 768 px): four destinations within thumb reach (decision D35). */
 export function BottomNav() {
   return (
     // A distinct name, so screen readers can tell it apart from the sidebar's navigation.
-    // Fixed to the bottom; the safe-area padding keeps it above the iPhone home indicator;
-    // hidden from 768 px up, where the sidebar takes over.
+    // Fixed to the bottom. The safe-area padding keeps it clear of the iPhone home indicator at
+    // the bottom and the notch at the sides in landscape. Hidden from 768 px up.
     <nav
       aria-label="Quick navigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t bg-surface pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] md:hidden"
     >
-      {/* Five equal columns. */}
-      <ul className="grid grid-cols-5">
-        {/* Only items marked for the bottom bar (Settings lives in the avatar menu on phones). */}
+      {/* Four equal columns: about 98 px each on a 390 px phone, room for every label. */}
+      <ul className="grid grid-cols-4">
+        {/* Only items marked for the bottom bar. */}
         {NAV_ITEMS.filter((item) => item.inBottomBar).map(({ label, to, icon: Icon }) => (
           // The route is unique, so it doubles as React's key.
           <li key={to}>
             {/* NavLink sets aria-current="page" on the current destination automatically. */}
             <NavLink
               to={to}
-              className={({ isActive }) =>
-                cn(
-                  // At least 56 px tall, above the 44 px touch-target minimum (NFR-1).
-                  'flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground',
-                  // The current destination is highlighted in brand colour.
-                  isActive && 'text-primary',
-                )
-              }
+              // At least 56 px tall, above the 44 px touch-target minimum (NFR-1).
+              className="group flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] text-muted-foreground aria-[current=page]:text-primary-dark"
             >
-              {/* Icon, hidden from screen readers because the label says the same thing. */}
-              <Icon aria-hidden="true" className="size-5" />
-              {/* The visible label, which is also the link's accessible name. */}
-              {label}
+              {({ isActive }) => (
+                <>
+                  {/* The pill behind the icon. Filled on the current tab, so the selection is
+                      shown by shape as well as colour (WCAG 1.4.1). */}
+                  <span
+                    data-slot="tab-pill"
+                    data-active={isActive}
+                    className={cn(
+                      // 56 × 28 px capsule, as in iOS and Material tab bars.
+                      'flex h-7 w-14 items-center justify-center rounded-full transition-colors',
+                      // Soft brand fill on the current tab only.
+                      isActive && 'bg-primary-light',
+                    )}
+                  >
+                    {/* Icon, hidden from screen readers because the label says the same thing. */}
+                    <Icon aria-hidden="true" className="size-6" />
+                  </span>
+                  {/* The visible label, which is also the link's accessible name. Bolder on the
+                      current tab, the second non-colour cue. */}
+                  <span className={cn('font-medium', isActive && 'font-semibold')}>{label}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}

@@ -17,7 +17,11 @@ import { ROUTES } from '@/lib/routes'
 export function AuthLayout() {
   return (
     // The page's main landmark; id="main" is the skip-link target. Pale brand background.
-    <main id="main" className="grid min-h-dvh place-items-center bg-primary-light/60 px-4 py-10">
+    // The top padding never drops below 40 px, and grows under an iPhone status bar.
+    <main
+      id="main"
+      className="grid min-h-dvh place-items-center bg-primary-light/60 px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10"
+    >
       {/* Pinned to the top of the screen while the connection is down (FR-PWA-4). */}
       <div className="fixed inset-x-0 top-0 z-40">
         <OfflineBanner />

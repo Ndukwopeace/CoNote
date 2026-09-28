@@ -62,19 +62,81 @@ describe('PortalLayout', () => {
       .map((link) => link.textContent.trim())
 
     // Assert: exact list and order.
-    expect(labels).toEqual(['Dashboard', 'Courses', 'Notes', 'Ask AI', 'Notifications', 'Settings'])
+    expect(labels).toEqual(['Home', 'Courses', 'Notes', 'Ask AI', 'Notifications', 'Settings'])
   })
 
-  // Proves the phone bar fits five items and leaves Settings to the avatar menu.
-  it('shows five destinations in the phone bottom bar, leaving Settings to the avatar menu', async () => {
+  // Proves the phone bar holds four places to work (decision D35). Notifications lives on the
+  // top-bar bell and Settings in the avatar menu, so each tab gets room for its label.
+  it('shows four destinations in the phone bottom bar', async () => {
     // Arrange: render the portal on the dashboard.
     renderPortal()
     // Arrange: find the phone bar.
     const bottomBar = await screen.findByRole('navigation', { name: 'Quick navigation' })
 
-    // Assert: five links, none of them Settings.
-    expect(within(bottomBar).getAllByRole('link')).toHaveLength(5)
-    expect(within(bottomBar).queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
+    // Act: read every tab's visible text.
+    const labels = within(bottomBar)
+      .getAllByRole('link')
+      .map((link) => link.textContent.trim())
+
+    // Assert: exactly these four, in order.
+    expect(labels).toEqual(['Home', 'Courses', 'Notes', 'Ask AI'])
+  })
+
+  // Proves the current tab is shown by more than colour (WCAG 1.4.1): a pill behind its icon
+  // and a bolder label, as well as aria-current for screen readers.
+  it('marks the current tab with a pill and a bold label, not colour alone', async () => {
+    // Arrange: render the portal on the Notes page.
+    renderPortal('/notes')
+    const bottomBar = await screen.findByRole('navigation', { name: 'Quick navigation' })
+    const current = within(bottomBar).getByRole('link', { name: 'Notes' })
+    const other = within(bottomBar).getByRole('link', { name: 'Courses' })
+
+    // Assert: announced as current.
+    expect(current).toHaveAttribute('aria-current', 'page')
+    // Assert: the pill is filled only on the current tab.
+    expect(current.querySelector('[data-slot="tab-pill"]')).toHaveAttribute('data-active', 'true')
+    expect(other.querySelector('[data-slot="tab-pill"]')).toHaveAttribute('data-active', 'false')
+    // Assert: the label is bolder only on the current tab.
+    expect(within(current).getByText('Notes')).toHaveClass('font-semibold')
+    expect(within(other).getByText('Courses')).not.toHaveClass('font-semibold')
+  })
+
+  // Proves the search box says what it searches (recognition rather than recall).
+  it('says what the search box searches', async () => {
+    // Act.
+    renderPortal()
+
+    // Assert.
+    expect(await screen.findByRole('searchbox')).toHaveAttribute(
+      'placeholder',
+      'Find courses & notes',
+    )
+  })
+
+  // Proves the top bar carries the CoNote logo, linking home.
+  it('shows the CoNote logo in the top bar, linking home', async () => {
+    // Act.
+    renderPortal()
+
+    // Assert.
+    const topBar = await screen.findByRole('banner')
+    expect(within(topBar).getByRole('link', { name: 'CoNote' })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    )
+  })
+
+  // Proves the bell reaches Notifications, now that it isn't a phone tab.
+  it('links the bell to Notifications', async () => {
+    // Act.
+    renderPortal()
+
+    // Assert: the top bar's bell, whose name with nothing unread is just "Notifications".
+    const topBar = await screen.findByRole('banner')
+    expect(within(topBar).getByRole('link', { name: 'Notifications' })).toHaveAttribute(
+      'href',
+      '/notifications',
+    )
   })
 
   // Proves screen readers are told which page is current.

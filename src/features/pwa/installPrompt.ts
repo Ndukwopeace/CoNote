@@ -10,22 +10,13 @@ import { useSyncExternalStore } from 'react'
 // The rule that turns browser facts into an option, and the iOS check.
 import { installOption, isIosDevice, type InstallOption } from '@/lib/pwa'
 
+// Whether this is already the installed app.
+import { isRunningStandalone } from './displayMode'
+
 /** The non-standard event Chromium browsers fire when the app can be installed. */
 interface BeforeInstallPromptEvent extends Event {
   // Opens the browser's install dialog. Works once per event.
   prompt: () => Promise<void>
-}
-
-/** True when the page is running as the installed app rather than in a browser tab. */
-function isStandalone() {
-  // Chromium and Firefox report the display mode through a media query (missing in jsdom).
-  const displayMode =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(display-mode: standalone)').matches
-  // iOS Safari has its own flag instead.
-  const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
-  // Either means installed.
-  return displayMode || iosStandalone
 }
 
 /** Creates a store that remembers the install prompt. One lives in the app; tests make their own. */
@@ -95,7 +86,7 @@ export function createInstallPromptStore() {
     getOption: (): InstallOption => {
       return installOption({
         // Installed now, or earlier in this visit.
-        isStandalone: installed || isStandalone(),
+        isStandalone: installed || isRunningStandalone(),
         // A saved offer exists.
         canPrompt: deferred !== null,
         // iPhone or iPad.
