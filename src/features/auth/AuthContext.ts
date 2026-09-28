@@ -37,7 +37,7 @@ export type AuthContextValue = AuthState & {
   signIn: (input: SignInInput) => Promise<Session>
   // Create an account.
   signUp: (input: SignUpInput) => Promise<Session>
-  // Sign in with Google or Microsoft.
+  // Sign in with Google.
   signInWithProvider: (provider: OAuthProvider) => Promise<Session>
   // Send a password reset link; the demo also returns the link (FR-AUTH-7).
   requestPasswordReset: (email: string) => Promise<PasswordResetRequest>

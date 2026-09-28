@@ -108,7 +108,7 @@ Hosting is on Vercel, starting at the end of M1. Every later milestone ships to 
 - Sign in, sign up, forgot password and reset password pages, including the expired-link state and the mock-only reset shortcut (FR-AUTH-5, FR-AUTH-7)
 - zod validation schemas with inline errors
 - Loading and disabled states on submit
-- Google and Microsoft buttons (mock sign-in)
+- Google sign-in button (mock sign-in; Microsoft dropped in D38)
 - Placeholder `/terms` and `/privacy` pages
 - Unit tests for the validation schemas
 
@@ -249,7 +249,7 @@ Added after M1 at the team's request. It comes straight after M2 so the icons us
 Not requested in the brief. It could be inserted after M2 if real accounts are wanted early.
 
 - Supabase project, and the tables from section 12.2 with Row Level Security
-- Real email/password, Google and Microsoft (`azure`) sign-in
+- Real email/password and Google sign-in
 - Supabase implementations of the Course, Class, Note, Profile and Notification services
 - Full-text search of note bodies using Postgres full-text search (REQUIREMENTS section 8)
 - PWA level 3 (D22): notes written offline are queued and synced with conflict handling; push notifications for published summaries and class reminders

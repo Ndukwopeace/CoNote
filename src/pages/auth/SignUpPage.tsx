@@ -1,6 +1,6 @@
 /**
  * The sign-up page at /signup (FR-AUTH-2). Full name, email, password twice, the required terms
- * checkbox, and the Google and Microsoft buttons. New accounts are always students.
+ * checkbox, and the Google button. New accounts are always students.
  */
 
 // Connects zod schemas to react-hook-form.
@@ -22,7 +22,7 @@ import { PasswordInput } from '@/components/forms/PasswordInput'
 import { Button } from '@/components/ui/button'
 // Standard text input.
 import { Input } from '@/components/ui/input'
-// Google and Microsoft buttons.
+// The Google button.
 import { OAuthButtons } from '@/features/auth/OAuthButtons'
 // Sign-up actions.
 import { useAuth } from '@/features/auth/useAuth'
@@ -179,7 +179,7 @@ export function SignUpPage() {
         </Button>
       </form>
 
-      {/* Google and Microsoft create the account and sign in straight away. */}
+      {/* Google creates the account and signs in straight away. */}
       <OAuthButtons
         disabled={isPending}
         onSelect={(provider) => void run(() => signInWithProvider(provider))}

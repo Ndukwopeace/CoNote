@@ -54,6 +54,7 @@ describe('SignUpPage', () => {
     }
     // Assert: providers and the way back to sign in.
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Microsoft/ })).toBeNull()
     expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
     // Assert: accessible.
     await expectNoAxeViolations(container)

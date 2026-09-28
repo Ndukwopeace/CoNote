@@ -20,7 +20,7 @@ export interface AuthService {
   signIn(input: SignInInput): Promise<Session>
   /** Creates a student account and signs it in. */
   signUp(input: SignUpInput): Promise<Session>
-  /** Signs in through Google or Microsoft. */
+  /** Signs in through Google (decision D38). */
   signInWithProvider(provider: OAuthProvider): Promise<Session>
   /** Ends the session. */
   signOut(): Promise<void>

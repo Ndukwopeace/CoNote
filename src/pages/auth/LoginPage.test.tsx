@@ -46,8 +46,17 @@ describe('LoginPage', () => {
       'href',
       '/forgot-password',
     )
-    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Continue with Microsoft' })).toBeInTheDocument()
+    // Google is the only provider (decision D38), and its button says what it does.
+    const google = screen.getByRole('button', { name: 'Continue with Google' })
+    expect(google).toHaveTextContent('Continue with Google')
+    expect(screen.queryByRole('button', { name: /Microsoft/ })).toBeNull()
+    // The official four-colour Google "G", decorative because the text names the button.
+    const logo = google.querySelector('svg')
+    expect(logo).toHaveAttribute('aria-hidden', 'true')
+    const colours = Array.from(logo?.querySelectorAll('path') ?? [], (path) =>
+      path.getAttribute('fill'),
+    )
+    expect(colours.sort()).toEqual(['#34A853', '#4285F4', '#EA4335', '#FBBC05'])
     expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute('href', '/signup')
     // Assert: accessible.
     await expectNoAxeViolations(container)
