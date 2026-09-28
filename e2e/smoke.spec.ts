@@ -33,7 +33,7 @@ test('a student signs in, visits every portal page and signs out', async ({ page
 
   // Arrives on the dashboard.
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible()
   await expectNoAxeViolations(page)
 
   // Every destination in the visible navigation: [link text, page heading, expected address].
@@ -41,8 +41,7 @@ test('a student signs in, visits every portal page and signs out', async ({ page
     ['Courses', 'My Courses', /\/courses$/],
     ['Notes', 'Notes', /\/notes$/],
     ['Ask AI', 'Ask CoNote AI', /\/ask-ai$/],
-    ['Notifications', 'Notifications', /\/notifications$/],
-    ['Dashboard', 'Dashboard', /\/dashboard$/],
+    ['Home', 'Home', /\/dashboard$/],
   ] as const
   // Click through each and check address, heading and accessibility.
   for (const [link, heading, url] of destinations) {
@@ -51,6 +50,12 @@ test('a student signs in, visits every portal page and signs out', async ({ page
     await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
     await expectNoAxeViolations(page)
   }
+
+  // Notifications through the top-bar bell (the only way on phones, decision D35).
+  await page.getByRole('banner').getByRole('link', { name: 'Notifications' }).click()
+  await expect(page).toHaveURL(/\/notifications$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Notifications' })).toBeVisible()
+  await expectNoAxeViolations(page)
 
   // Settings through the avatar menu (the only route to it on phones).
   await page.getByRole('button', { name: /account menu/i }).click()

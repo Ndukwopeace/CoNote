@@ -22,7 +22,6 @@ export function SettingsPage() {
     // Placeholder body until M5 builds the tabs.
     <PlaceholderPage
       title="Settings"
-      milestone="M5"
       description="Profile, account, notification, privacy and help settings."
     />
   )

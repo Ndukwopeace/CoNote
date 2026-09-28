@@ -8,5 +8,5 @@ import { PlaceholderPage } from '@/components/common/PlaceholderPage'
 /** Edit note page. */
 export function EditNotePage() {
   // The heading, the milestone and a one-line description of the finished page.
-  return <PlaceholderPage title="Edit note" milestone="M4" description="Edit a saved note." />
+  return <PlaceholderPage title="Edit note" description="Edit a saved note." />
 }

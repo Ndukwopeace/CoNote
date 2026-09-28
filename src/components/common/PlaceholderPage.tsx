@@ -1,5 +1,6 @@
 /**
- * A temporary page body that names the milestone which will build the real page.
+ * A temporary page body shown until the real page is built. It says "Coming soon" rather than
+ * naming the team's milestone, which would mean nothing to a student.
  */
 
 // Construction-sign icon.
@@ -14,21 +15,14 @@ import { PageTitle } from './PageTitle'
 interface PlaceholderPageProps {
   // Page heading and tab title.
   title: string
-  /** The build milestone that delivers this page (docs/MILESTONES.md). */
-  milestone: string
   // What the finished page will do.
   description: string
   // Optional content under the heading, e.g. the dashboard greeting.
   children?: ReactNode
 }
 
-/** Stands in for a page until its milestone lands, so routing can be tested end to end. */
-export function PlaceholderPage({
-  title,
-  milestone,
-  description,
-  children,
-}: Readonly<PlaceholderPageProps>) {
+/** Stands in for a page until it is built, so routing can be tested end to end. */
+export function PlaceholderPage({ title, description, children }: Readonly<PlaceholderPageProps>) {
   return (
     // Left-aligned column, as in the wireframes.
     <section className="w-full max-w-5xl">
@@ -43,8 +37,8 @@ export function PlaceholderPage({
         {/* Decorative icon. */}
         <Construction aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
         <div>
-          {/* Which milestone builds this page. */}
-          <p className="font-semibold">Coming in {milestone}</p>
+          {/* Plain words for students; docs/MILESTONES.md says which milestone builds it. */}
+          <p className="font-semibold">Coming soon</p>
           {/* What the page will do. */}
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>

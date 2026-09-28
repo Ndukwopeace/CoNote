@@ -134,7 +134,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     // Assert: on the dashboard, and the remember marker was written.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
     expect(window.localStorage.getItem('conote:remember')).not.toBeNull()
   })
 })

@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/useAuth'
 // "Victory Okafor" → "Victory".
 import { firstName } from '@/lib/initials'
 
-/** Dashboard, at /dashboard. */
+/** Home (the dashboard), at /dashboard. Named "Home" to match its tab (decision D35). */
 export function DashboardPage() {
   // Current sign-in state.
   const auth = useAuth()
@@ -18,8 +18,7 @@ export function DashboardPage() {
 
   return (
     <PlaceholderPage
-      title="Dashboard"
-      milestone="M3"
+      title="Home"
       description="Your stats, upcoming classes, recent activity and a shortcut to Ask CoNote AI."
     >
       {/* Greeting, proving the session reached the page. */}

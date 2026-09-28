@@ -26,7 +26,7 @@ describe('app routes: portal pages', () => {
   // Proves every portal address reaches its page, identified by its one h1.
   it.each([
     // [address, expected h1]
-    ['/dashboard', 'Dashboard'],
+    ['/dashboard', 'Home'],
     ['/classes', 'All classes'],
     ['/courses', 'My Courses'],
     ['/courses/swe-311', 'Course details'],
@@ -112,7 +112,7 @@ describe('app routes: public pages', () => {
     renderApp('/')
 
     // Assert: on the dashboard.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
   })
 
   it.each([
@@ -189,6 +189,6 @@ describe('app routes: signing in', () => {
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
     // Assert: on the dashboard.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
   })
 })

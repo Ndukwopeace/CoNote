@@ -218,7 +218,7 @@ A visitor who is not signed in and opens a portal route goes to `/login?redirect
 
 | Item | Icon (Lucide) | Route |
 |---|---|---|
-| Dashboard | `LayoutDashboard` | `/dashboard` |
+| Home (the dashboard) | `LayoutDashboard` | `/dashboard` |
 | Courses | `BookOpen` | `/courses` |
 | Notes | `NotebookPen` | `/notes` |
 | Ask AI | `Sparkles` | `/ask-ai` |
@@ -229,9 +229,11 @@ Classes are reached through a course, so they get no top-level item.
 
 **Desktop (≥ 1024 px):** a fixed left sidebar, 240 px wide, with the logo at the top and the student's name and avatar at the bottom.
 **Tablet (768–1023 px):** the sidebar collapses to an icon rail with tooltips.
-**Phone (< 768 px):** a bottom tab bar with Dashboard, Courses, Notes, Ask AI and Notifications. Settings moves to the avatar menu.
+**Phone (< 768 px):** a bottom tab bar with four tabs: Home, Courses, Notes and Ask AI (D35). The current tab has a filled pill behind its icon and a bolder label, so it is not shown by colour alone. Notifications is reached through the top-bar bell and Settings through the avatar menu. The bar, headers and sidebar keep clear of the iPhone notch and home indicator (`viewport-fit=cover` with `env(safe-area-inset-*)` padding).
 
-**Top bar on every portal page:** global search, a notification bell with the unread count, and an avatar menu (Profile, Settings, Sign out).
+**Top bar on every portal page:** global search (placeholder "Search courses & notes"), a notification bell with the unread count (a badge showing 1–9, then "9+"; the exact count is in the link's accessible name), and an avatar menu (Profile, Settings, Install app where possible, Sign out). On phones the top bar has no logo; the Home tab leads home, and search needs the width.
+
+**Placeholders:** pages not built yet say "Coming soon", never an internal milestone name.
 
 **Global search** — **[Default]** v1 matches course code and title, class title and note title. It does not search inside note text. Results are grouped by type in a dropdown. Full-text search of note bodies is planned for the backend stage (see `MILESTONES.md`), where Postgres full-text search is available.
 
@@ -595,6 +597,7 @@ Taken from the wireframes:
 | D32 | Offline banner placement | FR-PWA-4 says "under the top bar"; public and auth pages have no top bar | Shown at the top of the main content on every layout, as a polite live region, so it sits inside a landmark and is announced without interrupting. |
 | D33 | Runtime cache names | FR-PWA-7 needs to find student-data caches | Every runtime cache is named `conote-runtime-…` (`RUNTIME_CACHE_PREFIX` in `lib/pwa.ts`); sign-out deletes those and keeps the precache. M4 and M5 must use the prefix. |
 | D34 | Install offer for visitors | Asked for after M2.5: a way to get the app from the public page | A strip at the top of the public pages with an **Install app** button. It installs through the browser (Chrome and Edge dialog; iOS Add to Home Screen steps), since a web app has no file to download. Hidden where installing isn't possible or CoNote is already installed. Dismissable; the dismissal is kept in `localStorage` and holds no personal data. |
+| D35 | Phone navigation | UX review after M2.5: five tabs felt packed; Notifications appeared twice (tab and bell) | Four tabs: Home, Courses, Notes, Ask AI (about 98 px each on a 390 px phone). Notifications moves to the top-bar bell with an unread badge. "Dashboard" is renamed "Home" in the nav and page heading; the address stays `/dashboard`. The phone top bar drops its logo so the search placeholder fits at 360 px. |
 
 ---
 

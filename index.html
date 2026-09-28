@@ -7,8 +7,10 @@
     <meta charset="UTF-8" />
     <!-- Browser tab icon. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Use the device's real width on phones instead of a zoomed-out desktop view. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Use the device's real width on phones instead of a zoomed-out desktop view.
+         viewport-fit=cover lets iOS report the notch and home-indicator sizes to CSS
+         (env(safe-area-inset-*)), so the tab bar and headers can keep clear of them. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Summary shown by search engines and link previews. -->
     <meta name="description" content="CoNote: your notes, collective understanding." />
     <!-- Colours the mobile browser's address bar in the brand colour. -->

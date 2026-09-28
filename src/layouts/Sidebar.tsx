@@ -29,7 +29,8 @@ import { SidebarLink } from './SidebarLink'
 export function Sidebar({ fullName }: Readonly<{ fullName: string }>) {
   return (
     // Fixed to the left edge. Hidden on phones; 64 px wide from 768 px; 240 px from 1024 px.
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col border-r bg-surface md:flex lg:w-60">
+    // The left offset keeps it clear of the notch on a sideways iPhone; zero elsewhere.
+    <aside className="fixed inset-y-0 left-[env(safe-area-inset-left)] z-30 hidden w-16 flex-col border-r bg-surface md:flex lg:w-60">
       {/* Logo linking to the dashboard. */}
       <NavLink
         to={ROUTES.dashboard}
