@@ -137,12 +137,32 @@ export function SignUpPage() {
             />
             <span>
               I agree to the{' '}
-              <Link to={ROUTES.terms} className="font-medium text-primary hover:underline">
+              {/* A new tab keeps the half-filled form, and keeps the installed app free of
+                  public pages (D36). SECURITY: noopener stops the new tab reaching back into
+                  this one through window.opener (reverse tabnabbing). */}
+              <Link
+                to={ROUTES.terms}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
                 Terms of Service
+                {/* Screen readers are told the link opens a new tab. */}
+                <span className="sr-only"> (opens in a new tab)</span>
               </Link>{' '}
               and{' '}
-              <Link to={ROUTES.privacy} className="font-medium text-primary hover:underline">
+              {/* A new tab keeps the half-filled form, and keeps the installed app free of
+                  public pages (D36). SECURITY: noopener stops the new tab reaching back into
+                  this one through window.opener (reverse tabnabbing). */}
+              <Link
+                to={ROUTES.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
                 Privacy Policy
+                {/* Screen readers are told the link opens a new tab. */}
+                <span className="sr-only"> (opens in a new tab)</span>
               </Link>
             </span>
           </label>

@@ -43,8 +43,15 @@ describe('SignUpPage', () => {
       'new-password',
     )
     // Assert: the terms links open the legal pages.
-    expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms')
-    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy')
+    expect(screen.getByRole('link', { name: /Terms of Service/ })).toHaveAttribute('href', '/terms')
+    expect(screen.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute('href', '/privacy')
+    // Assert: both open in a new tab, so the half-filled form stays, and the installed app never
+    // shows a public page (D36). SECURITY: noopener stops the new tab controlling this one.
+    for (const name of ['Terms of Service', 'Privacy Policy']) {
+      const link = screen.getByRole('link', { name: new RegExp(name) })
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
     // Assert: providers and the way back to sign in.
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')

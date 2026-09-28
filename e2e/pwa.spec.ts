@@ -180,3 +180,37 @@ test('the landing page shows the Add to Home Screen steps on iPhone', async ({ b
   await expect(page.getByText('Get the CoNote app.')).toBeHidden()
   await context.close()
 })
+
+// D36: the installed app shows sign-in and the portal, never the public landing page.
+test('the installed app skips the landing page', async ({ browser }) => {
+  // A window that reports the installed-app display mode, as Chrome does after installing.
+  const context = await browser.newContext()
+  await context.addInitScript(() => {
+    // Keep the browser's own matchMedia for every other query.
+    const original = window.matchMedia.bind(window)
+    // Answer "yes" to the standalone query only, on a real MediaQueryList.
+    window.matchMedia = (query: string) => {
+      const list = original(query)
+      if (query === '(display-mode: standalone)') {
+        Object.defineProperty(list, 'matches', { value: true })
+      }
+      return list
+    }
+  })
+  const page = await context.newPage()
+
+  // Opening "/" lands on sign in, not the landing page.
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeVisible()
+
+  // Signing in reaches Home as usual.
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+
+  // Signing out ends on sign in, not the landing page.
+  await page.getByRole('button', { name: /account menu/i }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await context.close()
+})

@@ -109,7 +109,20 @@ describe('PortalLayout', () => {
     // Assert.
     expect(await screen.findByRole('searchbox')).toHaveAttribute(
       'placeholder',
-      'Search courses & notes',
+      'Find courses & notes',
+    )
+  })
+
+  // Proves the top bar carries the CoNote logo, linking home.
+  it('shows the CoNote logo in the top bar, linking home', async () => {
+    // Act.
+    renderPortal()
+
+    // Assert.
+    const topBar = await screen.findByRole('banner')
+    expect(within(topBar).getByRole('link', { name: 'CoNote' })).toHaveAttribute(
+      'href',
+      '/dashboard',
     )
   })
 

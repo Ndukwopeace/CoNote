@@ -6,8 +6,10 @@
 // Queries the rendered page.
 import { screen } from '@testing-library/react'
 // Vitest building blocks.
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
+// Fakes the installed app's display mode.
+import { resetDisplayMode, setStandalone } from '@/test/displayMode'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.
@@ -190,5 +192,62 @@ describe('app routes: signing in', () => {
 
     // Assert: on the dashboard.
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
+  })
+})
+
+describe('app routes: the installed app (decision D36)', () => {
+  // Back to a normal browser tab after each test.
+  afterEach(() => {
+    resetDisplayMode()
+  })
+
+  // Proves the installed app never shows the public landing page: "/" goes to sign in.
+  it('sends a signed-out visitor from the landing page to sign in', async () => {
+    // Arrange: running as the installed app.
+    setStandalone(true)
+
+    // Act: open "/".
+    const { router } = renderApp('/', false)
+
+    // Assert: on sign in, not the landing page.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Welcome back' }),
+    ).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
+  })
+
+  // Proves the browser website keeps its landing page.
+  it('still shows the landing page in a browser tab', async () => {
+    // Arrange: a normal browser tab.
+    setStandalone(false)
+
+    // Act.
+    renderApp('/', false)
+
+    // Assert.
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /Your notes\. Collective understanding\./,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  // Proves sign-out in the installed app ends on sign in rather than the landing page.
+  it('ends on sign in after signing out', async () => {
+    // Arrange: signed in, in the installed app.
+    setStandalone(true)
+    const { user, router } = renderApp('/dashboard')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+
+    // Act: sign out from the account menu.
+    await user.click(screen.getByRole('button', { name: /Account menu/ }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
+
+    // Assert.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Welcome back' }),
+    ).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
   })
 })
