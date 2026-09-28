@@ -1,15 +1,27 @@
+/**
+ * Tests for the signed-in shell: navigation, landmarks, the account menu and accessibility.
+ */
+
+// screen queries the page; within narrows a query to one region.
 import { screen, within } from '@testing-library/react'
+// Vitest building blocks.
 import { describe, expect, it } from 'vitest'
 
+// Accessibility checker.
 import { expectNoAxeViolations } from '@/test/axe'
+// Session factory.
 import { makeSession } from '@/test/factories'
+// Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 
+// The real guards, so sign-out behaves as in the app.
 import { RedirectIfSignedIn } from '@/features/auth/RedirectIfSignedIn'
 import { RequireStudent } from '@/features/auth/RequireStudent'
 
+// The layout under test.
 import { PortalLayout } from './PortalLayout'
 
+// Three portal pages behind the real guard, plus a landing page to sign out to.
 const routes = [
   {
     element: <RequireStudent />,
@@ -30,103 +42,149 @@ const routes = [
   },
 ]
 
+/** Renders the portal at `path`, signed in as Victory. */
 function renderPortal(path = '/dashboard') {
+  // Signed in, so the guard lets the layout render.
   return renderWithRouter({ routes, path, session: makeSession({ fullName: 'Victory Okafor' }) })
 }
 
 describe('PortalLayout', () => {
+  // Proves the sidebar lists exactly the agreed destinations, in order (decision D6).
   it('shows the six primary destinations in the sidebar', async () => {
+    // Arrange: render the portal on the dashboard.
     renderPortal()
+    // Arrange: find the sidebar navigation.
     const sidebar = await screen.findByRole('navigation', { name: 'Main navigation' })
 
+    // Act: read every link's visible text.
     const labels = within(sidebar)
       .getAllByRole('link')
       .map((link) => link.textContent.trim())
 
+    // Assert: exact list and order.
     expect(labels).toEqual(['Dashboard', 'Courses', 'Notes', 'Ask AI', 'Notifications', 'Settings'])
   })
 
+  // Proves the phone bar fits five items and leaves Settings to the avatar menu.
   it('shows five destinations in the phone bottom bar, leaving Settings to the avatar menu', async () => {
+    // Arrange: render the portal on the dashboard.
     renderPortal()
+    // Arrange: find the phone bar.
     const bottomBar = await screen.findByRole('navigation', { name: 'Quick navigation' })
 
+    // Assert: five links, none of them Settings.
     expect(within(bottomBar).getAllByRole('link')).toHaveLength(5)
     expect(within(bottomBar).queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
+  // Proves screen readers are told which page is current.
   it('marks the current page in the navigation', async () => {
+    // Arrange: render the portal on the Notes page.
     renderPortal('/notes')
+    // Arrange: find the sidebar navigation.
     const sidebar = await screen.findByRole('navigation', { name: 'Main navigation' })
 
+    // Assert: Notes carries aria-current="page".
     expect(within(sidebar).getByRole('link', { name: 'Notes' })).toHaveAttribute(
       'aria-current',
       'page',
     )
   })
 
+  // Proves page content sits in <main>, where the skip link and screen readers expect it.
   it('renders the page inside the main landmark', async () => {
+    // Arrange: render the portal on the dashboard.
     renderPortal()
 
+    // Assert: the page text is inside <main>.
     expect(within(await screen.findByRole('main')).getByText('Dashboard content')).toBeVisible()
   })
 
+  // Proves keyboard users can skip past the navigation (NFR-2).
   it('offers a skip link to the main content', async () => {
+    // Arrange: render the portal on the dashboard.
     renderPortal()
 
+    // Assert: the skip link points at #main.
     expect(await screen.findByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
       'href',
       '#main',
     )
   })
 
+  // Proves the account menu holds its three items.
   it('opens the account menu with Profile, Settings and Sign out', async () => {
+    // Arrange: render the portal and get the simulated user.
     const { user } = renderPortal()
 
+    // Act: open the account menu.
     await user.click(await screen.findByRole('button', { name: /account menu/i }))
 
+    // Assert: all three items are present.
     expect(screen.getByRole('menuitem', { name: 'Profile' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument()
   })
 
+  // Proves the Profile item navigates.
   it('goes to the profile tab from the account menu', async () => {
+    // Arrange: render the portal and get the simulated user.
     const { user } = renderPortal()
 
+    // Act: open the account menu.
     await user.click(await screen.findByRole('button', { name: /account menu/i }))
+    // Act: choose Profile.
     await user.click(screen.getByRole('menuitem', { name: 'Profile' }))
 
+    // Assert: the profile tab rendered.
     expect(await screen.findByText('Profile content')).toBeInTheDocument()
   })
 
+  // Proves sign-out from the menu lands on the landing page (decision D21).
   it('signs out to the landing page', async () => {
+    // Arrange: render the portal and get the simulated user.
     const { user } = renderPortal()
 
+    // Act: open the account menu.
     await user.click(await screen.findByRole('button', { name: /account menu/i }))
+    // Act: choose Sign out.
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
 
+    // Assert: on the landing page.
     expect(await screen.findByRole('heading', { name: 'Landing' })).toBeInTheDocument()
   })
 
+  // Proves the shell passes axe's automated accessibility rules.
   it('has no detectable accessibility violations', async () => {
+    // Arrange: render and wait for the page.
     const { container } = renderPortal()
     await screen.findByText('Dashboard content')
 
+    // Assert: no violations.
     await expectNoAxeViolations(container)
   })
 })
 
 describe('PortalLayout sidebar links', () => {
+  // Regression test for the M1 bug where Radix Slot turned NavLink's className function into text.
   it('keep their layout classes when wrapped in a tooltip trigger', async () => {
+    // Arrange: render the portal on the Notes page.
     renderPortal('/notes')
+    // Arrange: find the sidebar navigation.
     const sidebar = await screen.findByRole('navigation', { name: 'Main navigation' })
 
+    // Act: the Notes link.
     const link = within(sidebar).getByRole('link', { name: 'Notes' })
 
+    // Assert: its layout and active classes arrived as real classes...
     expect(link).toHaveClass('flex', 'items-center', 'bg-primary-light')
+    // ...and not as the text of a function.
     expect(link.className).not.toContain('=>')
   })
 
+  // Proves "Notes" stays highlighted on a note's own page.
   it('marks a parent section active on its child pages', async () => {
+    // Arrange: render the layout on a child page of Notes.
     renderWithRouter({
       routes: [
         {
@@ -139,8 +197,10 @@ describe('PortalLayout sidebar links', () => {
       path: '/notes/n1',
       session: makeSession(),
     })
+    // Arrange: find the sidebar navigation.
     const sidebar = await screen.findByRole('navigation', { name: 'Main navigation' })
 
+    // Assert: Notes carries aria-current="page".
     expect(within(sidebar).getByRole('link', { name: 'Notes' })).toHaveAttribute(
       'aria-current',
       'page',

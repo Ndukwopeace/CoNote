@@ -18,6 +18,7 @@ See `docs/ENGINEERING_STANDARDS.md` section 1. Tick what applies; explain anythi
 - [ ] Checked at 360 px and 1440 px in the Vercel preview
 - [ ] No new security findings: user HTML goes through `SafeHtml`, inputs validated, no secrets
 - [ ] New dependencies justified below (what, why, size, licence)
+- [ ] Every statement commented; security lines start with `SECURITY:` and say what they block
 - [ ] Docs and the decisions log updated if behaviour, routes or decisions changed
 - [ ] CI green
 

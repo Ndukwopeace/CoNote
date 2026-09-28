@@ -1,34 +1,57 @@
+// TypeScript settings for the app code in src/ (runs in the browser).
 {
   "compilerOptions": {
+    // Where incremental build info is cached between runs.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    // Modern JavaScript output; Vite handles browser support.
     "target": "es2023",
+    // Built-in types: modern JavaScript plus the browser DOM, including iterable DOM lists.
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    // ES modules.
     "module": "esnext",
+    // Global types: Vite's import.meta.env, Vitest's globals, and jest-dom's matchers.
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom/vitest"],
+    // Don't type-check library declaration files (faster; libraries are checked by their authors).
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    /* Bundler mode: TypeScript only checks types; Vite does the actual building. */
+    // Resolve imports the way Vite does.
     "moduleResolution": "bundler",
+    // Allow "./file.ts" style imports.
     "allowImportingTsExtensions": true,
+    // Keep import statements exactly as written; requires `import type` for types.
     "verbatimModuleSyntax": true,
+    // Treat every file as a module.
     "moduleDetection": "force",
+    // TypeScript emits nothing; it only checks.
     "noEmit": true,
+    // Modern JSX transform: no need to import React in every file.
     "jsx": "react-jsx",
 
     /* Paths */
+    // "@/x" means "src/x", matching the alias in vite.config.ts.
     "paths": {
       "@/*": ["./src/*"]
     },
 
     /* Strictness: ENGINEERING_STANDARDS.md section 4.1 */
+    // All strict checks, including no implicit any and strict null checks.
     "strict": true,
+    // Array and record lookups may be undefined, and code must handle it.
     "noUncheckedIndexedAccess": true,
+    // Overriding a parent method needs the `override` keyword.
     "noImplicitOverride": true,
+    // A switch case can't fall into the next one by accident.
     "noFallthroughCasesInSwitch": true,
+    // "Optional" means "may be missing", not "may be set to undefined".
     "exactOptionalPropertyTypes": true,
+    // Unused variables are errors.
     "noUnusedLocals": true,
+    // Unused parameters are errors.
     "noUnusedParameters": true,
+    // Only syntax that can be erased to plain JavaScript (no enums or namespaces).
     "erasableSyntaxOnly": true
   },
+  // The app source.
   "include": ["src"]
 }

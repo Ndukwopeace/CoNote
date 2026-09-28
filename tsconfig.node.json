@@ -1,26 +1,45 @@
+// TypeScript settings for Node-side files: the Vite, Vitest, Playwright and ESLint configs,
+// and the browser tests in e2e/.
 {
   "compilerOptions": {
+    // Where incremental build info is cached.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    // Modern JavaScript.
     "target": "es2023",
+    // Modern JavaScript plus DOM types (the e2e tests mention browser objects).
     "lib": ["ES2023", "DOM"],
+    // Node's global types (process, Buffer…).
     "types": ["node"],
+    // Don't type-check library declaration files.
     "skipLibCheck": true,
 
     /* Bundler mode */
+    // Node's own ES-module rules.
     "module": "nodenext",
+    // Allow "./file.ts" imports, which Node and Playwright run directly.
     "allowImportingTsExtensions": true,
+    // Keep imports exactly as written.
     "verbatimModuleSyntax": true,
+    // Every file is a module.
     "moduleDetection": "force",
+    // Only type-check.
     "noEmit": true,
 
     /* Strictness: ENGINEERING_STANDARDS.md section 4.1 */
+    // All strict checks.
     "strict": true,
+    // Lookups may be undefined.
     "noUncheckedIndexedAccess": true,
+    // No accidental switch fall-through.
     "noFallthroughCasesInSwitch": true,
+    // Unused variables are errors.
     "noUnusedLocals": true,
+    // Unused parameters are errors.
     "noUnusedParameters": true,
+    // Only erasable syntax.
     "erasableSyntaxOnly": true
   },
+  // The files this config covers.
   "include": [
     "vite.config.ts",
     "vitest.config.ts",

@@ -20,6 +20,7 @@ A React + TypeScript + Vite web app for the **student side only** of CoNote. Stu
 7. **Every data view handles loading, empty, error and not-found.**
 8. **No new dependency without a stated reason** (standards section 10).
 9. **Keep the docs in sync.** New decisions go in REQUIREMENTS section 15.
+10. **Comment every statement** (standards section 4.5): what it does and why. Security lines start with `SECURITY:` and name the attack they block. JSON config files are explained in `docs/CONFIG_FILES.md` instead.
 
 ## Commands
 

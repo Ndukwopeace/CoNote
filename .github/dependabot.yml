@@ -1,18 +1,28 @@
+# Dependabot opens pull requests to update dependencies. SECURITY: known vulnerabilities get
+# fixed promptly, and every update still has to pass CI before it merges.
 version: 2
 updates:
+  # npm packages from package.json.
   - package-ecosystem: npm
+    # package.json is at the repository root.
     directory: /
+    # Check once a week.
     schedule:
       interval: weekly
+    # At most 10 open update PRs at a time.
     open-pull-requests-limit: 10
+    # Minor and patch updates arrive together in one PR; major updates stay separate for review.
     groups:
       minor-and-patch:
         update-types: [minor, patch]
 
+  # The GitHub Actions used by the workflows (updates their pinned commits).
   - package-ecosystem: github-actions
     directory: /
+    # Check once a week.
     schedule:
       interval: weekly
+    # All action updates in one PR.
     groups:
       actions:
         patterns: ['*']

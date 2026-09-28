@@ -1,22 +1,32 @@
-# Dependencies and build output
+# Files git must never track: installed packages, build output, reports and secrets.
+
+# Installed packages; recreated by `npm ci`.
 node_modules
+# Production build output.
 dist
+# Server-rendering build output (not used; kept from the Vite template).
 dist-ssr
+# Test coverage reports.
 coverage
+# Browser test reports and traces.
 playwright-report
+# Playwright's per-test results.
 test-results
+# Playwright's merged report data.
 blob-report
+# TypeScript's incremental build cache.
 *.tsbuildinfo
 
-# Environment files: only .env.example is committed
+# SECURITY: environment files can hold keys, so none are committed except the template.
 .env
 .env.*
+# ...except the template, which holds no secrets.
 !.env.example
 
-# Logs
+# Log files.
 *.log
 
-# Editor and OS
+# Editor and operating-system files, except shared VS Code extension suggestions.
 .vscode/*
 !.vscode/extensions.json
 .idea

@@ -1,1 +1,3 @@
+# Runs before every commit (ENGINEERING_STANDARDS.md 13): format, lint and run the related tests
+# on the staged files only. The lint-staged settings live in package.json.
 npx lint-staged

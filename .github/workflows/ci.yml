@@ -1,13 +1,20 @@
+# Continuous integration: checks every pull request and every push to main.
+# A change can merge only when both jobs pass (docs/MILESTONES.md, "Continuous integration").
 name: CI
 
 on:
+  # Every pull request, whatever its branch.
   pull_request:
+  # Every push to main, so main itself is always verified.
   push:
     branches: [main]
 
+# SECURITY: the workflow's GitHub token can only read the repository. A compromised step
+# cannot push code, change settings or approve pull requests.
 permissions:
   contents: read
 
+# A new push to the same branch cancels the run still in progress, saving time.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -15,45 +22,62 @@ concurrency:
 jobs:
   checks:
     name: Lint, types, tests, build
+    # A fresh Linux machine for every run.
     runs-on: ubuntu-latest
+    # Stop a stuck run after 20 minutes.
     timeout-minutes: 20
     env:
+      # Build and test against demo data.
       VITE_DATA_SOURCE: mock
     steps:
+      # Get the code. SECURITY: every action is pinned to an exact commit, so a hijacked tag
+      # upstream can't swap in malicious code (supply-chain attack). The comment says the version.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Install the Node version from .nvmrc, with npm's download cache.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
+      # SECURITY: `npm ci` installs exactly what package-lock.json lists and fails if the lock
+      # file is out of date, so no unexpected package versions sneak in.
       - name: Install
         run: npm ci
 
+      # ESLint, including the security and import-boundary rules.
       - name: Lint
         run: npm run lint
 
+      # Prettier formatting.
       - name: Format
         run: npm run format:check
 
+      # TypeScript, strict mode.
       - name: Type check
         run: npm run typecheck
 
+      # Vitest once (not watch mode), failing below the 80% coverage floor.
       - name: Unit and component tests with coverage
         run: npm test -- --run --coverage
 
+      # Production build.
       - name: Build
         run: npm run build
 
+      # Fails if the first-load JavaScript exceeds 250 KB gzipped.
       - name: Bundle budget
         run: npm run size
 
+      # Chromium plus the system libraries it needs, for the browser tests.
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      # Browser tests against the production build with production security headers.
       - name: End-to-end tests
         run: npm run e2e
 
+      # When a browser test fails, keep its report and traces for a week for debugging.
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -62,6 +86,7 @@ jobs:
           path: playwright-report
           retention-days: 7
 
+      # SECURITY: fails on any known high or critical vulnerability in a dependency.
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
@@ -70,10 +95,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Full history (fetch-depth: 0), so secrets in earlier commits are found too.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
+      # SECURITY: gitleaks fails the check if a password, API key or token was committed.
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
+          # Lets gitleaks read the pull request it is scanning.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

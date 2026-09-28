@@ -1,3 +1,8 @@
+/**
+ * Edit note, at /notes/:noteId/edit. A placeholder until milestone M4 builds the real page.
+ */
+
+// Temporary page body naming the milestone.
 import { PlaceholderPage } from '@/components/common/PlaceholderPage'
 
 export function EditNotePage() {

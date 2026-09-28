@@ -1,4 +1,8 @@
+// Root TypeScript config. It holds no settings itself; it points at the two real configs so
+// `tsc -b` checks both: the app (browser code) and the tooling (Node-side config files).
 {
+  // No files directly; everything comes from the references.
   "files": [],
+  // The app, and the Node-side tooling.
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }
