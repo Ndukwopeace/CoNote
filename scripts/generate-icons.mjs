@@ -77,6 +77,7 @@ const SPLASH_SIZES = [
   [1290, 2796],
   [1206, 2622],
   [1320, 2868],
+  [1260, 2736],
 ]
 
 /** The launch image's page at `scale` device pixels per CSS pixel. */
