@@ -13,8 +13,8 @@ export type CourseAccent = 1 | 2 | 3 | 4
 export function courseAccent(courseId: string): CourseAccent {
   // Running total of character codes.
   let hash = 0
-  // Add each character's code.
-  for (const char of courseId) hash += char.charCodeAt(0)
+  // Add each character's code point (a whole character, even outside the basic plane).
+  for (const char of courseId) hash += char.codePointAt(0) ?? 0
   // Map onto 1–4. The cast is safe: the remainder is 0–3.
   return ((hash % 4) + 1) as CourseAccent
 }

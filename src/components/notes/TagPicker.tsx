@@ -58,8 +58,10 @@ export function TagPicker({ value, onChange, error }: Readonly<TagPickerProps>) 
 
   return (
     <div className="space-y-3">
-      {/* Presets: one tap each (FR-NTE-3). aria-pressed says which are on. */}
-      <div role="group" aria-label="Preset tags" className="flex flex-wrap gap-2">
+      {/* Presets: one tap each (FR-NTE-3). aria-pressed says which are on. A fieldset groups
+          them natively; its legend names the group. */}
+      <fieldset className="flex flex-wrap gap-2">
+        <legend className="sr-only">Preset tags</legend>
         {PRESET_TAGS.map((preset) => {
           // On when already chosen.
           const on = value.includes(preset)
@@ -87,7 +89,7 @@ export function TagPicker({ value, onChange, error }: Readonly<TagPickerProps>) 
             </Button>
           )
         })}
-      </div>
+      </fieldset>
 
       {/* Custom tags chosen so far, each removable. */}
       {value.some((tag) => !isPreset(tag)) && (

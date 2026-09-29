@@ -71,6 +71,10 @@ describe('CoursesPage', () => {
     expect(await screen.findByRole('link', { name: /^BUS 207/ })).toBeInTheDocument()
     expect(courseLinks()).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Upcoming' })).toHaveAttribute('aria-pressed', 'true')
+    // The buttons are announced as one named group.
+    expect(screen.getByRole('group', { name: 'Filter by status' })).toContainElement(
+      screen.getByRole('button', { name: 'Upcoming' }),
+    )
   })
 
   // Proves choosing a filter updates the list and the address.

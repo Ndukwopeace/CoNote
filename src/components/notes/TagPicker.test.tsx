@@ -39,6 +39,8 @@ describe('TagPicker', () => {
     const user = userEvent.setup()
     render(<Harness />)
     const question = screen.getByRole('button', { name: 'Question' })
+    // The presets are announced as one named group.
+    expect(screen.getByRole('group', { name: 'Preset tags' })).toContainElement(question)
 
     // Act and assert: on.
     await user.click(question)

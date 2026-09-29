@@ -14,8 +14,9 @@ import { ROUTES } from './routes'
 function hasControlCharacter(value: string) {
   // Look at each character one by one.
   for (const char of value) {
-    // Get the character's numeric code so it can be compared against the control range.
-    const code = char.charCodeAt(0)
+    // Get the character's code point so it can be compared against the control range.
+    // `for…of` yields whole characters, so there is always a first code point.
+    const code = char.codePointAt(0) ?? 0
     // Codes below 0x20 are control characters; 0x7f is DEL. Either one means "unsafe".
     if (code < 0x20 || code === 0x7f) return true
   }
