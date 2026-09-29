@@ -83,7 +83,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       signInWithProvider: (provider) => auth.signInWithProvider(provider),
       requestPasswordReset: (email) => auth.requestPasswordReset(email),
       resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),
-      updatePassword: (newPassword) => auth.updatePassword(newPassword),
+      updatePassword: (currentPassword, newPassword) =>
+        auth.updatePassword(currentPassword, newPassword),
       signOut: async () => {
         // Mark this as a chosen sign-out, so the guard sends the student to the landing page.
         pendingExit.current = ROUTES.landing

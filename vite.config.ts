@@ -90,7 +90,16 @@ const pwa = VitePWA({
   },
 })
 
+/** The app's version from package.json, shown under Settings → Help (FR-SET-5). */
+const APP_VERSION = (
+  JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+    version: string
+  }
+).version
+
 export default defineConfig({
+  // Build-time constants: replaced in the code as plain text, so nothing reads package.json at run time.
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   // React first, then Tailwind, then the installable-app plugin.
   plugins: [react(), tailwindcss(), pwa],
   resolve: {

@@ -6,7 +6,18 @@
 // What a student submits for a note.
 import type { NoteInput } from '@/lib/notes'
 // The course, class, note, summary and notification shapes.
-import type { AppNotification, ClassSession, Course, ID, Note, Summary } from '@/types/domain'
+import type {
+  AiContext,
+  AiMessage,
+  AppNotification,
+  ClassSession,
+  Course,
+  ID,
+  Note,
+  NotificationPrefs,
+  StudentProfile,
+  Summary,
+} from '@/types/domain'
 // The auth data shapes the interface methods accept and return.
 import type {
   OAuthProvider,
@@ -44,8 +55,11 @@ export interface AuthService {
    * longer valid or the password breaks the rules.
    */
   resetPassword(code: string, newPassword: string): Promise<void>
-  /** Changes the password of the signed-in student (Settings → Account, M5). */
-  updatePassword(newPassword: string): Promise<void>
+  /**
+   * Changes the signed-in student's password (Settings → Account). The current password is
+   * required, so someone at an unlocked computer can't take over the account.
+   */
+  updatePassword(currentPassword: string, newPassword: string): Promise<void>
   /** Calls `listener` whenever the session changes. Returns an unsubscribe function. */
   onAuthChange(listener: (session: Session | null) => void): () => void
 }
@@ -93,18 +107,67 @@ export interface NoteService {
   deleteNote(noteId: ID): Promise<void>
 }
 
-/** Published summaries. The rest of the interface arrives in M5. */
+/** Published summaries. Draft content never reaches the client (section 4). */
 export interface SummaryService {
-  /** Published summaries only, newest first; draft content never reaches the client. */
+  /** Published summaries only, newest first. */
   listPublished(filter?: { courseId?: ID }): Promise<Summary[]>
+  /** The published summary of one class; not_found when the class has none published. */
+  getByClass(classId: ID): Promise<Summary>
+  /** Records that the student opened a summary (FR-SUM-5). */
+  markViewed(summaryId: ID): Promise<void>
 }
 
-/** The student's notifications. Reading only in M3; marking as read arrives in M5. */
+/** The student's notifications. Unknown IDs reject with a not_found AppError. */
 export interface NotificationService {
   /** Newest first. */
   list(): Promise<AppNotification[]>
   /** How many are unread, for the bell's badge. */
   unreadCount(): Promise<number>
+  /** Marks one as read (FR-NTF-3). */
+  markRead(notificationId: ID): Promise<void>
+  /** Marks every one as read (FR-NTF-3). */
+  markAllRead(): Promise<void>
+}
+
+/**
+ * Ask CoNote AI (FR-AI). One call per question, with the whole conversation so far, so a later
+ * backend can answer from context and stream without the UI changing shape (FR-AI-7).
+ */
+export interface AiService {
+  /** The assistant's reply to the last user message in `messages`. */
+  askAi(context: AiContext, messages: AiMessage[]): Promise<string>
+}
+
+/** Profile fields a student can change; any left out stay as they are. */
+export interface ProfileUpdate {
+  // Display name.
+  fullName?: string
+  // Department.
+  department?: string
+  // Level or year.
+  level?: string
+  // Phone number.
+  phone?: string
+  // A picture address returned by uploadAvatar.
+  avatarUrl?: string
+  // Notification settings (FR-SET-3).
+  notificationPrefs?: NotificationPrefs
+}
+
+/** The signed-in student's profile (FR-SET-1, FR-SET-3). */
+export interface ProfileService {
+  /** The profile; unauthorized when nobody is signed in. */
+  getMe(): Promise<StudentProfile>
+  /** Saves changes and returns the whole profile; validation errors can be shown as is. */
+  updateMe(changes: ProfileUpdate): Promise<StudentProfile>
+  /** Stores a JPG or PNG of 2 MB or less and returns its address, for updateMe. */
+  uploadAvatar(file: File): Promise<string>
+}
+
+/** Demo-only actions. Present only in mock mode, so the UI can hide them otherwise. */
+export interface DemoService {
+  /** Deletes every demo change so the seed data returns (FR-SET-5). */
+  resetDemoData(): void
 }
 
 /** The full set of services the app receives through ServicesProvider. */
@@ -121,4 +184,10 @@ export interface Services {
   summaries: SummaryService
   // Notifications.
   notifications: NotificationService
+  // Ask CoNote AI.
+  ai: AiService
+  // The student's profile.
+  profile: ProfileService
+  // Demo-only actions; absent outside mock mode.
+  demo?: DemoService
 }

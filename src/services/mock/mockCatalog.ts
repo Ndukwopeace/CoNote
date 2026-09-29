@@ -5,6 +5,8 @@
 
 // The error a missing record becomes.
 import { AppError } from '@/lib/errors'
+// The mock-data key prefix.
+import { MOCK_DATA_PREFIX } from '@/lib/storage'
 // The shapes served.
 import type { ID } from '@/types/domain'
 
@@ -21,6 +23,8 @@ import type {
 import { simulateLatency } from './latency'
 // The demo note service.
 import { createMockNoteService } from './mockNotes'
+// Remembered sets of IDs.
+import { createPersistedIdSet } from './persistedIds'
 // The demo student every note belongs to.
 import { DEMO_STUDENT_ID } from './seed/constants'
 // The demo data's shape.
@@ -32,8 +36,9 @@ interface MockCatalogOptions {
   seed: Seed
   // Delay per call; tests pass 0.
   latencyMs: number
-  // Where notes are kept between reloads; tests usually leave it out.
-  noteStore?: Storage
+  // Where demo changes (notes, viewed summaries, read notifications) are kept between reloads;
+  // tests usually leave it out.
+  store?: Storage
 }
 
 /** The read-only services built over one seed. */
@@ -57,7 +62,7 @@ function newestFirst<T>(items: readonly T[], time: (item: T) => string): T[] {
 }
 
 /** Builds the demo catalog services over `seed`. */
-export function createMockCatalog({ seed, latencyMs, noteStore }: MockCatalogOptions): MockCatalog {
+export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions): MockCatalog {
   /**
    * Waits the demo delay, then returns a deep copy of `value`.
    * Copies stop a page that edits a returned object from changing the demo data for everyone.
@@ -77,6 +82,37 @@ export function createMockCatalog({ seed, latencyMs, noteStore }: MockCatalogOpt
     if (!course) throw new AppError('not_found', 'Course not found')
     // Found.
     return course
+  }
+
+  // Summaries the student has opened, and notifications they have read, kept between reloads.
+  const viewed = createPersistedIdSet(
+    seed.summaries.filter((s) => s.viewedByMe).map((s) => s.id),
+    store,
+    `${MOCK_DATA_PREFIX}viewed-summaries`,
+  )
+  const read = createPersistedIdSet(
+    seed.notifications.filter((n) => n.read).map((n) => n.id),
+    store,
+    `${MOCK_DATA_PREFIX}read-notifications`,
+  )
+
+  /**
+   * Summaries of published classes only, with the viewed flag applied.
+   * SECURITY: filters on the class's status again even though the seed holds only published
+   * summaries, so an edit to the seed can never leak a draft to students (section 4).
+   */
+  function publishedSummaries() {
+    const published = new Set(
+      seed.classes.filter((c) => c.summaryStatus === 'published').map((c) => c.id),
+    )
+    return seed.summaries
+      .filter((s) => published.has(s.classId))
+      .map((s) => ({ ...s, viewedByMe: viewed.has(s.id) }))
+  }
+
+  /** The notifications with the read flag applied. */
+  function notificationsNow() {
+    return seed.notifications.map((n) => ({ ...n, read: read.has(n.id) }))
   }
 
   return {
@@ -126,31 +162,61 @@ export function createMockCatalog({ seed, latencyMs, noteStore }: MockCatalogOpt
       classes: seed.classes,
       studentId: DEMO_STUDENT_ID,
       latencyMs,
-      ...(noteStore ? { store: noteStore } : {}),
+      ...(store ? { store: store } : {}),
     }),
     summaries: {
-      // SECURITY: filters to published classes again even though the seed holds only those, so
-      // an edit to the seed can never leak a draft summary to students (section 4).
-      listPublished: (filter = {}) => {
-        // IDs of classes whose summary is published.
-        const published = new Set(
-          seed.classes.filter((c) => c.summaryStatus === 'published').map((c) => c.id),
-        )
-        // Published summaries, narrowed to one course when asked.
-        const summaries = seed.summaries.filter(
-          (s) =>
-            published.has(s.classId) &&
-            (filter.courseId === undefined || s.courseId === filter.courseId),
-        )
-        // Newest first.
-        return respond(newestFirst(summaries, (s) => s.publishedAt))
+      // Published summaries, narrowed to one course when asked, newest first.
+      listPublished: (filter = {}) =>
+        respond(
+          newestFirst(
+            publishedSummaries().filter(
+              (s) => filter.courseId === undefined || s.courseId === filter.courseId,
+            ),
+            (s) => s.publishedAt,
+          ),
+        ),
+      // One class's published summary.
+      getByClass: async (classId) => {
+        // Behave like a network call.
+        await simulateLatency(latencyMs)
+        // SECURITY: only a published summary is ever returned; a class still in collecting,
+        // processing or review gets not_found, so no draft reaches the page (FR-SUM-6).
+        const summary = publishedSummaries().find((s) => s.classId === classId)
+        if (!summary) throw new AppError('not_found', 'Summary not found')
+        return structuredClone(summary)
+      },
+      // Remember that the student opened it (FR-SUM-5).
+      markViewed: async (summaryId) => {
+        // Behave like a network call.
+        await simulateLatency(latencyMs)
+        // Only published summaries can be viewed.
+        if (!publishedSummaries().some((s) => s.id === summaryId)) {
+          throw new AppError('not_found', 'Summary not found')
+        }
+        viewed.add(summaryId)
       },
     },
     notifications: {
-      // Newest first.
-      list: () => respond(newestFirst(seed.notifications, (n) => n.createdAt)),
+      // Newest first, with the remembered read state.
+      list: () => respond(newestFirst(notificationsNow(), (n) => n.createdAt)),
       // Unread ones only.
-      unreadCount: () => respond(seed.notifications.filter((n) => !n.read).length),
+      unreadCount: () => respond(notificationsNow().filter((n) => !n.read).length),
+      // One read (FR-NTF-3).
+      markRead: async (notificationId) => {
+        // Behave like a network call.
+        await simulateLatency(latencyMs)
+        // Unknown: not_found.
+        if (!seed.notifications.some((n) => n.id === notificationId)) {
+          throw new AppError('not_found', 'Notification not found')
+        }
+        read.add(notificationId)
+      },
+      // All read (FR-NTF-3).
+      markAllRead: async () => {
+        // Behave like a network call.
+        await simulateLatency(latencyMs)
+        read.add(...seed.notifications.map((n) => n.id))
+      },
     },
   }
 }

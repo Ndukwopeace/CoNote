@@ -43,8 +43,8 @@ export type AuthContextValue = AuthState & {
   requestPasswordReset: (email: string) => Promise<PasswordResetRequest>
   // Set a new password from a reset link; the code is checked again (FR-AUTH-5).
   resetPassword: (code: string, newPassword: string) => Promise<void>
-  // Set a new password while signed in.
-  updatePassword: (newPassword: string) => Promise<void>
+  // Set a new password while signed in; the current one is required (FR-SET-2).
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>
   /**
    * Signs out, clears everything stored for this student (REQUIREMENTS.md NFR-4) and sends
    * them to the landing page. Callers must not navigate themselves: the guards do it, so

@@ -5,15 +5,12 @@
 
 // Icons for the stat cards, activity types and the AI card.
 import {
-  Bell,
   BookOpen,
   CalendarDays,
   FileCheck2,
   GraduationCap,
-  MessageSquare,
   NotebookPen,
   Sparkles,
-  type LucideIcon,
 } from 'lucide-react'
 // Client-side links.
 import { Link } from 'react-router'
@@ -24,6 +21,8 @@ import { ClassListItem } from '@/components/common/ClassListItem'
 import { EmptyState } from '@/components/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
+// The notification type icon.
+import { NotificationTypeIcon } from '@/components/common/NotificationTypeIcon'
 // Tab title.
 import { PageTitle } from '@/components/common/PageTitle'
 // Loading placeholders.
@@ -50,24 +49,12 @@ import { isSafeRedirect } from '@/lib/isSafeRedirect'
 // Route constants and builders.
 import { ROUTES, routeTo } from '@/lib/routes'
 // Shapes used below.
-import type { AppNotification, NotificationType } from '@/types/domain'
+import type { AppNotification } from '@/types/domain'
 
 /** How many classes the Upcoming Classes card shows (FR-DSH-3). */
 const UPCOMING_LIMIT = 3
 /** How many events Recent Activity shows (FR-DSH-4). */
 const ACTIVITY_LIMIT = 5
-
-/** The icon for each kind of activity. */
-const ACTIVITY_ICONS: Record<NotificationType, LucideIcon> = {
-  // A summary was published.
-  summary: FileCheck2,
-  // A note was added.
-  note: NotebookPen,
-  // A teacher's message.
-  message: MessageSquare,
-  // A CoNote announcement.
-  system: Bell,
-}
 
 /** Home. The greeting shows at once; the rest follows the data. */
 export function DashboardPage() {
@@ -263,15 +250,11 @@ function DashboardContent({ now }: Readonly<{ now: Date }>) {
 
 /** One Recent Activity row: icon, title and relative time; a link when it points somewhere. */
 function ActivityItem({ item, now }: Readonly<{ item: AppNotification; now: Date }>) {
-  // The icon for this kind of event.
-  const Icon = ACTIVITY_ICONS[item.type]
   // The row's content, shared by the linked and plain versions.
   const content = (
     <>
       {/* Decorative icon in a soft circle. */}
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-light text-primary">
-        <Icon aria-hidden="true" className="size-4" />
-      </span>
+      <NotificationTypeIcon type={item.type} />
       <span className="min-w-0 flex-1">
         {/* What happened. */}
         <span className="block truncate text-sm font-medium">{item.title}</span>

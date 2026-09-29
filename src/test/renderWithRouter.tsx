@@ -20,6 +20,10 @@ import { AppProviders } from '@/app/AppProviders'
 import { storageKey } from '@/lib/storage'
 // The demo auth service, used here as the test fake.
 import { createMockAuthService } from '@/services/mock/mockAuthService'
+// The demo AI, used as the test fake with no delay.
+import { createMockAiService } from '@/services/mock/mockAiService'
+// The demo profile service, used as the test fake.
+import { createMockProfileService } from '@/services/mock/mockProfileService'
 // The demo catalog services and their data, used as the test fakes.
 import { createMockCatalog } from '@/services/mock/mockCatalog'
 import { createSeed } from '@/services/mock/seed'
@@ -42,15 +46,21 @@ interface RenderOptions {
 
 /** Demo services with zero delay, plus any overrides. */
 export function createTestServices(overrides: Partial<Services> = {}): Services {
+  // The demo auth service, instant; the profile service renames through it.
+  const auth = createMockAuthService({
+    localStore: window.localStorage,
+    sessionStore: window.sessionStorage,
+    latencyMs: 0,
+  })
   return {
-    // The demo auth service, instant.
-    auth: createMockAuthService({
-      localStore: window.localStorage,
-      sessionStore: window.sessionStorage,
-      latencyMs: 0,
-    }),
+    // Demo sign-in.
+    auth,
+    // The profile, instant.
+    profile: createMockProfileService({ auth, store: window.localStorage, latencyMs: 0 }),
     // Courses, classes, notes, summaries and notifications over fresh demo data, instant.
     ...createMockCatalog({ seed: createSeed(new Date()), latencyMs: 0 }),
+    // The demo AI, answering at once.
+    ai: createMockAiService({ delay: () => 0 }),
     // The test's replacements win.
     ...overrides,
   }

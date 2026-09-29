@@ -33,7 +33,7 @@ describe('app routes: portal pages', () => {
     ['/courses', 'My Courses'],
     ['/courses/swe-311', 'Software Engineering'],
     ['/courses/swe-311/classes/swe-311-c2', 'Software Requirements'],
-    ['/courses/swe-311/classes/swe-311-c2/summary', 'Class summary'],
+    ['/courses/swe-311/classes/swe-311-c2/summary', 'Software Requirements'],
     ['/notes', 'Notes'],
     ['/notes/new', 'New note'],
     ['/notes/note-1', 'Why process matters'],

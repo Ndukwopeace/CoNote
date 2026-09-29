@@ -214,7 +214,7 @@ describe('mock AuthService', () => {
 
   // Proves the new-password rules apply to reset as well as sign-up (FR-AUTH-3): [password].
   it.each([['abcdefgh'], ['12345678']])('rejects the weak new password %j', async (password) => {
-    await expect(createService().updatePassword(password)).rejects.toMatchObject({
+    await expect(createService().updatePassword('current1', password)).rejects.toMatchObject({
       kind: 'validation',
     })
   })
@@ -235,13 +235,13 @@ describe('mock AuthService', () => {
 
   // Proves the minimum password length is enforced.
   it('rejects a new password shorter than 8 characters', async () => {
-    await expect(createService().updatePassword('short1')).rejects.toMatchObject({
+    await expect(createService().updatePassword('current1', 'short1')).rejects.toMatchObject({
       kind: 'validation',
     })
   })
 
   // Proves a valid password is accepted.
   it('accepts a valid new password', async () => {
-    await expect(createService().updatePassword('longenough1')).resolves.toBeUndefined()
+    await expect(createService().updatePassword('current1', 'longenough1')).resolves.toBeUndefined()
   })
 })

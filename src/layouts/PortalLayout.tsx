@@ -43,7 +43,7 @@ export function PortalLayout() {
         Skip to main content
       </a>
       {/* Sidebar (desktop) or icon rail (tablet). */}
-      <Sidebar fullName={fullName} />
+      <Sidebar fullName={fullName} unreadCount={unread.data ?? 0} />
       {/* Content column, pushed right by the rail (64 px) or sidebar (240 px). */}
       <div className="md:pl-16 lg:pl-60">
         {/* Top bar. The bell shows no badge while the count loads or if it fails. */}

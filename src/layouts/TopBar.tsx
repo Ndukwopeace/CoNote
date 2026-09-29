@@ -3,16 +3,13 @@
  * account menu.
  */
 
-// Magnifying-glass icon.
-import { Search } from 'lucide-react'
 // Internal links.
 import { Link } from 'react-router'
 
 // The CoNote logo.
 import { Logo } from '@/components/common/Logo'
-
-// Text input.
-import { Input } from '@/components/ui/input'
+// Global search.
+import { GlobalSearch } from '@/features/search/GlobalSearch'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
 
@@ -26,8 +23,7 @@ interface TopBarProps {
   // For the account menu.
   fullName: string
   email: string
-  // Unread notifications for the bell's badge. The notification service arrives in M5; until
-  // then nothing is unread.
+  // Unread notifications for the bell's badge; none while the count loads.
   unreadCount?: number
 }
 
@@ -45,27 +41,8 @@ export function TopBar({ fullName, email, unreadCount = 0 }: Readonly<TopBarProp
         <Logo compact />
       </Link>
 
-      {/* Search arrives with M5 (REQUIREMENTS.md section 8); disabled until it works. */}
-      <div className="relative max-w-md flex-1">
-        {/* Magnifying glass inside the field; decorative, and ignores clicks. */}
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        {/* The field. aria-label names it because there is no visible label. */}
-        <Input
-          type="search"
-          aria-label="Search courses, classes and notes"
-          // Says what can be found, so students don't have to guess (recognition over recall).
-          // Classes are found through their course. At 138 px it fits phones from 360 px up; if a
-          // font setting makes it longer, it ends in "…" rather than being cut mid-word.
-          placeholder="Find courses & notes"
-          // The browser's own clear (×) button reserves width even when empty, which cut the
-          // placeholder short; it is hidden, and M5 adds a clear button that works everywhere.
-          className="pl-9 text-ellipsis [&::-webkit-search-cancel-button]:appearance-none"
-          disabled
-        />
-      </div>
+      {/* Search across courses, classes and note titles (section 8). */}
+      <GlobalSearch />
 
       {/* Right-hand actions. */}
       <div className="ml-auto flex items-center gap-2">

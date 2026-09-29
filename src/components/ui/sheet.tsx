@@ -48,11 +48,30 @@ function SheetOverlay({
 }
 
 /** The panel itself, from the right edge, with a close button in its corner. */
+/** Where the sheet slides in from, with its size and animation. */
+const SIDE_CLASSES = {
+  // Full height on the right, three quarters wide up to 384 px.
+  right:
+    'inset-y-0 right-0 h-full w-3/4 max-w-sm border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
+  // Full width along the bottom, up to 85% of the screen tall, clear of the home indicator.
+  bottom:
+    'inset-x-0 bottom-0 max-h-[85dvh] rounded-t-2xl border-t pb-[max(1.5rem,env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+} as const
+
 function SheetContent({
   className,
   children,
+  // Right (the landing menu) or bottom (the summary's Ask AI on phones).
+  side = 'right',
+  // The close button's name for screen readers.
+  closeLabel = 'Close menu',
   ...props
-}: Readonly<React.ComponentProps<typeof SheetPrimitive.Content>>) {
+}: Readonly<
+  React.ComponentProps<typeof SheetPrimitive.Content> & {
+    side?: keyof typeof SIDE_CLASSES
+    closeLabel?: string
+  }
+>) {
   return (
     // Rendered at the end of <body>, so no parent's overflow or stacking can clip it.
     <SheetPrimitive.Portal>
@@ -61,8 +80,9 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          // Full height on the right, three quarters wide up to 384 px, sliding in and out.
-          'fixed inset-y-0 right-0 z-50 flex h-full w-3/4 max-w-sm flex-col gap-4 border-l bg-surface p-6 shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=closed]:slide-out-to-right data-[state=open]:animate-in data-[state=open]:duration-500 data-[state=open]:slide-in-from-right',
+          // Shared: fixed above the page, a column, sliding in and out; then the side's own classes.
+          'fixed z-50 flex flex-col gap-4 bg-surface p-6 shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500',
+          SIDE_CLASSES[side],
           className,
         )}
         {...props}
@@ -74,7 +94,7 @@ function SheetContent({
           {/* Decorative icon. */}
           <XIcon aria-hidden="true" className="size-5" />
           {/* The button's name for screen readers. */}
-          <span className="sr-only">Close menu</span>
+          <span className="sr-only">{closeLabel}</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>
     </SheetPrimitive.Portal>

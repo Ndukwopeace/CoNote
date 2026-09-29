@@ -15,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { initials } from '@/lib/initials'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
+// "12" → "9+", 0 → no badge.
+import { formatUnreadCount } from '@/lib/unreadBadge'
 
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
@@ -26,7 +28,13 @@ import { SidebarLink } from './SidebarLink'
  * Tablet (768–1023 px): icon rail; labels move into tooltips but stay readable by screen readers.
  * Hidden on phones, where BottomNav takes over.
  */
-export function Sidebar({ fullName }: Readonly<{ fullName: string }>) {
+export function Sidebar({
+  fullName,
+  unreadCount = 0,
+}: Readonly<{ fullName: string; unreadCount?: number }>) {
+  // The badge text ("3", "9+"), or null when nothing is unread.
+  const badge = formatUnreadCount(unreadCount)
+
   return (
     // Fixed to the left edge. Hidden on phones; 64 px wide from 768 px; 240 px from 1024 px.
     // The left offset keeps it clear of the notch on a sideways iPhone; zero elsewhere.
@@ -55,14 +63,28 @@ export function Sidebar({ fullName }: Readonly<{ fullName: string }>) {
                   {/* 44 px tall rows; centred icons on the rail, left-aligned with text on desktop. */}
                   <SidebarLink
                     to={to}
-                    className="flex h-11 items-center justify-center gap-3 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:justify-start lg:px-3"
+                    className="relative flex h-11 items-center justify-center gap-3 rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:justify-start lg:px-3"
                     activeClassName="bg-primary-light text-primary-dark"
+                    // Notifications says its exact unread count (FR-NTF-5); the badge is hidden
+                    // from screen readers and may say "9+".
+                    {...(to === ROUTES.notifications && badge
+                      ? { 'aria-label': `${label}, ${String(Math.floor(unreadCount))} unread` }
+                      : {})}
                   >
                     {/* Icon, hidden from screen readers because the label follows. */}
                     <Icon aria-hidden="true" className="size-5 shrink-0" />
                     {/* Visually hidden on the rail, shown on desktop; always read by screen
                         readers, so the link never loses its name. */}
                     <span className="sr-only lg:not-sr-only">{label}</span>
+                    {/* The unread badge: a pill after the label on desktop, on the icon on the rail. */}
+                    {to === ROUTES.notifications && badge && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-1.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-none font-semibold text-white lg:static lg:ml-auto lg:h-5 lg:min-w-5 lg:text-xs"
+                      >
+                        {badge}
+                      </span>
+                    )}
                   </SidebarLink>
                 </TooltipTrigger>
                 {/* Tooltip text to the right; not needed on desktop, where labels show. */}
