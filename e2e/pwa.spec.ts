@@ -164,14 +164,39 @@ test('the splash shows at launch and leaves once the page is ready', async ({ pa
   const html = await (await request.get('/login')).text()
   expect(html).toContain('id="splash"')
   expect(html).toContain('rel="apple-touch-startup-image"')
-  // A launch image is really served.
+  // iOS uses launch images for home-screen web apps, which this tag declares (D62).
+  expect(html).toContain('name="apple-mobile-web-app-capable" content="yes"')
+  // Launch images are really served, including the one added for iPhone Air (D62).
   expect((await request.get('/splash/iphone-1179x2556.png')).ok()).toBe(true)
+  expect((await request.get('/splash/iphone-1260x2736.png')).ok()).toBe(true)
 
   // Once the page is ready, the splash has gone and the page is usable.
   await page.goto('/login')
   await expect(page.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeVisible()
   await expect(page.locator('#splash')).toHaveCount(0)
   await expectNoAxeViolations(page)
+})
+
+// D62: a first open showed a white screen before the splash, because a stylesheet link in the
+// head held back the first paint until the CSS file had downloaded.
+test('the splash paints before any script or style file arrives', async ({ page, request }) => {
+  // The page has no stylesheet link left to wait for; its styles are inside it.
+  const html = await (await request.get('/login')).text()
+  expect(html).not.toContain('rel="stylesheet"')
+
+  // Slow every built file down by two seconds, like a first open on a weak connection.
+  await page.route('**/assets/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await route.continue()
+  })
+  // Open the page, waiting only until the server's response starts arriving.
+  await page.goto('/login', { waitUntil: 'commit' })
+  // The splash is drawn long before those files arrive (it took over two seconds before D62).
+  await expect
+    .poll(() =>
+      page.evaluate(() => performance.getEntriesByName('first-contentful-paint')[0]?.startTime),
+    )
+    .toBeLessThan(1000)
 })
 
 // D23: the font is served by CoNote, so nothing is requested from Google.

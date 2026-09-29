@@ -11,10 +11,13 @@ import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 // React support: JSX and fast refresh.
 import react from '@vitejs/plugin-react'
-// Typed configuration helper.
-import { defineConfig } from 'vite'
+// Typed configuration helper, and the plugin type for the stylesheet step below.
+import { defineConfig, type Plugin } from 'vite'
 // Builds the service worker and web app manifest (M2.5, FR-PWA-1 to FR-PWA-3).
 import { VitePWA } from 'vite-plugin-pwa'
+
+// Moves the stylesheet into index.html (D62).
+import { inlineStylesheets } from './src/lib/inlineStylesheets.ts'
 
 /** The part of vercel.json this file reads. */
 interface VercelConfig {
@@ -94,6 +97,40 @@ const pwa = VitePWA({
   },
 })
 
+/**
+ * Puts the app's stylesheet inside index.html (D62). As a separate file it held back the first
+ * paint, so a first open showed a white screen before the launch splash. Runs after Vite has
+ * written the page, and before the service worker's file list is built, so the removed CSS file
+ * is not precached.
+ */
+const inlineCss: Plugin = {
+  // Shown in build errors.
+  name: 'conote-inline-css',
+  // Production builds only; the dev server serves styles its own way.
+  apply: 'build',
+  // After Vite's own HTML step, which is what adds the stylesheet link.
+  enforce: 'post',
+  generateBundle(_options, bundle) {
+    // The built page; nothing to do if this build has none.
+    const page = bundle['index.html']
+    if (page?.type !== 'asset' || typeof page.source !== 'string') return
+    // Swap each stylesheet link for its rules. Paths in the page start with "/", bundle keys don't.
+    const result = inlineStylesheets(page.source, (href) => {
+      const file = bundle[href.replace(/^\//, '')]
+      return file?.type === 'asset' && typeof file.source === 'string' ? file.source : undefined
+    })
+    page.source = result.html
+    // Drop each inlined file unless some script still loads it by name.
+    for (const href of result.inlined) {
+      const name = href.replace(/^\//, '')
+      const stillUsed = Object.values(bundle).some(
+        (file) => file.type === 'chunk' && file.code.includes(name),
+      )
+      if (!stillUsed) Reflect.deleteProperty(bundle, name)
+    }
+  },
+}
+
 /** The app's version from package.json, shown under Settings → Help (FR-SET-5). */
 const APP_VERSION = (
   JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
@@ -104,8 +141,8 @@ const APP_VERSION = (
 export default defineConfig({
   // Build-time constants: replaced in the code as plain text, so nothing reads package.json at run time.
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
-  // React first, then Tailwind, then the installable-app plugin.
-  plugins: [react(), tailwindcss(), pwa],
+  // React first, then Tailwind, the stylesheet step, then the installable-app plugin.
+  plugins: [react(), tailwindcss(), inlineCss, pwa],
   resolve: {
     // "@/lib/utils" means "src/lib/utils" everywhere, instead of long "../../" paths.
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

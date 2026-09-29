@@ -15,6 +15,11 @@
     <meta name="description" content="CoNote: your notes, collective understanding." />
     <!-- Colours the mobile browser's address bar in the brand colour. -->
     <meta name="theme-color" content="#4F46E5" />
+    <!-- Marks the page as a home-screen web app for iPhone. iOS uses the launch images below only
+         for such apps; without them it showed a black screen at launch (D62). The second tag is
+         the same declaration under the name other browsers read. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <!-- Home-screen icon for iPhone and iPad, which ignore the manifest's icons (FR-PWA-1).
          The manifest link itself is added by the PWA plugin at build time. -->
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
@@ -69,13 +74,19 @@
       media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
       href="/splash/iphone-1290x2796.png"
     />
-    <!-- iPhone 16 Pro. -->
+    <!-- iPhone 16 Pro, 17, 17 Pro. -->
     <link
       rel="apple-touch-startup-image"
       media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
       href="/splash/iphone-1206x2622.png"
     />
-    <!-- iPhone 16 Pro Max. -->
+    <!-- iPhone Air. -->
+    <link
+      rel="apple-touch-startup-image"
+      media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+      href="/splash/iphone-1260x2736.png"
+    />
+    <!-- iPhone 16 Pro Max, 17 Pro Max. -->
     <link
       rel="apple-touch-startup-image"
       media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
