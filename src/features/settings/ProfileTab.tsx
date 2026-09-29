@@ -137,7 +137,8 @@ function ProfileForm({ profile }: Readonly<{ profile: StudentProfile }>) {
                 'cursor-pointer focus-within:ring-[3px] focus-within:ring-ring/50',
               )}
             >
-              Change picture
+              {/* The words in their own element, so the space before the input is explicit. */}
+              <span>Change picture</span>
               <input
                 type="file"
                 aria-label="Choose a picture"

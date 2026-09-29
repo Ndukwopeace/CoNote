@@ -95,7 +95,8 @@ function AskAi({ courses, classes }: Readonly<{ courses: Course[]; classes: Clas
     <>
       {/* The context picker (FR-AI-2). */}
       <label className="flex flex-col gap-1.5 text-sm font-medium sm:flex-row sm:items-center sm:gap-3">
-        Context
+        {/* The words in their own element, so the space before the picker is explicit. */}
+        <span>Context</span>
         <select
           value={contextKey(context)}
           onChange={(event) => {

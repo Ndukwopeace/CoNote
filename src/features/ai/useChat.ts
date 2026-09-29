@@ -59,10 +59,10 @@ export function useChat(context: AiContext) {
           setMessages((existing) => [...existing, message('assistant', reply)])
           setStatus('idle')
         })
-        .catch((failure: unknown) => {
-          reportError(failure, { where: 'useChat.ask' })
+        .catch((error_: unknown) => {
+          reportError(error_, { where: 'useChat.ask' })
           if (current !== generation.current) return
-          setError(errorMessage(toAppError(failure)))
+          setError(errorMessage(toAppError(error_)))
           setStatus('error')
         })
     },

@@ -89,7 +89,8 @@ export function ChatPanel({
               <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
               <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
             </span>
-            CoNote AI is typing…
+            {/* The words in their own element, so the space after the dots is explicit. */}
+            <span>CoNote AI is typing…</span>
           </p>
         )}
       </div>
