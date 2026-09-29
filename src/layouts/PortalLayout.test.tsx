@@ -126,10 +126,9 @@ describe('PortalLayout', () => {
     renderPortal()
 
     // Assert.
-    expect(await screen.findByRole('searchbox')).toHaveAttribute(
-      'placeholder',
-      'Find courses & notes',
-    )
+    expect(
+      await screen.findByRole('combobox', { name: 'Search courses, classes and notes' }),
+    ).toHaveAttribute('placeholder', 'Find courses & notes')
   })
 
   // Proves the top bar carries the CoNote logo, linking home.
