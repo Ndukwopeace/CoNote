@@ -3,6 +3,8 @@
  * implementation. More services join the registry as the milestones that need them land.
  */
 
+// What a student submits for a note.
+import type { NoteInput } from '@/lib/notes'
 // The course, class, note, summary and notification shapes.
 import type { AppNotification, ClassSession, Course, ID, Note, Summary } from '@/types/domain'
 // The auth data shapes the interface methods accept and return.
@@ -74,10 +76,21 @@ export interface NoteFilter {
   classId?: ID
 }
 
-/** The student's own notes. Reading only in M3; writing arrives in M4. */
+/**
+ * The student's own notes. Unknown IDs reject with a not_found AppError; input that breaks the
+ * note rules (lib/notes.ts) rejects with a validation AppError whose message can be shown as is.
+ */
 export interface NoteService {
   /** The signed-in student's notes, newest first. Never anyone else's (RLS, section 12.2). */
   listMyNotes(filter?: NoteFilter): Promise<Note[]>
+  /** One of the student's notes. */
+  getNote(noteId: ID): Promise<Note>
+  /** Creates a note for one of the student's classes. A blank title becomes the first line. */
+  createNote(input: NoteInput): Promise<Note>
+  /** Replaces a note's class, title, body and tags. */
+  updateNote(noteId: ID, input: NoteInput): Promise<Note>
+  /** Deletes a note for good (FR-NTE-8). */
+  deleteNote(noteId: ID): Promise<void>
 }
 
 /** Published summaries. The rest of the interface arrives in M5. */

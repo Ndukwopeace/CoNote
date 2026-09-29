@@ -32,6 +32,8 @@ export const queryKeys = {
     all: ['notes'] as const,
     // A filtered note list. The filter object is part of the key, so each filter caches apart.
     list: (filter: NoteFilter = {}) => [...queryKeys.notes.all, 'list', filter] as const,
+    // One note.
+    detail: (noteId: ID) => [...queryKeys.notes.all, 'detail', noteId] as const,
   },
   summaries: {
     // Every summary query.

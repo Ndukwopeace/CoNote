@@ -5,8 +5,8 @@
 
 // The shapes being built.
 import type { Session, SessionUser } from '@/types/auth'
-// Course and class shapes.
-import type { ClassSession, Course } from '@/types/domain'
+// Course, class and note shapes.
+import type { ClassSession, Course, Note } from '@/types/domain'
 
 /** Test data factories (ENGINEERING_STANDARDS.md 2.4). Override only what a test cares about. */
 export function makeSessionUser(overrides: Partial<SessionUser> = {}): SessionUser {
@@ -61,6 +61,24 @@ export function makeClass(overrides: Partial<ClassSession> = {}): ClassSession {
     startsAt: start.toISOString(),
     endsAt: end.toISOString(),
     summaryStatus: 'collecting',
+    // Anything the test passes replaces the defaults above.
+    ...overrides,
+  }
+}
+
+/** A note. Override only what a test cares about. */
+export function makeNote(overrides: Partial<Note> = {}): Note {
+  return {
+    // Default: a tagged note for class-1, written and edited at the same moment.
+    id: 'note-1',
+    studentId: 'student-1',
+    courseId: 'course-1',
+    classId: 'class-1',
+    title: 'Why process matters',
+    contentHtml: '<p>Teams need an agreed process.</p>',
+    tags: ['Key concept'],
+    createdAt: '2026-09-20T10:00:00.000Z',
+    updatedAt: '2026-09-20T10:00:00.000Z',
     // Anything the test passes replaces the defaults above.
     ...overrides,
   }

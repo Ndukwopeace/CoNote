@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query'
 // React hooks used below, and the children type.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+// Deletes the offline copy of the student's notes.
+import { clearOfflineData } from '@/features/offline/clearOfflineData'
 // Deletes cached responses that may hold student data (FR-PWA-7).
 import { clearRuntimeCaches } from '@/lib/pwa'
 // Reports failures without exposing them to the student.
@@ -109,6 +111,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
               reportError(error, { where: 'AuthProvider.clearRuntimeCaches' })
             },
           )
+          // SECURITY: delete the offline copy of the student's notes in IndexedDB (FR-PWA-8),
+          // so the next person on this computer can't read them offline. Always resolves.
+          await clearOfflineData()
         }
       },
       acknowledgeSignOut: () => {

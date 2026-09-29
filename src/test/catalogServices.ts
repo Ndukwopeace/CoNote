@@ -29,8 +29,14 @@ function catalogOf(make: () => Promise<never>): Catalog {
     courses: { listMyCourses: make, getCourse: make },
     // Class reads.
     classes: { listClasses: make, listMyClasses: make, getClass: make },
-    // Note reads.
-    notes: { listMyNotes: make },
+    // Note reads and writes.
+    notes: {
+      listMyNotes: make,
+      getNote: make,
+      createNote: make,
+      updateNote: make,
+      deleteNote: make,
+    },
     // Summary reads.
     summaries: { listPublished: make },
     // Notification reads.

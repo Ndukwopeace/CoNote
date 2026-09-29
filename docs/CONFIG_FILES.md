@@ -108,6 +108,8 @@ Run by the pre-commit hook on staged files only.
 | `react-hook-form` | Form state and validation timing (errors on blur and on submit) without re-rendering the whole form on each keystroke (D26) |
 | `@hookform/resolvers` | Connects the zod schemas to react-hook-form, so the forms and the auth service share one set of rules (D26) |
 | `dompurify` | **SECURITY:** removes dangerous HTML from notes before display (XSS) |
+| `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/pm` | The note editor (D16, D46). MIT. Loaded only with the New and Edit note pages, so the first download doesn't grow |
+| `@tanstack/react-query-persist-client` | Saves and restores the notes cache for offline reading (FR-PWA-8, D49). MIT, same authors as TanStack Query |
 | `radix-ui` | Accessible building blocks: menus, tooltips, avatars (keyboard support and screen-reader roles) |
 | `lucide-react` | Icons |
 | `class-variance-authority` | Builds class names from component variants |

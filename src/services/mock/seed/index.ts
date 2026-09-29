@@ -9,8 +9,8 @@ import type { AppNotification, ClassSession, Course, Note, Summary, Teacher } fr
 // The demo student every note belongs to (the same ID the demo sign-in uses).
 import { DEMO_STUDENT_ID } from './constants'
 
-/** The four preset note tags (FR-NTE-3). */
-export const PRESET_TAGS = ['Key concept', 'Question', 'Example', 'Aha moment'] as const
+/** The four preset note tags (FR-NTE-3), re-exported for the seed tests. */
+export { PRESET_TAGS } from '@/lib/notes'
 
 /** Everything the demo services serve. */
 export interface Seed {

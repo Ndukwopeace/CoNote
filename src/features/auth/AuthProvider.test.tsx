@@ -132,6 +132,28 @@ describe('AuthProvider', () => {
     vi.unstubAllGlobals()
   })
 
+  // SECURITY: proves sign-out deletes the offline copy of the student's notes (FR-PWA-7, FR-PWA-8).
+  it('deletes the offline note database on sign-out', async () => {
+    // Arrange: an IndexedDB whose delete succeeds at once.
+    const deleteDatabase = vi.fn(() => {
+      const request = {} as { onsuccess?: () => void }
+      queueMicrotask(() => request.onsuccess?.())
+      return request
+    })
+    vi.stubGlobal('indexedDB', { deleteDatabase })
+    const { user } = renderWithRouter({ routes, path: '/', session: makeSession() })
+    await screen.findByText('status: signedIn')
+
+    // Act.
+    await user.click(screen.getByRole('button', { name: 'sign out' }))
+
+    // Assert.
+    await waitFor(() => {
+      expect(deleteDatabase).toHaveBeenCalledWith('conote-offline')
+    })
+    vi.unstubAllGlobals()
+  })
+
   // Proves a broken Cache API is reported but doesn't stop sign-out.
   it('still signs out when the caches cannot be cleared', async () => {
     // Arrange: a Cache API that fails.

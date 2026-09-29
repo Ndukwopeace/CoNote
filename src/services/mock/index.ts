@@ -29,6 +29,11 @@ export function createMockServices(): Services {
       latencyMs: DEMO_LATENCY_MS,
     }),
     // Everything else, over demo data dated from the moment the app opened (section 13).
-    ...createMockCatalog({ seed: createSeed(new Date()), latencyMs: DEMO_LATENCY_MS }),
+    ...createMockCatalog({
+      seed: createSeed(new Date()),
+      latencyMs: DEMO_LATENCY_MS,
+      // Notes survive a reload (M4 "done when").
+      noteStore: window.localStorage,
+    }),
   }
 }

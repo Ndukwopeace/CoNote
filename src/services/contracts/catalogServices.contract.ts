@@ -107,6 +107,118 @@ export function runCatalogServicesContract(name: string, { create }: CatalogCont
       }
     })
 
+    // Proves a created note is stored for its class and course, and can be read back.
+    it('creates a note and reads it back', async () => {
+      // Arrange.
+      const { notes } = create()
+
+      // Act.
+      const created = await notes.createNote({
+        classId: 'swe-311-c2',
+        title: '',
+        contentHtml: '<p>Measurable requirements</p><p>More</p>',
+        tags: [' Question '],
+      })
+
+      // Assert: the course comes from the class, the blank title from the first line.
+      expect(created.courseId).toBe('swe-311')
+      expect(created.title).toBe('Measurable requirements')
+      expect(created.tags).toEqual(['Question'])
+      await expect(notes.getNote(created.id)).resolves.toEqual(created)
+      expect((await notes.listMyNotes({ classId: 'swe-311-c2' })).map((n) => n.id)).toContain(
+        created.id,
+      )
+    })
+
+    // SECURITY: proves script and event-handler markup is stripped before a note is stored.
+    it('stores sanitised HTML', async () => {
+      // Act.
+      const created = await create().notes.createNote({
+        classId: 'swe-311-c2',
+        title: 'x',
+        contentHtml: '<p onclick="steal()">Hi<script>steal()</script></p>',
+        tags: [],
+      })
+
+      // Assert.
+      expect(created.contentHtml).toBe('<p>Hi</p>')
+    })
+
+    // Proves an edit changes the content and the edit time, and keeps the creation time.
+    it('updates a note', async () => {
+      // Arrange.
+      const { notes } = create()
+      const [before] = await notes.listMyNotes()
+
+      // Act.
+      const after = await notes.updateNote(before?.id ?? '', {
+        classId: before?.classId ?? '',
+        title: 'Edited',
+        contentHtml: '<p>Changed</p>',
+        tags: [],
+      })
+
+      // Assert.
+      expect(after.title).toBe('Edited')
+      expect(after.createdAt).toBe(before?.createdAt)
+      expect(Date.parse(after.updatedAt)).toBeGreaterThanOrEqual(
+        Date.parse(before?.updatedAt ?? ''),
+      )
+      await expect(notes.getNote(after.id)).resolves.toEqual(after)
+    })
+
+    // Proves delete is final (FR-NTE-8).
+    it('deletes a note', async () => {
+      // Arrange.
+      const { notes } = create()
+      const [first] = await notes.listMyNotes()
+
+      // Act.
+      await notes.deleteNote(first?.id ?? '')
+
+      // Assert.
+      await expect(notes.getNote(first?.id ?? '')).rejects.toMatchObject({ kind: 'not_found' })
+    })
+
+    // Proves unknown notes are not_found for every note operation.
+    it.each([
+      ['read', (s: ReturnType<typeof create>) => s.notes.getNote('no-such-note')],
+      [
+        'update',
+        (s: ReturnType<typeof create>) =>
+          s.notes.updateNote('no-such-note', {
+            classId: 'swe-311-c1',
+            title: '',
+            contentHtml: '<p>x</p>',
+            tags: [],
+          }),
+      ],
+      ['delete', (s: ReturnType<typeof create>) => s.notes.deleteNote('no-such-note')],
+    ])('reports an unknown note as not_found on %s', async (_label, act) => {
+      await expect(act(create())).rejects.toMatchObject({ kind: 'not_found' })
+    })
+
+    // SECURITY: proves the service applies the note rules itself, so skipping the form doesn't
+    // skip them, and that a note can only be filed under one of the student's classes.
+    it.each([
+      ['an empty body', { classId: 'swe-311-c1', title: '', contentHtml: '<p></p>', tags: [] }],
+      [
+        'an unknown class',
+        { classId: 'no-such-class', title: '', contentHtml: '<p>x</p>', tags: [] },
+      ],
+      [
+        'too many tags',
+        {
+          classId: 'swe-311-c1',
+          title: '',
+          contentHtml: '<p>x</p>',
+          tags: Array.from({ length: 11 }, (_, i) => `t${String(i)}`),
+        },
+      ],
+    ])('rejects %s as a validation error', async (_label, input) => {
+      await expect(create().notes.createNote(input)).rejects.toMatchObject({ kind: 'validation' })
+    })
+
     // Proves the unread count matches the unread notifications in the list.
     it('counts unread notifications', async () => {
       // Arrange.

@@ -4,7 +4,7 @@
  */
 
 // Playwright's assertions and test function.
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 // Shared helpers.
 import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
@@ -105,6 +105,56 @@ test('a returning student can open the app and move between pages offline', asyn
 
   // SECURITY: nothing in the journey was blocked by the security policy.
   expect(cspViolations).toEqual([])
+})
+
+/** Reads the offline copy of the query cache from IndexedDB, as text (empty if there is none). */
+async function readOfflineCopy(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        // Open without creating: a missing database means no copy.
+        const request = indexedDB.open('conote-offline')
+        request.onupgradeneeded = () => {
+          request.transaction?.abort()
+          resolve('')
+        }
+        request.onerror = () => {
+          resolve('')
+        }
+        request.onsuccess = () => {
+          const db = request.result
+          const get = db.transaction('cache').objectStore('cache').get('query-cache')
+          get.onsuccess = () => {
+            db.close()
+            resolve(JSON.stringify(get.result ?? ''))
+          }
+        }
+      }),
+  )
+}
+
+// FR-PWA-8 and FR-PWA-7: a note the student opened is kept on the device, and sign-out
+// deletes the copy.
+test('an opened note is kept for offline reading and deleted at sign-out', async ({ page }) => {
+  // Sign in and open a note.
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.goto('/notes/note-4')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Is "fast" a requirement?' }),
+  ).toBeVisible()
+
+  // The copy is written after a short pause, and holds the note.
+  await expect
+    .poll(() => readOfflineCopy(page), { timeout: 10_000 })
+    .toContain('Is \\"fast\\" a requirement?')
+
+  // SECURITY: sign-out deletes it, so the next person can't read it.
+  await page.getByRole('button', { name: /account menu/i }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect.poll(() => readOfflineCopy(page)).not.toContain('requirement')
 })
 
 // D23: the font is served by CoNote, so nothing is requested from Google.

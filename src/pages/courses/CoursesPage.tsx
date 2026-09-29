@@ -96,8 +96,9 @@ export function CoursesPage() {
           />
         </div>
         {/* Status filter: toggle buttons, the pressed one is filled (not colour alone: aria-pressed
-            and a bolder weight). */}
-        <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
+            and a bolder weight). A fieldset groups them natively; its legend names the group. */}
+        <fieldset className="flex flex-wrap gap-2">
+          <legend className="sr-only">Filter by status</legend>
           {COURSE_STATUS_FILTERS.map((option) => (
             <Button
               key={option}
@@ -113,7 +114,7 @@ export function CoursesPage() {
               {FILTER_LABELS[option]}
             </Button>
           ))}
-        </div>
+        </fieldset>
       </div>
 
       {/* The list, or its loading, error and empty states. */}

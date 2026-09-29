@@ -1,17 +1,29 @@
 /**
- * New note, at /notes/new. A placeholder until milestone M4 builds the real page.
+ * New note, at /notes/new, optionally ?classId= to file it under a class (FR-NTE-1).
  */
 
-// Temporary page body naming the milestone.
-import { PlaceholderPage } from '@/components/common/PlaceholderPage'
+// The query string.
+import { useSearchParams } from 'react-router'
 
-/** New note page. */
+// Tab title.
+import { PageTitle } from '@/components/common/PageTitle'
+// The form.
+import { NoteForm } from '@/features/notes/NoteForm'
+
+/** New note. */
 export function NewNotePage() {
-  // The heading, the milestone and a one-line description of the finished page.
+  // The class, if the page was opened from one; NoteForm checks it is one of the student's.
+  const [params] = useSearchParams()
+  const classId = params.get('classId')
+
   return (
-    <PlaceholderPage
-      title="New note"
-      description="The note editor with formatting, tags and draft autosave."
-    />
+    <div className="w-full max-w-3xl space-y-6">
+      {/* Tab title. */}
+      <PageTitle title="New note" />
+      {/* Page heading. */}
+      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">New note</h1>
+      {/* The form; keyed by class so opening another class's editor starts fresh. */}
+      <NoteForm key={classId ?? 'none'} mode={{ kind: 'new', classId }} />
+    </div>
   )
 }
