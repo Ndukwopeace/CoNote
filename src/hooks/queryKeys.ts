@@ -38,6 +38,8 @@ export const queryKeys = {
   summaries: {
     // Every summary query.
     all: ['summaries'] as const,
+    // One class's published summary.
+    byClass: (classId: ID) => [...queryKeys.summaries.all, 'class', classId] as const,
     // Published summaries, optionally for one course.
     published: (courseId?: ID) =>
       [...queryKeys.summaries.all, 'published', courseId ?? 'all'] as const,

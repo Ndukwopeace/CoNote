@@ -14,12 +14,14 @@ function query(key: string[], status: 'success' | 'error' | 'pending' = 'success
 }
 
 describe('shouldKeepOffline', () => {
-  // Proves notes, and the courses and classes that label them, are kept.
+  // Proves notes, published summaries, and the courses and classes that label them, are kept.
   it.each([
     ['notes', 'list'],
     ['notes', 'detail', 'n1'],
     ['courses', 'list'],
     ['classes', 'mine'],
+    ['summaries', 'class', 'c1'],
+    ['summaries', 'published', 'all'],
   ])('keeps %s', (...key) => {
     expect(shouldKeepOffline(query(key))).toBe(true)
   })
@@ -27,7 +29,7 @@ describe('shouldKeepOffline', () => {
   // Proves anything else, and anything not loaded successfully, is not.
   it.each([
     query(['notifications', 'list']),
-    query(['summaries', 'published']),
+    query(['ai', 'conversation']),
     query(['notes', 'list'], 'error'),
     query(['notes', 'list'], 'pending'),
   ])('does not keep %j', (q) => {

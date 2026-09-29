@@ -2,8 +2,12 @@
  * Which cached data is kept on the device for offline reading (FR-PWA-8).
  */
 
-/** Query areas kept offline: the notes, and the courses and classes that label them. */
-const OFFLINE_ROOTS: ReadonlySet<unknown> = new Set(['notes', 'courses', 'classes'])
+/**
+ * Query areas kept offline: notes, published summaries (FR-PWA-8), and the courses and classes
+ * that label them. The summary service only ever returns published summaries, so no draft can
+ * be stored. Ask AI conversations are component state, not queries, so they are never stored.
+ */
+const OFFLINE_ROOTS: ReadonlySet<unknown> = new Set(['notes', 'summaries', 'courses', 'classes'])
 
 /** How long kept data stays usable: 7 days, the same as drafts. */
 export const OFFLINE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
@@ -18,7 +22,7 @@ interface QueryLike {
 
 /**
  * True for data worth reading offline: loaded successfully, and in one of the kept areas.
- * Everything else (notifications, summaries until M5) is left out, so less is stored.
+ * Everything else (notifications, the profile) is left out, so less is stored.
  */
 export function shouldKeepOffline(query: QueryLike): boolean {
   return query.state.status === 'success' && OFFLINE_ROOTS.has(query.queryKey[0])

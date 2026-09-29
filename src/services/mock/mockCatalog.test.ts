@@ -58,4 +58,21 @@ describe('mock catalog services', () => {
     expect(summaries.length).toBeGreaterThan(0)
     expect(summaries.every((s) => s.courseId === 'swe-311')).toBe(true)
   })
+
+  // Proves viewed summaries and read notifications survive a reload when a store is given.
+  it('remembers viewed summaries and read notifications across a reload', async () => {
+    // Arrange: a catalog saving to localStorage.
+    const withStore = () =>
+      createMockCatalog({ seed: createSeed(new Date()), latencyMs: 0, store: window.localStorage })
+    const first = withStore()
+    await first.summaries.markViewed('summary-swe-311-c2')
+    await first.notifications.markAllRead()
+
+    // Act: "reload".
+    const again = withStore()
+
+    // Assert.
+    expect((await again.summaries.getByClass('swe-311-c2')).viewedByMe).toBe(true)
+    await expect(again.notifications.unreadCount()).resolves.toBe(0)
+  })
 })

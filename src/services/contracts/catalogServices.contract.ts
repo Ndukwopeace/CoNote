@@ -219,6 +219,73 @@ export function runCatalogServicesContract(name: string, { create }: CatalogCont
       await expect(create().notes.createNote(input)).rejects.toMatchObject({ kind: 'validation' })
     })
 
+    // Proves a published summary can be read by its class.
+    it('reads a published summary by class', async () => {
+      // Arrange.
+      const { summaries } = create()
+      const [first] = await summaries.listPublished()
+
+      // Act and assert.
+      await expect(summaries.getByClass(first?.classId ?? '')).resolves.toEqual(first)
+    })
+
+    // SECURITY: proves a class whose summary isn't published returns not_found, never a draft.
+    it.each(['swe-311-c3', 'cse-205-c1', 'swe-311-c4', 'no-such-class'])(
+      'reports the summary of %s as not_found',
+      async (classId) => {
+        await expect(create().summaries.getByClass(classId)).rejects.toMatchObject({
+          kind: 'not_found',
+        })
+      },
+    )
+
+    // Proves marking a summary as viewed sticks (FR-SUM-5).
+    it('marks a summary as viewed', async () => {
+      // Arrange.
+      const { summaries } = create()
+      const unviewed = (await summaries.listPublished()).find((s) => !s.viewedByMe)
+
+      // Act.
+      await summaries.markViewed(unviewed?.id ?? '')
+
+      // Assert.
+      const after = await summaries.getByClass(unviewed?.classId ?? '')
+      expect(after.viewedByMe).toBe(true)
+      await expect(summaries.markViewed('no-such-summary')).rejects.toMatchObject({
+        kind: 'not_found',
+      })
+    })
+
+    // Proves reading one notification lowers the unread count (FR-NTF-3, FR-NTF-5).
+    it('marks a notification as read', async () => {
+      // Arrange.
+      const { notifications } = create()
+      const before = await notifications.unreadCount()
+      const unread = (await notifications.list()).find((n) => !n.read)
+
+      // Act.
+      await notifications.markRead(unread?.id ?? '')
+
+      // Assert.
+      await expect(notifications.unreadCount()).resolves.toBe(before - 1)
+      expect((await notifications.list()).find((n) => n.id === unread?.id)?.read).toBe(true)
+      await expect(notifications.markRead('no-such-notification')).rejects.toMatchObject({
+        kind: 'not_found',
+      })
+    })
+
+    // Proves "Mark all as read" clears the count (FR-NTF-3).
+    it('marks every notification as read', async () => {
+      // Arrange.
+      const { notifications } = create()
+
+      // Act.
+      await notifications.markAllRead()
+
+      // Assert.
+      await expect(notifications.unreadCount()).resolves.toBe(0)
+    })
+
     // Proves the unread count matches the unread notifications in the list.
     it('counts unread notifications', async () => {
       // Arrange.

@@ -6,7 +6,16 @@
 // What a student submits for a note.
 import type { NoteInput } from '@/lib/notes'
 // The course, class, note, summary and notification shapes.
-import type { AppNotification, ClassSession, Course, ID, Note, Summary } from '@/types/domain'
+import type {
+  AiContext,
+  AiMessage,
+  AppNotification,
+  ClassSession,
+  Course,
+  ID,
+  Note,
+  Summary,
+} from '@/types/domain'
 // The auth data shapes the interface methods accept and return.
 import type {
   OAuthProvider,
@@ -93,18 +102,35 @@ export interface NoteService {
   deleteNote(noteId: ID): Promise<void>
 }
 
-/** Published summaries. The rest of the interface arrives in M5. */
+/** Published summaries. Draft content never reaches the client (section 4). */
 export interface SummaryService {
-  /** Published summaries only, newest first; draft content never reaches the client. */
+  /** Published summaries only, newest first. */
   listPublished(filter?: { courseId?: ID }): Promise<Summary[]>
+  /** The published summary of one class; not_found when the class has none published. */
+  getByClass(classId: ID): Promise<Summary>
+  /** Records that the student opened a summary (FR-SUM-5). */
+  markViewed(summaryId: ID): Promise<void>
 }
 
-/** The student's notifications. Reading only in M3; marking as read arrives in M5. */
+/** The student's notifications. Unknown IDs reject with a not_found AppError. */
 export interface NotificationService {
   /** Newest first. */
   list(): Promise<AppNotification[]>
   /** How many are unread, for the bell's badge. */
   unreadCount(): Promise<number>
+  /** Marks one as read (FR-NTF-3). */
+  markRead(notificationId: ID): Promise<void>
+  /** Marks every one as read (FR-NTF-3). */
+  markAllRead(): Promise<void>
+}
+
+/**
+ * Ask CoNote AI (FR-AI). One call per question, with the whole conversation so far, so a later
+ * backend can answer from context and stream without the UI changing shape (FR-AI-7).
+ */
+export interface AiService {
+  /** The assistant's reply to the last user message in `messages`. */
+  askAi(context: AiContext, messages: AiMessage[]): Promise<string>
 }
 
 /** The full set of services the app receives through ServicesProvider. */
@@ -121,4 +147,6 @@ export interface Services {
   summaries: SummaryService
   // Notifications.
   notifications: NotificationService
+  // Ask CoNote AI.
+  ai: AiService
 }

@@ -38,9 +38,9 @@ function catalogOf(make: () => Promise<never>): Catalog {
       deleteNote: make,
     },
     // Summary reads.
-    summaries: { listPublished: make },
+    summaries: { listPublished: make, getByClass: make, markViewed: make },
     // Notification reads.
-    notifications: { list: make, unreadCount: make },
+    notifications: { list: make, unreadCount: make, markRead: make, markAllRead: make },
   }
 }
 

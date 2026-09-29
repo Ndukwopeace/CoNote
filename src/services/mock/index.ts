@@ -7,6 +7,8 @@ import type { Services } from '../types'
 
 // The demo authentication service.
 import { createMockAuthService } from './mockAuthService'
+// The demo Ask CoNote AI.
+import { createMockAiService } from './mockAiService'
 // The demo courses, classes, notes, summaries and notifications.
 import { createMockCatalog } from './mockCatalog'
 // The demo data, built relative to the current time.
@@ -32,8 +34,10 @@ export function createMockServices(): Services {
     ...createMockCatalog({
       seed: createSeed(new Date()),
       latencyMs: DEMO_LATENCY_MS,
-      // Notes survive a reload (M4 "done when").
-      noteStore: window.localStorage,
+      // Notes, viewed summaries and read notifications survive a reload.
+      store: window.localStorage,
     }),
+    // Prepared answers after a short delay (FR-AI-6).
+    ai: createMockAiService(),
   }
 }
