@@ -13,6 +13,9 @@ import { expect, type Page } from '@playwright/test'
  * rightly block and which would otherwise show up as false CSP violations.
  */
 export async function expectNoAxeViolations(page: Page) {
+  // Check the settled page: wait until the launch splash (D61) has faded and gone, or axe would
+  // measure text through the half-transparent overlay.
+  await expect(page.locator('#splash')).toHaveCount(0)
   // Scan the whole page.
   const results = await new AxeBuilder({ page }).options({ preload: false }).analyze()
   // One readable line per problem.

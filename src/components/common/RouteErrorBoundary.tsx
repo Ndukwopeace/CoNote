@@ -20,6 +20,8 @@ import { toAppError } from '@/lib/errors'
 import { reportError } from '@/lib/reportError'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
+// The launch splash's ID (the constant lives in lib so components may import it).
+import { SPLASH_ID } from '@/lib/splash'
 
 // Sets the tab title.
 import { PageTitle } from './PageTitle'
@@ -29,9 +31,11 @@ export function RouteErrorBoundary() {
   // Whatever the crashed page threw.
   const error = useRouteError()
 
-  // Report the error once per distinct error, not on every re-render.
+  // Report the error once per distinct error, not on every re-render. The launch splash (still
+  // up if the first page crashed) is removed directly, so it can never hide this message.
   useEffect(() => {
     reportError(error, { where: 'RouteErrorBoundary' })
+    document.getElementById(SPLASH_ID)?.remove()
   }, [error])
 
   return (

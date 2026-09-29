@@ -157,6 +157,23 @@ test('an opened note is kept for offline reading and deleted at sign-out', async
   await expect.poll(() => readOfflineCopy(page)).not.toContain('requirement')
 })
 
+// D61: the splash is in the first HTML (so it paints before any script), iPhone launch images
+// are listed, and the splash is gone once the page is ready.
+test('the splash shows at launch and leaves once the page is ready', async ({ page, request }) => {
+  // The first HTML carries the splash and the iPhone launch images.
+  const html = await (await request.get('/login')).text()
+  expect(html).toContain('id="splash"')
+  expect(html).toContain('rel="apple-touch-startup-image"')
+  // A launch image is really served.
+  expect((await request.get('/splash/iphone-1179x2556.png')).ok()).toBe(true)
+
+  // Once the page is ready, the splash has gone and the page is usable.
+  await page.goto('/login')
+  await expect(page.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeVisible()
+  await expect(page.locator('#splash')).toHaveCount(0)
+  await expectNoAxeViolations(page)
+})
+
 // D23: the font is served by CoNote, so nothing is requested from Google.
 test('the font loads from CoNote itself', async ({ page }) => {
   // Record every request's host.

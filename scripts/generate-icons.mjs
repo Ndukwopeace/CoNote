@@ -1,6 +1,7 @@
 /**
- * Draws the app icons (REQUIREMENTS.md FR-PWA-1) from the CoNote logo mark, using the Chromium
- * that Playwright already installs, so no image library is needed. The PNGs are committed; run
+ * Draws the app icons (REQUIREMENTS.md FR-PWA-1) and the iPhone launch images (D61) from the
+ * CoNote logo mark, using the Chromium that Playwright already installs, so no image library is
+ * needed. The PNGs are committed; run
  * this again only when the logo changes:
  *
  *   node scripts/generate-icons.mjs
@@ -58,6 +59,43 @@ for (const { file, size, art } of ICONS) {
   await page.screenshot({ path: `public/icons/${file}`, omitBackground: true })
   // Report progress.
   process.stdout.write(`wrote public/icons/${file}\n`)
+}
+
+/**
+ * iPhone launch images (D61): the brand colour with the reversed logo tile, the name and the
+ * tagline, centred, matching the in-app splash in index.html. One per iPhone screen size
+ * (portrait pixels); index.html's media queries choose between them.
+ */
+const SPLASH_SIZES = [
+  [750, 1334],
+  [1125, 2436],
+  [828, 1792],
+  [1242, 2688],
+  [1170, 2532],
+  [1284, 2778],
+  [1179, 2556],
+  [1290, 2796],
+  [1206, 2622],
+  [1320, 2868],
+]
+
+/** The launch image's page at `scale` device pixels per CSS pixel. */
+function splashPage(scale) {
+  return `<html><body style="margin:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${16 * scale}px;background:#4f46e5;color:#fff;font-family:system-ui,sans-serif">
+<svg viewBox="0 0 32 32" width="${80 * scale}" height="${80 * scale}"><rect width="32" height="32" rx="8" fill="#fff"/><path d="M20.5 11.2a6.5 6.5 0 1 0 0 9.6" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="16" r="2" fill="#4f46e5"/></svg>
+<p style="margin:0;font-size:${30 * scale}px;font-weight:800;letter-spacing:-0.02em">CoNote</p>
+<p style="margin:0;font-size:${15 * scale}px;opacity:0.9">Your notes. Collective understanding.</p>
+</body></html>`
+}
+
+// Draw and save each launch image.
+for (const [width, height] of SPLASH_SIZES) {
+  // 750-wide screens are 2x; every other iPhone listed is 3x.
+  const scale = width === 750 || width === 828 ? 2 : 3
+  await page.setViewportSize({ width, height })
+  await page.setContent(splashPage(scale))
+  await page.screenshot({ path: `public/splash/iphone-${width}x${height}.png` })
+  process.stdout.write(`wrote public/splash/iphone-${width}x${height}.png\n`)
 }
 
 // Done.
