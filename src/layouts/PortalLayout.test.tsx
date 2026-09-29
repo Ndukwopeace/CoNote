@@ -61,8 +61,27 @@ describe('PortalLayout', () => {
       .getAllByRole('link')
       .map((link) => link.textContent.trim())
 
-    // Assert: exact list and order.
-    expect(labels).toEqual(['Home', 'Courses', 'Notes', 'Ask AI', 'Notifications', 'Settings'])
+    // Assert: exact list and order. Notifications may carry its unread badge once it loads.
+    expect(labels).toEqual([
+      'Home',
+      'Courses',
+      'Notes',
+      'Ask AI',
+      expect.stringMatching(/^Notifications\d*$/),
+      'Settings',
+    ])
+  })
+
+  // Proves the sidebar shows the unread count too, and says it to screen readers (FR-NTF-5).
+  it('shows the unread count in the sidebar', async () => {
+    // Act.
+    renderPortal()
+
+    // Assert.
+    const sidebar = await screen.findByRole('navigation', { name: 'Main navigation' })
+    expect(
+      await within(sidebar).findByRole('link', { name: 'Notifications, 3 unread' }),
+    ).toHaveAttribute('href', '/notifications')
   })
 
   // Proves the phone bar holds four places to work (decision D35). Notifications lives on the
