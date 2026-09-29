@@ -145,7 +145,17 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
 
     // Proves weak new passwords are refused by the service, not only by the form.
     it('rejects a new password that breaks the password rules', async () => {
-      await expect(create().updatePassword('short')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(create().updatePassword('current1', 'short')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+    })
+
+    // SECURITY: proves a password change needs the current password (FR-SET-2).
+    it('requires the current password to change it', async () => {
+      await expect(create().updatePassword('', 'longenough1')).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'Enter your current password.',
+      })
     })
 
     // Proves sign-up creates a student with the given name.

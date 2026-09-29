@@ -44,6 +44,12 @@ export const queryKeys = {
     published: (courseId?: ID) =>
       [...queryKeys.summaries.all, 'published', courseId ?? 'all'] as const,
   },
+  profile: {
+    // Every profile query.
+    all: ['profile'] as const,
+    // The signed-in student's profile.
+    me: () => [...queryKeys.profile.all, 'me'] as const,
+  },
   notifications: {
     // Every notification query.
     all: ['notifications'] as const,

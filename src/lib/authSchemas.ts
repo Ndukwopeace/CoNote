@@ -138,6 +138,25 @@ export const resetPasswordSchema = z
     when: bothPasswordsPresent,
   })
 
+/** Settings → Account: change password (FR-SET-2). */
+export const changePasswordSchema = z
+  .object({
+    // The current password, so someone at an unlocked computer can't change it.
+    currentPassword: z.string().min(1, 'Enter your current password.'),
+    // The new password, with the strength rules.
+    password: newPasswordSchema,
+    // Typed twice to catch typos.
+    confirmPassword: z.string(),
+  })
+  // The two new passwords must match.
+  .refine(passwordsMatch, {
+    // Attach the message to the confirm field.
+    path: ['confirmPassword'],
+    error: MISMATCH,
+    // Run even while the password itself is invalid.
+    when: bothPasswordsPresent,
+  })
+
 /** What the sign-in form holds while being filled in. */
 export type SignInValues = z.input<typeof signInSchema>
 /** What the sign-up form holds while being filled in. */
@@ -146,3 +165,5 @@ export type SignUpValues = z.input<typeof signUpSchema>
 export type ForgotPasswordValues = z.input<typeof forgotPasswordSchema>
 /** What the reset-password form holds. */
 export type ResetPasswordValues = z.input<typeof resetPasswordSchema>
+/** What the change-password form holds. */
+export type ChangePasswordValues = z.input<typeof changePasswordSchema>

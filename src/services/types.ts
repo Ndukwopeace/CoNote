@@ -14,6 +14,8 @@ import type {
   Course,
   ID,
   Note,
+  NotificationPrefs,
+  StudentProfile,
   Summary,
 } from '@/types/domain'
 // The auth data shapes the interface methods accept and return.
@@ -53,8 +55,11 @@ export interface AuthService {
    * longer valid or the password breaks the rules.
    */
   resetPassword(code: string, newPassword: string): Promise<void>
-  /** Changes the password of the signed-in student (Settings → Account, M5). */
-  updatePassword(newPassword: string): Promise<void>
+  /**
+   * Changes the signed-in student's password (Settings → Account). The current password is
+   * required, so someone at an unlocked computer can't take over the account.
+   */
+  updatePassword(currentPassword: string, newPassword: string): Promise<void>
   /** Calls `listener` whenever the session changes. Returns an unsubscribe function. */
   onAuthChange(listener: (session: Session | null) => void): () => void
 }
@@ -133,6 +138,38 @@ export interface AiService {
   askAi(context: AiContext, messages: AiMessage[]): Promise<string>
 }
 
+/** Profile fields a student can change; any left out stay as they are. */
+export interface ProfileUpdate {
+  // Display name.
+  fullName?: string
+  // Department.
+  department?: string
+  // Level or year.
+  level?: string
+  // Phone number.
+  phone?: string
+  // A picture address returned by uploadAvatar.
+  avatarUrl?: string
+  // Notification settings (FR-SET-3).
+  notificationPrefs?: NotificationPrefs
+}
+
+/** The signed-in student's profile (FR-SET-1, FR-SET-3). */
+export interface ProfileService {
+  /** The profile; unauthorized when nobody is signed in. */
+  getMe(): Promise<StudentProfile>
+  /** Saves changes and returns the whole profile; validation errors can be shown as is. */
+  updateMe(changes: ProfileUpdate): Promise<StudentProfile>
+  /** Stores a JPG or PNG of 2 MB or less and returns its address, for updateMe. */
+  uploadAvatar(file: File): Promise<string>
+}
+
+/** Demo-only actions. Present only in mock mode, so the UI can hide them otherwise. */
+export interface DemoService {
+  /** Deletes every demo change so the seed data returns (FR-SET-5). */
+  resetDemoData(): void
+}
+
 /** The full set of services the app receives through ServicesProvider. */
 export interface Services {
   // Authentication.
@@ -149,4 +186,8 @@ export interface Services {
   notifications: NotificationService
   // Ask CoNote AI.
   ai: AiService
+  // The student's profile.
+  profile: ProfileService
+  // Demo-only actions; absent outside mock mode.
+  demo?: DemoService
 }

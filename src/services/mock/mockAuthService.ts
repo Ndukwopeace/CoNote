@@ -131,6 +131,15 @@ function assertEmail(email: string) {
   }
 }
 
+/** The demo auth service, plus the hook the demo profile service uses to rename the student. */
+export type MockAuthService = AuthService & {
+  /**
+   * Updates the signed-in student's name and tells listeners, as a real backend does after a
+   * profile change (Supabase sends USER_UPDATED). Does nothing when nobody is signed in.
+   */
+  updateDisplayName(fullName: string): void
+}
+
 /**
  * Demo authentication (REQUIREMENTS.md FR-AUTH-7). Any valid email and non-empty password
  * signs in as the demo student. The identity lives in sessionStorage; "Remember me" adds an
@@ -140,7 +149,7 @@ export function createMockAuthService({
   localStore,
   sessionStore,
   latencyMs,
-}: MockAuthOptions): AuthService {
+}: MockAuthOptions): MockAuthService {
   // Everyone who asked to hear about session changes (the AuthProvider, mainly).
   const listeners = new Set<(session: Session | null) => void>()
 
@@ -264,11 +273,26 @@ export function createMockAuthService({
       sessionStore.removeItem(RESET_CODE_KEY)
     },
 
-    async updatePassword(newPassword) {
+    async updatePassword(currentPassword, newPassword) {
       // Behave like a network call.
       await simulateLatency(latencyMs)
+      // SECURITY: the current password is required. The demo accepts any non-empty one, as it
+      // does at sign-in; the real backend checks it before changing anything.
+      if (currentPassword.length === 0)
+        throw new AppError('validation', 'Enter your current password.')
       // SECURITY: the same strength rules as sign-up, enforced here and not only in the form.
       assertRule(newPasswordSchema, newPassword)
+    },
+
+    updateDisplayName(fullName) {
+      // The current identity; nothing to rename when signed out.
+      const current = readSession(sessionStore)
+      if (!current) return
+      // Same identity, new name.
+      const renamed: Session = { user: { ...current.user, fullName } }
+      sessionStore.setItem(SESSION_KEY, JSON.stringify(renamed))
+      // The navigation re-renders with the new name.
+      emit(renamed)
     },
 
     onAuthChange(listener) {
