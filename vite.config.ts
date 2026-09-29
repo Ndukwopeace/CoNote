@@ -63,9 +63,10 @@ const pwa = VitePWA({
     start_url: '/dashboard',
     // A window of its own, without the browser's address bar.
     display: 'standalone',
-    // Title bar and splash colours, from the design tokens.
+    // Title bar and splash colours, from the design tokens. The brand colour behind the icon on
+    // Android's launch screen flows straight into the in-app splash (D61).
     theme_color: '#4F46E5',
-    background_color: '#F8FAFC',
+    background_color: '#4F46E5',
     // Icons made from the logo mark by scripts/generate-icons.mjs.
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -83,6 +84,9 @@ const pwa = VitePWA({
     // Precache the app shell: HTML, every script and style chunk, the font and the icons
     // (FR-PWA-2). The Latin font files only; the browser never needs the other alphabets here.
     globPatterns: ['**/*.{html,js,css,svg,png}', 'assets/*latin-wght-normal*.woff2'],
+    // iPhone launch images are fetched by iOS when the app is added to the home screen, not by
+    // the app, so they stay out of the offline download (about 10 files).
+    globIgnores: ['splash/**'],
     // Any in-app address opened offline gets index.html, so client-side routes work (FR-PWA-3).
     navigateFallback: '/index.html',
     // Delete caches left by older versions of the service worker.
