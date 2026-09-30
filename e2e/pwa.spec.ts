@@ -170,10 +170,31 @@ test('the splash shows at launch and leaves once the page is ready', async ({ pa
   expect((await request.get('/splash/iphone-1179x2556.png')).ok()).toBe(true)
   expect((await request.get('/splash/iphone-1260x2736.png')).ok()).toBe(true)
 
+  // Record when the splash leaves the page, in milliseconds since launch.
+  await page.addInitScript(() => {
+    // Watch the page for removed elements from the moment it starts loading.
+    new MutationObserver((changes, observer) => {
+      // Once the splash has been taken out, note the time and stop watching.
+      if (
+        changes.some((change) =>
+          [...change.removedNodes].some(
+            (node) => node instanceof HTMLElement && node.id === 'splash',
+          ),
+        )
+      ) {
+        document.documentElement.dataset.splashGoneAt = String(performance.now())
+        observer.disconnect()
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+
   // Once the page is ready, the splash has gone and the page is usable.
   await page.goto('/login')
   await expect(page.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeVisible()
   await expect(page.locator('#splash')).toHaveCount(0)
+  // D63: even on this fast start it stayed up for the minimum 1.5 s (its fade comes after that).
+  const goneAt = Number(await page.locator('html').getAttribute('data-splash-gone-at'))
+  expect(goneAt).toBeGreaterThanOrEqual(1500)
   await expectNoAxeViolations(page)
 })
 
