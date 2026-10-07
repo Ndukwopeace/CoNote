@@ -1,7 +1,8 @@
 /**
- * ESLint configuration: code-quality rules, React and accessibility rules, the folder import
- * boundaries (ENGINEERING_STANDARDS.md 3.1) and the security bans. Runs in the pre-commit hook
- * and in CI.
+ * ESLint configuration for the whole repository (D64): code-quality rules, React and
+ * accessibility rules, the folder import boundaries (ENGINEERING_STANDARDS.md 3.1) and the
+ * security bans. The same layer rules apply to every app under apps/. Runs in the pre-commit
+ * hook and in CI.
  */
 
 // Type-check this JavaScript file with the TypeScript compiler.
@@ -51,8 +52,8 @@ function restrictImports(extra = []) {
 // The configuration is a list of blocks; later blocks override earlier ones for their files.
 export default tseslint.config(
   {
-    // Build output, reports and docs are not linted.
-    ignores: ['dist', 'coverage', 'playwright-report', 'test-results', 'docs'],
+    // Build output, reports and docs are not linted, in any app or package.
+    ignores: ['**/dist', '**/coverage', '**/playwright-report', '**/test-results', 'docs'],
   },
   {
     // Base rules for every TypeScript file.
@@ -106,7 +107,7 @@ export default tseslint.config(
   // Layer boundaries (ENGINEERING_STANDARDS.md 3.1).
   {
     // Components render props only; no data fetching, pages or app wiring.
-    files: ['src/components/**/*.{ts,tsx}'],
+    files: ['apps/*/src/components/**/*.{ts,tsx}'],
     rules: restrictImports([
       {
         group: [
@@ -124,7 +125,7 @@ export default tseslint.config(
   },
   {
     // lib/ is pure helpers that depend on nothing else in the app.
-    files: ['src/lib/**/*.{ts,tsx}'],
+    files: ['apps/*/src/lib/**/*.{ts,tsx}'],
     rules: restrictImports([
       {
         group: [
@@ -143,7 +144,7 @@ export default tseslint.config(
   },
   {
     // Hooks fetch data and never import UI.
-    files: ['src/hooks/**/*.{ts,tsx}'],
+    files: ['apps/*/src/hooks/**/*.{ts,tsx}'],
     rules: restrictImports([
       {
         group: ['@/components/*', '@/pages/*', '@/layouts/*'],
@@ -153,7 +154,7 @@ export default tseslint.config(
   },
   {
     // Services never import UI or app code.
-    files: ['src/services/**/*.{ts,tsx}'],
+    files: ['apps/*/src/services/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -178,32 +179,42 @@ export default tseslint.config(
   },
   {
     // The factory is the one file allowed to import implementations.
-    files: ['src/app/createServices.ts'],
+    files: ['apps/*/src/app/createServices.ts'],
     rules: { 'no-restricted-imports': 'off' },
   },
   // Test helpers build real implementations to inject as fakes.
   {
-    files: ['src/test/**/*.{ts,tsx}'],
+    files: ['apps/*/src/test/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': ['error', { patterns: [DEEP_RELATIVE] }] },
   },
 
   // The one place allowed to inject HTML.
   {
     // SECURITY: this file sanitises before injecting, so the HTML ban is lifted here only.
-    files: ['src/components/common/SafeHtml.tsx'],
+    files: ['apps/*/src/components/common/SafeHtml.tsx'],
     rules: { 'no-restricted-syntax': 'off' },
   },
 
-  // Generated shadcn/ui primitives.
+  // Shared packages (D64).
   {
-    // shadcn files export components and their style helpers together.
-    files: ['src/components/ui/**/*.{ts,tsx}'],
+    // A package is used by every app, so it can't depend on any one app's code.
+    files: ['packages/**/*.{ts,tsx}'],
+    rules: restrictImports([
+      {
+        group: ['@/*'],
+        message: 'Shared packages cannot import app code. Move the code into the package instead.',
+      },
+    ]),
+  },
+  {
+    // shadcn-style primitives export components and their style helpers together.
+    files: ['packages/ui/src/components/**/*.{ts,tsx}'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
 
   // Tests may build fixtures more loosely.
   {
-    files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}', 'e2e/**/*.ts'],
+    files: ['**/*.test.{ts,tsx}', 'apps/*/src/test/**/*.{ts,tsx}', 'apps/*/e2e/**/*.ts'],
     rules: {
       // Tests may assert a value exists with `!`.
       '@typescript-eslint/no-non-null-assertion': 'off',
@@ -214,7 +225,7 @@ export default tseslint.config(
   // Node-side config files.
   {
     // Config files and browser tests run in Node, not the browser.
-    files: ['*.config.{js,ts}', 'e2e/**/*.ts'],
+    files: ['*.config.{js,ts}', 'apps/*/*.config.{js,ts}', 'apps/*/e2e/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   {

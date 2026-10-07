@@ -1,22 +1,19 @@
-// TypeScript settings for Node-side files: the Vite, Vitest, Playwright and ESLint configs,
-// and the browser tests in e2e/.
+// TypeScript settings for the Node-side tooling files at the repository root.
 {
   "compilerOptions": {
     // Where incremental build info is cached.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     // Modern JavaScript.
     "target": "es2023",
-    // Modern JavaScript plus DOM types (the e2e tests mention browser objects).
-    "lib": ["ES2023", "DOM"],
+    // Modern JavaScript; no browser objects here.
+    "lib": ["ES2023"],
     // Node's global types (process, Buffer…).
     "types": ["node"],
     // Don't type-check library declaration files.
     "skipLibCheck": true,
-
-    /* Bundler mode */
     // Node's own ES-module rules.
     "module": "nodenext",
-    // Allow "./file.ts" imports, which Node and Playwright run directly.
+    // Allow "./file.ts" imports.
     "allowImportingTsExtensions": true,
     // Keep imports exactly as written.
     "verbatimModuleSyntax": true,
@@ -24,27 +21,16 @@
     "moduleDetection": "force",
     // Only type-check.
     "noEmit": true,
-
-    /* Strictness: ENGINEERING_STANDARDS.md section 4.1 */
-    // All strict checks.
+    // All strict checks (ENGINEERING_STANDARDS.md section 4.1).
     "strict": true,
     // Lookups may be undefined.
     "noUncheckedIndexedAccess": true,
-    // No accidental switch fall-through.
-    "noFallthroughCasesInSwitch": true,
-    // Unused variables are errors.
+    // Unused variables and parameters are errors.
     "noUnusedLocals": true,
-    // Unused parameters are errors.
     "noUnusedParameters": true,
     // Only erasable syntax.
     "erasableSyntaxOnly": true
   },
-  // The files this config covers.
-  "include": [
-    "vite.config.ts",
-    "vitest.config.ts",
-    "playwright.config.ts",
-    "e2e",
-    "eslint.config.js"
-  ]
+  // The root Vitest config and ESLint config.
+  "include": ["vitest.config.ts", "eslint.config.js"]
 }

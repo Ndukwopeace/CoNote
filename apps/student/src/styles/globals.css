@@ -1,0 +1,49 @@
+/*
+ * The student app's global stylesheet: loads Tailwind and the shared CoNote design system
+ * (packages/ui), then adds the styles only this app needs.
+ */
+
+/* Tailwind CSS: utility classes such as flex, p-4 and text-sm. */
+@import 'tailwindcss';
+/* Enter and exit animations used by menus and tooltips. */
+@import 'tw-animate-css';
+/* The shared CoNote design system: tokens, Tailwind names and base styles (packages/ui). */
+@import '@conote/ui/styles/theme.css';
+
+/* Note text, in the editor and the read view (FR-NTE-2, FR-NTE-10). Tailwind resets headings,
+   lists and links to plain text, so the formatting a student chose is given back here. */
+@layer components {
+  /* Space between blocks. */
+  .note-content > * + * {
+    @apply mt-3;
+  }
+  /* Headings: two sizes, matching the editor's h2 and h3. */
+  .note-content h2 {
+    @apply text-xl font-bold;
+  }
+  .note-content h3 {
+    @apply text-lg font-semibold;
+  }
+  /* Lists keep their markers, indented. */
+  .note-content ul {
+    @apply list-disc pl-6;
+  }
+  .note-content ol {
+    @apply list-decimal pl-6;
+  }
+  /* Links look like links: brand colour and underlined, so not by colour alone. */
+  .note-content a {
+    @apply text-primary underline;
+  }
+  /* Quotations: a bar on the left. */
+  .note-content blockquote {
+    @apply border-l-4 pl-4 text-muted-foreground;
+  }
+  /* Code: monospace on a soft background. */
+  .note-content code {
+    @apply rounded bg-background px-1 font-mono text-sm;
+  }
+  .note-content pre {
+    @apply overflow-x-auto rounded-md bg-background p-3 font-mono text-sm;
+  }
+}

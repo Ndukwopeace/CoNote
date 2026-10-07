@@ -1,8 +1,13 @@
-// Root TypeScript config. It holds no settings itself; it points at the two real configs so
-// `tsc -b` checks both: the app (browser code) and the tooling (Node-side config files).
+// Root TypeScript config for the whole repository (D64). It holds no settings itself; it points
+// at each app and package so one `tsc -b` checks everything.
 {
   // No files directly; everything comes from the references.
   "files": [],
-  // The app, and the Node-side tooling.
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+  // The student app, the shared packages, and the root tooling files.
+  "references": [
+    { "path": "./apps/student" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/domain" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

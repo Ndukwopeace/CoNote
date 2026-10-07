@@ -16,8 +16,8 @@ Tells Vercel how to build the app and which HTTP headers to send. `vite.config.t
 |---|---|---|
 | `"$schema"` | Points editors at Vercel's schema | Autocomplete and typo warnings while editing |
 | `"framework": "vite"` | Tells Vercel this is a Vite app | Picks sensible defaults |
-| `"buildCommand": "npm run build"` | Runs the type check, then the Vite build | A type error stops a deploy instead of shipping |
-| `"outputDirectory": "dist"` | Serves the built files from `dist/` | That is where Vite writes them |
+| `"buildCommand": "npm run build -w @conote/student"` | Runs the student app's build script: the type check, then the Vite build | A type error stops a deploy instead of shipping. `-w` picks the app inside the monorepo (D64). |
+| `"outputDirectory": "apps/student/dist"` | Serves the built files from the student app's `dist/` | That is where Vite writes them. The file sits at the repository root so the existing Vercel project keeps deploying without a settings change; a future admin or teacher app gets its own Vercel project with its folder as the Root Directory. |
 | `"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]` | Every address serves `index.html`; React Router then shows the right page | Without it, refreshing on `/courses` or opening a shared link gives a Vercel 404. Real files such as `/assets/…` and `/favicon.svg` are still served as they are, because Vercel checks for a real file before applying a rewrite. |
 
 ### Security headers
@@ -58,44 +58,74 @@ Sent with every response (`"source": "/(.*)"`).
 
 ---
 
-## `package.json`
+## `package.json` files (npm workspaces, D64)
 
-### Top-level fields
+The repository is one npm workspace: a root `package.json`, one per app under `apps/`, and one per shared package under `packages/`. `npm ci` at the root installs everything into one `node_modules`, with one `package-lock.json`, and links each workspace in as `node_modules/@conote/<name>`.
+
+### Root `package.json`
 
 | Field | What it does | Why |
 |---|---|---|
-| `"name"` | The package name | Identifies the project in tools and logs |
-| `"private": true` | npm refuses to publish this package | **SECURITY:** stops the app's source from being published to the public npm registry by accident |
-| `"version"` | The app version | Shown later in Settings → Help (FR-SET-5) |
+| `"name": "conote"` | The repository's package name | Identifies the project in tools and logs |
+| `"private": true` | npm refuses to publish it | **SECURITY:** stops the source from being published to the public npm registry by mistake. Every workspace sets it too. |
+| `"version"` | The repository version | Kept for tooling; each app has its own version |
 | `"type": "module"` | `.js` files are ES modules | Modern `import`/`export` syntax everywhere, including `eslint.config.js` |
-| `"engines": { "node": ">=22" }` | Declares the minimum Node version | React Router 8 needs Node 22.22+. `.nvmrc` pins the exact major version. |
+| `"engines": { "node": ">=22" }` | Declares the minimum Node version | React Router 8 needs Node 22.22+. `.nvmrc` pins the exact major version for CI and local setups. |
+| `"workspaces": ["apps/*", "packages/*"]` | Every folder under `apps/` and `packages/` is a workspace | One install, one lock file, shared tooling versions |
 
-### Scripts
+| Script | Command | What it does |
+|---|---|---|
+| `dev`, `build`, `preview`, `size`, `e2e` | `npm run <script> -w @conote/student` | Runs that script in the student app. Use `-w @conote/<app>` directly for another app. |
+| `lint` | `eslint . --max-warnings=0` | Lint every app and package with the root `eslint.config.js`; any warning fails |
+| `format` | `prettier --write .` | Reformat every file |
+| `format:check` | `prettier --check .` | Fail if any file isn't formatted (CI) |
+| `typecheck` | `tsc -b` | Type check every app and package through the root `tsconfig.json` references |
+| `test` | `vitest` | Every app's unit and component tests (the root `vitest.config.ts` lists them as projects); watch mode locally, `-- --run` in CI |
+| `prepare` | `husky \|\| true` | Installs the git hooks after `npm install`. `\|\| true` stops installs from failing on machines without git (such as Vercel's build machines). |
+
+The root `devDependencies` hold the tooling every workspace shares (listed under "Dev dependencies" below), so all apps build, lint and test with the same versions.
+
+### `lint-staged` (root `package.json`)
+
+Runs on the files staged for a commit, from the repository root.
+
+| Pattern | Commands | Why |
+|---|---|---|
+| `*.{ts,tsx}` | `prettier --write`, `eslint --fix --max-warnings=0`, `vitest related --run` | Format, lint (fixing what can be fixed automatically), then run only the tests affected by the change, in any app. A change to a shared package runs the tests of every app that uses it. |
+| `*.{js,css,json,html,yml,yaml}` | `prettier --write` | Format everything else |
+
+### `apps/student/package.json`
+
+| Field | What it does | Why |
+|---|---|---|
+| `"name": "@conote/student"` | The app's workspace name | What `-w @conote/student` refers to |
+| `"version"` | The app version | Shown in Settings → Help (FR-SET-5) |
+| `"private"`, `"type"` | As in the root | Same reasons |
 
 | Script | Command | What it does |
 |---|---|---|
 | `dev` | `vite` | Development server with instant reload |
-| `build` | `tsc -b && vite build` | Type check first, then production build, so a type error can never ship |
+| `build` | `tsc -b && vite build` | Type check first, then production build into `apps/student/dist`, so a type error can never ship |
 | `preview` | `vite preview` | Serves the production build locally, with the production security headers |
-| `lint` | `eslint . --max-warnings=0` | Lint everything; any warning fails |
-| `format` | `prettier --write .` | Reformat every file |
-| `format:check` | `prettier --check .` | Fail if any file isn't formatted (CI) |
-| `typecheck` | `tsc -b` | Type check only |
-| `test` | `vitest` | Unit and component tests; watch mode locally, `-- --run` in CI |
-| `size` | `size-limit` | Check the bundle budget in `.size-limit.json` |
-| `e2e` | `playwright test` | Browser tests |
-| `prepare` | `husky \|\| true` | Installs the git hooks after `npm install`. `\|\| true` stops installs from failing on machines without git, such as Vercel's build servers. |
+| `size` | `size-limit` | Check the bundle budget in `apps/student/.size-limit.json` |
+| `e2e` | `playwright test` | Browser tests in `apps/student/e2e` |
+| `icons` | `node scripts/generate-icons.mjs` | Redraws the app icons and iPhone launch images into `apps/student/public` |
 
-### `lint-staged`
+Its `dependencies` are the browser libraries listed below, plus `@conote/ui` and `@conote/domain`. Those two resolve to the workspace folders, never to the npm registry.
 
-Run by the pre-commit hook on staged files only.
+### `packages/ui/package.json` and `packages/domain/package.json`
 
-| Pattern | Commands | Why |
+| Field | What it does | Why |
 |---|---|---|
-| `*.{ts,tsx}` | `prettier --write`, `eslint --fix --max-warnings=0`, `vitest related --run` | Format, lint (fixing what can be fixed automatically), and run only the tests affected by the change |
-| `*.{js,css,json,html,yml,yaml}` | `prettier --write` | Format everything else |
+| `"name"` | `@conote/ui` / `@conote/domain` | The name apps import from, for example `@conote/ui/button` |
+| `"private": true` | Never published | **SECURITY:** as above |
+| `"exports"` | Maps import paths to source files: `@conote/ui/<name>` → `src/components/<name>.tsx`, `@conote/ui/utils` → `src/utils.ts`, `@conote/ui/styles/theme.css` and `…/tokens.css` → the stylesheets; `@conote/domain` → `src/index.ts` | Apps compile the package source directly (no build step for packages), and only the listed paths can be imported, so a package's internals stay private |
+| `"dependencies"` (`ui`) | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | What the primitives use |
+| `"peerDependencies"` (`ui`) | `react`, `react-dom` | Supplied by the app, so there is only ever one copy of React |
 
 ### Dependencies (shipped to the browser)
+
+Listed in `apps/student/package.json`, except the last four rows, which `packages/ui` declares for its primitives (`radix-ui` is in both, since the student app's confirm dialog uses it directly).
 
 | Package | What it's for |
 |---|---|
@@ -134,12 +164,12 @@ Run by the pre-commit hook on staged files only.
 
 ---
 
-## `.size-limit.json`
+## `apps/student/.size-limit.json`
 
 | Field | Value | Why |
 |---|---|---|
 | `name` | "Initial JavaScript (entry chunk)" | Label in the report |
-| `path` | `dist/assets/index-*.js` | The entry chunk every visitor downloads first; lazy-loaded pages are not counted |
+| `path` | `dist/assets/index-*.js` (relative to `apps/student`) | The entry chunk every visitor downloads first; lazy-loaded pages are not counted |
 | `limit` | `250 KB` | The budget from NFR-3, so the first load stays fast on phones |
 | `gzip` | `true` | Measure the compressed size, which is what is actually transferred |
 
@@ -154,12 +184,12 @@ Run by the pre-commit hook on staged files only.
 | `trailingComma` | `"all"` | Trailing commas, so adding an item changes one line in a diff, not two |
 | `printWidth` | `100` | Wrap lines at 100 characters |
 | `plugins` | `prettier-plugin-tailwindcss` | Sorts Tailwind classes in a consistent order |
-| `tailwindStylesheet` | `./src/styles/globals.css` | Where the plugin finds the custom token classes |
+| `tailwindStylesheet` | `./apps/student/src/styles/globals.css` | Where the plugin finds the custom token classes. The student stylesheet imports the shared theme, so it knows every token class. |
 | `tailwindFunctions` | `cn`, `cva` | Also sort classes written inside these helpers |
 
 ---
 
-## `components.json`
+## `packages/ui/components.json`
 
 shadcn/ui's settings, used if the `shadcn` command is run to add components.
 
@@ -170,12 +200,12 @@ shadcn/ui's settings, used if the `shadcn` command is run to add components.
 | `rsc` | `false` | No React Server Components; this is a browser-only app |
 | `tsx` | `true` | Generate TypeScript |
 | `tailwind.config` | `""` | Tailwind v4 has no config file; tokens live in CSS |
-| `tailwind.css` | `src/styles/globals.css` | Where theme variables are |
+| `tailwind.css` | `src/styles/theme.css` | Where theme variables are |
 | `tailwind.baseColor` | `slate` | Neutral grey scale for generated defaults |
 | `tailwind.cssVariables` | `true` | Components use CSS variables (the design tokens) |
 | `tailwind.prefix` | `""` | No class prefix |
 | `iconLibrary` | `lucide` | Icon set |
-| `aliases.*` | `@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks` | Where generated files go and how they import each other |
+| `aliases.*` | `@conote/ui`, `@conote/ui/utils` | The package names generated files are imported by. A generated file must then import `cn` from `'../utils'` (see `CLAUDE.md`), because `@/` means each app's own `src/`. |
 
 ---
 
