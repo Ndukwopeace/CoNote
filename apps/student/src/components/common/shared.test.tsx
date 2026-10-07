@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest'
 // The error type LoadError reads.
 import { AppError } from '@conote/core/errors'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The units under test.
 import { ClassListItem } from './ClassListItem'

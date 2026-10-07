@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 // The install option type.
 import type { InstallOption } from '@/lib/pwa'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The component under test.
 import { InstallBanner } from './InstallBanner'

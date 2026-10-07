@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 // The real route table, so the menu sits in the real portal shell.
 import { routes } from '@/app/routes'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.

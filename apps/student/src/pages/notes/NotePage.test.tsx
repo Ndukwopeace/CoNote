@@ -14,7 +14,7 @@ import { AppError } from '@conote/core/errors'
 // Service types.
 import type { Services } from '@/services/types'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Failing and hanging data.
 import { failingCatalog, hangingCatalog } from '@/test/catalogServices'
 // Factories.

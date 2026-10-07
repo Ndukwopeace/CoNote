@@ -11,6 +11,7 @@
    app by default. These lines make it scan the shared components too, so their classes exist. */
 @source '../components';
 @source '../common';
+@source '../forms';
 
 /* Maps each token to a Tailwind name, e.g. --color-primary makes bg-primary and text-primary work.
    "inline" makes classes read the CSS variable, so a token change applies everywhere at once. */

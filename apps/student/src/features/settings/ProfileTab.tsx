@@ -15,8 +15,8 @@ import { LoadError } from '@/components/common/LoadError'
 // Loading placeholder.
 import { ListSkeleton } from '@/components/common/Skeletons'
 // Labelled field and the error box.
-import { FormField } from '@/components/forms/FormField'
-import { FormMessage } from '@/components/forms/FormMessage'
+import { FormField } from '@conote/ui/forms/FormField'
+import { FormMessage } from '@conote/ui/forms/FormMessage'
 // Picture, button and input.
 import { Avatar, AvatarFallback } from '@conote/ui/avatar'
 import { buttonVariants, Button } from '@conote/ui/button'

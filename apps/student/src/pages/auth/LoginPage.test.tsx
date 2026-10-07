@@ -12,7 +12,7 @@ import { routes } from '@/app/routes'
 // The notice the reset page sends.
 import { authNoticeState } from '@/lib/authNotice'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Auth services that hang or fail.
 import { hangingAuth, offlineAuth } from '@/test/authServices'
 // Render helper.

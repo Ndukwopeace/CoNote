@@ -10,7 +10,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The badge text rules.
 import { formatUnreadCount } from '@/lib/unreadBadge'

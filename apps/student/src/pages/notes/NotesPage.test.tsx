@@ -13,7 +13,7 @@ import { routes } from '@/app/routes'
 // Service types.
 import type { Services } from '@/services/types'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Empty, failing and hanging data.
 import { emptyCatalog, failingCatalog, hangingCatalog } from '@/test/catalogServices'
 // Session factory.

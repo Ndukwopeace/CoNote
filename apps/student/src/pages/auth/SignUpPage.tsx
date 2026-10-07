@@ -13,11 +13,11 @@ import { Link } from 'react-router'
 // Sets the tab title.
 import { PageTitle } from '@conote/ui/common/PageTitle'
 // Labelled field with its inline error.
-import { FormField } from '@/components/forms/FormField'
+import { FormField } from '@conote/ui/forms/FormField'
 // Error box above the form.
-import { FormMessage } from '@/components/forms/FormMessage'
+import { FormMessage } from '@conote/ui/forms/FormMessage'
 // Password input with the show/hide toggle.
-import { PasswordInput } from '@/components/forms/PasswordInput'
+import { PasswordInput } from '@conote/ui/forms/PasswordInput'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Standard text input.

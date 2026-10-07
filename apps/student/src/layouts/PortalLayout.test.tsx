@@ -8,7 +8,7 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 // Accessibility checker.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.

@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 // The real route table.
 import { routes } from '@/app/routes'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 

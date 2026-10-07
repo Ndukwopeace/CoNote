@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Layout stand-ins the editor needs in jsdom.
 import { installEditorDomStubs } from '@/test/editorDom'
 

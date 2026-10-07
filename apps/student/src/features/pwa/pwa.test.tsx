@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // The hourly limit on update checks.
 import { UPDATE_CHECK_INTERVAL_MS } from '@/lib/pwa'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The units under test.
 import { createInstallPromptStore, useInstallOption } from './installPrompt'

@@ -214,7 +214,12 @@ export default tseslint.config(
 
   // Tests may build fixtures more loosely.
   {
-    files: ['**/*.test.{ts,tsx}', 'apps/*/src/test/**/*.{ts,tsx}', 'apps/*/e2e/**/*.ts'],
+    files: [
+      '**/*.test.{ts,tsx}',
+      'apps/*/src/test/**/*.{ts,tsx}',
+      'apps/*/e2e/**/*.ts',
+      'packages/testing/**/*.ts',
+    ],
     rules: {
       // Tests may assert a value exists with `!`.
       '@typescript-eslint/no-non-null-assertion': 'off',

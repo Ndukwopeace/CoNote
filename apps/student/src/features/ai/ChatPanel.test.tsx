@@ -17,7 +17,7 @@ import { AppError } from '@conote/core/errors'
 // Service types.
 import type { AiService } from '@/services/types'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Demo services and a test cache.
 import { createTestQueryClient, createTestServices } from '@/test/renderWithRouter'
 
