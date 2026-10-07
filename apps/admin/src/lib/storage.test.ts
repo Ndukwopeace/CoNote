@@ -16,7 +16,7 @@ describe('clearAdminStorage', () => {
     window.localStorage.setItem(`${ADMIN_STORAGE_PREFIX}filters`, 'y')
     window.localStorage.setItem('conote:session', 'student')
     clearAdminStorage(window.localStorage)
-    expect(window.localStorage.length).toBe(1)
+    expect(window.localStorage).toHaveLength(1)
     expect(window.localStorage.getItem('conote:session')).toBe('student')
   })
 })

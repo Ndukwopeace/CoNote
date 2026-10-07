@@ -49,8 +49,13 @@ describe('admin route guard', () => {
 
   // Proves an admin gets the page they asked for.
   it('lets an admin in', async () => {
-    renderWithRouter({ routes, path: '/admin/users', session: makeSession('admin') })
-    await screen.findByRole('heading', { level: 1, name: 'Users' })
+    const { router } = renderWithRouter({
+      routes,
+      path: '/admin/users',
+      session: makeSession('admin'),
+    })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Users' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/admin/users')
   })
 
   // Proves an admin who opens sign-in is sent on to the dashboard.
@@ -76,7 +81,7 @@ describe('admin route guard', () => {
     await screen.findByRole('heading', { level: 1, name: 'CoNote Admin' })
     expect(router.state.location.pathname).toBe('/admin/login')
     await waitFor(() => {
-      expect(window.sessionStorage.length).toBe(0)
+      expect(window.sessionStorage).toHaveLength(0)
     })
   })
 })

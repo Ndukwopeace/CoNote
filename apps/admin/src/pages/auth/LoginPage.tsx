@@ -58,10 +58,10 @@ export function LoginPage() {
     setError(null)
     try {
       await signIn(values)
-    } catch (caught) {
+    } catch (error_) {
       // SECURITY: only the safe wording reaches the screen; details go to the reporter.
-      const appError = toAppError(caught)
-      reportError(caught, { where: 'LoginPage' })
+      const appError = toAppError(error_)
+      reportError(error_, { where: 'LoginPage' })
       setError(errorMessage(appError))
       setIsPending(false)
     }

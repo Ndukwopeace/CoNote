@@ -4,10 +4,10 @@
  */
 
 // The shared parser.
-import { parseEnv, type AppEnv } from '@conote/core/env'
+import { parseEnv } from '@conote/core/env'
 
-// Re-exported for the modules that take the configuration as a parameter.
-export type { AppEnv }
+// The configuration type, re-exported for the modules that take it as a parameter.
+export type { AppEnv } from '@conote/core/env'
 
 // Parsed once when the app loads; every other module imports this checked result.
 export const env = parseEnv(import.meta.env)

@@ -38,7 +38,7 @@ describe('admin routes', () => {
     ['/admin/settings', 'Settings'],
   ])('opens %s', async (path, heading) => {
     renderAsAdmin(path)
-    await screen.findByRole('heading', { level: 1, name: heading })
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
   // Proves each detail address has its page.
@@ -50,7 +50,7 @@ describe('admin routes', () => {
     ['/admin/ai-summaries/s1', 'Summary pipeline'],
   ])('opens %s', async (path, heading) => {
     renderAsAdmin(path)
-    await screen.findByRole('heading', { level: 1, name: heading })
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
   // Proves the bare addresses lead to the dashboard.
@@ -70,7 +70,9 @@ describe('admin routes', () => {
   // Proves an unknown address outside /admin shows not-found too.
   it('shows not-found for an unknown address outside /admin', async () => {
     renderAsAdmin('/no-such-page')
-    await screen.findByRole('heading', { level: 1, name: 'Page not found' })
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Page not found' }),
+    ).toBeInTheDocument()
   })
 })
 
