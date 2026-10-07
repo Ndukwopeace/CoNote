@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@conote/ui/avatar'
 // Tooltips show labels while the rail hides them.
 import { Tooltip, TooltipContent, TooltipTrigger } from '@conote/ui/tooltip'
 // "Victory Okafor" → "VO".
-import { initials } from '@/lib/initials'
+import { initials } from '@conote/core/initials'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
 // "12" → "9+", 0 → no badge.
@@ -21,7 +21,7 @@ import { formatUnreadCount } from '@/lib/unreadBadge'
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
 // A link that works inside TooltipTrigger (see SidebarLink for why).
-import { SidebarLink } from './SidebarLink'
+import { SidebarLink } from '@conote/ui/common/SidebarLink'
 
 /**
  * Desktop (≥ 1024 px): full sidebar with labels.

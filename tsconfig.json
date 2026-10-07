@@ -3,9 +3,10 @@
 {
   // No files directly; everything comes from the references.
   "files": [],
-  // The student app, the shared packages, and the root tooling files.
+  // The apps, the shared packages, and the root tooling files.
   "references": [
     { "path": "./apps/student" },
+    { "path": "./apps/admin" },
     { "path": "./packages/ui" },
     { "path": "./packages/domain" },
     { "path": "./packages/core" },

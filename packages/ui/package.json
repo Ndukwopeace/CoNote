@@ -20,7 +20,8 @@
   },
   "peerDependencies": {
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@conote/testing": "0.1.0"

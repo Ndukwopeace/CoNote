@@ -32,7 +32,7 @@ import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
 import { toAppError } from '@conote/core/errors'
 // "Victory Okafor" → "VO".
-import { initials } from '@/lib/initials'
+import { initials } from '@conote/core/initials'
 // Profile rules.
 import { profileSchema, type ProfileValues } from '@/lib/profile'
 // Class-name helper.

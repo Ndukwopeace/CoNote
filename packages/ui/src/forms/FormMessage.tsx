@@ -8,7 +8,7 @@ import { CircleAlert, CircleCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 // Class-name helper.
-import { cn } from '@conote/ui/utils'
+import { cn } from '../utils'
 
 /** What a message shows. */
 interface FormMessageProps {

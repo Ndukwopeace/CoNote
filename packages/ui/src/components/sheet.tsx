@@ -50,6 +50,8 @@ function SheetOverlay({
 /** The panel itself, from the right edge, with a close button in its corner. */
 /** Where the sheet slides in from, with its size and animation. */
 const SIDE_CLASSES = {
+  // Full height on the left, three quarters wide up to 384 px (the admin phone navigation).
+  left: 'inset-y-0 left-0 h-full w-3/4 max-w-sm border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left',
   // Full height on the right, three quarters wide up to 384 px.
   right:
     'inset-y-0 right-0 h-full w-3/4 max-w-sm border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
@@ -61,7 +63,7 @@ const SIDE_CLASSES = {
 function SheetContent({
   className,
   children,
-  // Right (the landing menu) or bottom (the summary's Ask AI on phones).
+  // Left (the admin phone navigation), right (the landing menu) or bottom (Ask AI on phones).
   side = 'right',
   // The close button's name for screen readers.
   closeLabel = 'Close menu',

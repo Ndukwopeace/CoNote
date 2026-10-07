@@ -9,9 +9,9 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 
 // The standard text input.
-import { Input } from '@conote/ui/input'
+import { Input } from '../components/input'
 // Class-name helper.
-import { cn } from '@conote/ui/utils'
+import { cn } from '../utils'
 
 /** Every normal input attribute except `type`, which the toggle controls. */
 type PasswordInputProps = Omit<ComponentProps<'input'>, 'type'>

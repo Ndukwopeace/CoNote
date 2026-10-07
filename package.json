@@ -12,15 +12,16 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @conote/student",
-    "build": "npm run build -w @conote/student",
+    "dev:admin": "npm run dev -w @conote/admin",
+    "build": "npm run build --workspaces --if-present",
     "preview": "npm run preview -w @conote/student",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
     "test": "vitest",
-    "size": "npm run size -w @conote/student",
-    "e2e": "npm run e2e -w @conote/student",
+    "size": "npm run size --workspaces --if-present",
+    "e2e": "npm run e2e --workspaces --if-present",
     "prepare": "husky || true"
   },
   "lint-staged": {

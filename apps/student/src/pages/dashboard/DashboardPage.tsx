@@ -43,7 +43,7 @@ import { getClassStatus, groupClassesByDay, upcomingClasses } from '@/lib/classe
 // Greeting and relative times.
 import { formatRelativeTime, greetingFor } from '@/lib/dates'
 // "Victory Okafor" → "Victory".
-import { firstName } from '@/lib/initials'
+import { firstName } from '@conote/core/initials'
 // Checks a notification link stays inside CoNote.
 import { isSafeRedirect } from '@conote/core/isSafeRedirect'
 // Route constants and builders.

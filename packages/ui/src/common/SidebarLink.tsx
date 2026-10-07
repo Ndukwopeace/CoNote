@@ -9,7 +9,7 @@ import type { ComponentProps } from 'react'
 import { Link, useMatch, useResolvedPath } from 'react-router'
 
 // Class-name helper.
-import { cn } from '@conote/ui/utils'
+import { cn } from '../utils'
 
 /** Link's props, but with plain-string class names instead of NavLink's function form. */
 type SidebarLinkProps = Omit<ComponentProps<typeof Link>, 'className'> & {

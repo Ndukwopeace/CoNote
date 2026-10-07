@@ -223,6 +223,12 @@ Added after M1 at the team's request. It comes straight after M2 so the icons us
 
 ---
 
+## Admin portal
+
+The admin console's milestones (A1 to A11) and the shared backend stage are tracked in [`admin/MILESTONES.md`](./admin/MILESTONES.md).
+
+---
+
 ## Restructure — Monorepo (D64)
 
 Done between M5 and M6, before the admin portal starts. No change for students.

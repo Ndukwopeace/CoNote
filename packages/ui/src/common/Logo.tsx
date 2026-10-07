@@ -4,7 +4,7 @@
  */
 
 // Class-name helper.
-import { cn } from '@conote/ui/utils'
+import { cn } from '../utils'
 
 /** The CoNote mark and wordmark. `compact` shows only the mark. */
 export function Logo({

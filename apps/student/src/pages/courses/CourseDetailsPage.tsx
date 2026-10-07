@@ -41,7 +41,7 @@ import { usePublishedSummaries } from '@/hooks/useSummaries'
 // Class status from the clock.
 import { getClassStatus } from '@/lib/classes'
 // Teacher initials.
-import { initials } from '@/lib/initials'
+import { initials } from '@conote/core/initials'
 // "4 classes", "1 note".
 import { countOf } from '@/lib/plural'
 // Route constants and builders.

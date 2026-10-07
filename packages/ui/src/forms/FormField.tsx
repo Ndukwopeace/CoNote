@@ -7,7 +7,7 @@
 import type { ReactNode } from 'react'
 
 // Class-name helper.
-import { cn } from '@conote/ui/utils'
+import { cn } from '../utils'
 
 /** The attributes the field hands to its input. */
 export interface FieldControlProps {
