@@ -8,7 +8,7 @@
 import { z } from 'zod'
 
 // The error type every failure becomes.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The note rules shared with the form.
 import { noteInputSchema, resolveNoteTitle, type NoteInput } from '@/lib/notes'
 // Strips unsafe markup before a note is stored.

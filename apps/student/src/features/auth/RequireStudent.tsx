@@ -6,7 +6,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 
 // Spinner while the session is being checked.
-import { FullPageLoader } from '@/components/common/FullPageLoader'
+import { FullPageLoader } from '@conote/ui/common/FullPageLoader'
 // Builds the sign-in path with a redirect back.
 import { routeTo } from '@/lib/routes'
 

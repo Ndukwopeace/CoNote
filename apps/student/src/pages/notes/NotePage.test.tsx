@@ -10,11 +10,11 @@ import { describe, expect, it } from 'vitest'
 // The real route table.
 import { routes } from '@/app/routes'
 // The error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Service types.
 import type { Services } from '@/services/types'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Failing and hanging data.
 import { failingCatalog, hangingCatalog } from '@/test/catalogServices'
 // Factories.

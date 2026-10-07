@@ -8,6 +8,8 @@
     "target": "es2023",
     // Built-in types for the code in this package.
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    // jest-dom's matchers (toBeInTheDocument…) for the component tests.
+    "types": ["@testing-library/jest-dom/vitest"],
     // ES modules, resolved the way Vite resolves them.
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -31,6 +33,6 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true
   },
-  // The package source.
-  "include": ["src"]
+  // The package source, and the setup file its component tests run first.
+  "include": ["src", "vitest.setup.ts"]
 }

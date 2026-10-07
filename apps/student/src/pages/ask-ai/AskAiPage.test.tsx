@@ -12,7 +12,7 @@ import { routes } from '@/app/routes'
 // The prompts, for expectations.
 import { suggestedPrompts } from '@/lib/aiReplies'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.

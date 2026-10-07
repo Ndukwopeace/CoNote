@@ -9,9 +9,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 // Reports failures.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 // The injected services.
 import { useServices } from '@/services/useServices'
 // Shapes.

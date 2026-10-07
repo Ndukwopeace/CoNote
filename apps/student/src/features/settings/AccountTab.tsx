@@ -15,9 +15,9 @@ import { useForm } from 'react-hook-form'
 // Yes/no dialog.
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 // Labelled field, the error box and the password input.
-import { FormField } from '@/components/forms/FormField'
-import { FormMessage } from '@/components/forms/FormMessage'
-import { PasswordInput } from '@/components/forms/PasswordInput'
+import { FormField } from '@conote/ui/forms/FormField'
+import { FormMessage } from '@conote/ui/forms/FormMessage'
+import { PasswordInput } from '@conote/ui/forms/PasswordInput'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Sign-in state and actions.
@@ -29,7 +29,7 @@ import { changePasswordSchema, type ChangePasswordValues } from '@/lib/authSchem
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 
 // The section card.
 import { SettingsSection } from './SettingsSection'

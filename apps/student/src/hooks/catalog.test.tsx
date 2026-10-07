@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // The real providers.
 import { AppProviders } from '@/app/AppProviders'
 // The error type failures arrive as.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Instant demo services and a no-retry cache.
 import { createTestQueryClient, createTestServices } from '@/test/renderWithRouter'
 

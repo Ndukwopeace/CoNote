@@ -15,7 +15,7 @@ import { LoadError } from '@/components/common/LoadError'
 // Missing-class panel.
 import { NotFoundPanel } from '@/components/common/NotFoundPanel'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // The FR-CLS-3 banner.
 import { PrivacyBanner } from '@/components/common/PrivacyBanner'
 // The notes list.

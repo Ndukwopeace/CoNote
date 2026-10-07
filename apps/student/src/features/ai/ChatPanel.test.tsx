@@ -13,11 +13,11 @@ import { AppProviders } from '@/app/AppProviders'
 // Replies, for expectations.
 import { cannedReply, suggestedPrompts } from '@/lib/aiReplies'
 // The error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Service types.
 import type { AiService } from '@/services/types'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Demo services and a test cache.
 import { createTestQueryClient, createTestServices } from '@/test/renderWithRouter'
 

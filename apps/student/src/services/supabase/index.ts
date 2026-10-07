@@ -3,7 +3,7 @@
  */
 
 // The app's error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 
 // The shape the real implementation will return.
 import type { Services } from '../types'

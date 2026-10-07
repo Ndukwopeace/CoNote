@@ -9,7 +9,7 @@ import { ArrowLeft, SearchX } from 'lucide-react'
 import { Link } from 'react-router'
 
 // Sets the tab title.
-import { PageTitle } from './PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 
 /** What the panel shows. */
 interface NotFoundPanelProps {

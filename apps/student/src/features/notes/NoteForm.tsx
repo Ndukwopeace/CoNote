@@ -21,8 +21,8 @@ import { LoadError } from '@/components/common/LoadError'
 // Loading placeholder.
 import { ListSkeleton } from '@/components/common/Skeletons'
 // Labelled field and the error box.
-import { FormField } from '@/components/forms/FormField'
-import { FormMessage } from '@/components/forms/FormMessage'
+import { FormField } from '@conote/ui/forms/FormField'
+import { FormMessage } from '@conote/ui/forms/FormMessage'
 // The body editor and tag picker.
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { TagPicker } from '@/components/notes/TagPicker'
@@ -44,7 +44,7 @@ import { formatRelativeTime } from '@/lib/dates'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 // Draft keys.
 import { draftKey } from '@/lib/noteDrafts'
 // Note rules.

@@ -9,15 +9,18 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    // Each app is a project with its own config (environment, setup files, aliases).
-    projects: ['apps/*/vitest.config.ts'],
+    // Each app, and each package with tests, is a project with its own config (environment,
+    // setup files, aliases).
+    projects: ['apps/*/vitest.config.ts', 'packages/*/vitest.config.ts'],
     coverage: {
       // Use V8's built-in coverage (fast, no code instrumentation).
       provider: 'v8',
       // Terminal summary, a browsable HTML report, and lcov for SonarCloud.
       reporter: ['text', 'html', 'lcov'],
-      // ENGINEERING_STANDARDS.md section 2.6: the floor applies to each app's logic folders only.
+      // ENGINEERING_STANDARDS.md section 2.6: the floor applies to each app's logic folders and
+      // to the shared logic in packages/core.
       include: [
+        'packages/core/src/**',
         'apps/*/src/services/**',
         'apps/*/src/hooks/**',
         'apps/*/src/lib/**',

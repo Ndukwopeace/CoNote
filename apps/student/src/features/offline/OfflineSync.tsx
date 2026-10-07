@@ -16,7 +16,7 @@ import { useAuth } from '@/features/auth/useAuth'
 // Which data is kept, and for how long.
 import { OFFLINE_MAX_AGE_MS, shouldKeepOffline } from '@/lib/offlineCache'
 // Reports failures.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 
 // The IndexedDB store and the throttled persister.
 import { createIdbStore, type KeyValueStore } from './idbStore'

@@ -15,7 +15,7 @@ import { LoadError } from '@/components/common/LoadError'
 // Missing-summary panel.
 import { NotFoundPanel } from '@/components/common/NotFoundPanel'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Loading placeholders.
 import { HeaderSkeleton, ListSkeleton } from '@/components/common/Skeletons'
 // Status label.

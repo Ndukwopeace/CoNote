@@ -17,7 +17,7 @@ import { LoadError } from '@/components/common/LoadError'
 // Missing-note panel.
 import { NotFoundPanel } from '@/components/common/NotFoundPanel'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // The only way user HTML reaches the page.
 import { SafeHtml } from '@/components/common/SafeHtml'
 // Loading placeholders.

@@ -9,7 +9,7 @@ import { z } from 'zod'
 // The same name and password rules the forms use (FR-AUTH-3).
 import { fullNameSchema, newPasswordSchema } from '@/lib/authSchemas'
 // The error type every service throws.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The reset page's address, for the demo reset link.
 import { ROUTES } from '@/lib/routes'
 // Builds "conote:"-prefixed storage keys.

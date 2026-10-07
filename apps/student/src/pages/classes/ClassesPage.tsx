@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Loading placeholder.
 import { ListSkeleton } from '@/components/common/Skeletons'
 // Data hooks.

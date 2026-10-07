@@ -31,6 +31,7 @@
     // Only erasable syntax.
     "erasableSyntaxOnly": true
   },
-  // The root Vitest config and ESLint config.
-  "include": ["vitest.config.ts", "eslint.config.js"]
+  // The root Vitest and ESLint configs, and each package's Vitest config. (A package's test setup
+  // file runs in the simulated browser, so the package's own tsconfig checks it.)
+  "include": ["vitest.config.ts", "eslint.config.js", "packages/*/vitest.config.ts"]
 }

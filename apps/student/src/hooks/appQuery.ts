@@ -3,7 +3,7 @@
  */
 
 // Converts anything thrown into an AppError.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 
 /**
  * Runs `load` and turns any failure into an AppError, which is the error type the query cache

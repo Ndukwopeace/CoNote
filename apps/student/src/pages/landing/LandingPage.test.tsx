@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 // The real route table, so the public layout takes part.
 import { routes } from '@/app/routes'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 

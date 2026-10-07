@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
 
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The unit under test.
 import { TagPicker } from './TagPicker'

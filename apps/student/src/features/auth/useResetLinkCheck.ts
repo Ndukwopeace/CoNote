@@ -9,9 +9,9 @@ import { useCallback, useEffect, useState } from 'react'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown into an AppError.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 // Reports failures to developers.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 
 // The injected auth service. Used directly because it is a stable object, whereas the auth
 // context's functions are rebuilt on every sign-in change and would re-run the check.

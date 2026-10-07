@@ -7,6 +7,8 @@
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./utils": "./src/utils.ts",
+    "./common/*": "./src/common/*.tsx",
+    "./forms/*": "./src/forms/*.tsx",
     "./*": "./src/components/*.tsx"
   },
   "dependencies": {
@@ -18,6 +20,10 @@
   },
   "peerDependencies": {
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0"
+  },
+  "devDependencies": {
+    "@conote/testing": "0.1.0"
   }
 }

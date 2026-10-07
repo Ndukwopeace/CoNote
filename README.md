@@ -6,14 +6,17 @@ draft summary; a teacher approves it; students read the approved version.
 This repository is a monorepo (npm workspaces). Each role gets its own app, and the apps share
 one backend and a set of packages:
 
-| Folder            | Package           | What it is                                                |
-| ----------------- | ----------------- | --------------------------------------------------------- |
-| `apps/student`    | `@conote/student` | The student portal: an installable web app (built, M1–M5) |
-| `packages/ui`     | `@conote/ui`      | Design tokens, Tailwind theme and shared UI primitives    |
-| `packages/domain` | `@conote/domain`  | Shared roles and statuses                                 |
+| Folder             | Package           | What it is                                                |
+| ------------------ | ----------------- | --------------------------------------------------------- |
+| `apps/student`     | `@conote/student` | The student portal: an installable web app (built, M1–M5) |
+| `apps/admin`       | `@conote/admin`   | The admin console (in progress, A1 done)                  |
+| `packages/ui`      | `@conote/ui`      | Design tokens, Tailwind theme, UI primitives, form fields |
+| `packages/domain`  | `@conote/domain`  | Shared roles and statuses                                 |
+| `packages/core`    | `@conote/core`    | Errors, safe redirects, environment checks, reporting     |
+| `packages/testing` | `@conote/testing` | Test-only helpers shared by every app                     |
 
-The admin and teacher portals will be added as `apps/admin` and `apps/teacher`. See
-[`docs/MILESTONES.md`](docs/MILESTONES.md) for progress.
+The teacher portal will be added as `apps/teacher`. Progress: [`docs/MILESTONES.md`](docs/MILESTONES.md)
+(student) and [`docs/admin/MILESTONES.md`](docs/admin/MILESTONES.md) (admin).
 
 ## Quick start
 
@@ -23,15 +26,21 @@ Requires **Node 22.22 or newer** (see `.nvmrc`).
 npm ci                                                 # installs every app and package
 cp apps/student/.env.example apps/student/.env.local   # optional: the defaults use demo data
 npm run dev                                            # the student app, http://localhost:5173
+npm run dev:admin                                      # the admin console, http://localhost:5174/admin
 ```
 
-Sign in with **any valid email and any password**, or either OAuth button. You are signed in as
-the demo student. Demo data lives in your browser's storage.
+**Student app:** sign in with **any valid email and any password**, or either OAuth button. You
+are signed in as the demo student. Demo data lives in your browser's storage.
+
+**Admin console:** sign in as `admin@conote.example` with the password `password1`. The demo
+teacher and student accounts (`teacher@` and `student@conote.example`, same password) are turned
+away, which shows the admin-only guard.
 
 ## Scripts
 
-Run from the repository root. Lint, format, type check and tests cover every app and package;
-`dev`, `build`, `size` and `e2e` run the student app (add `-w @conote/<app>` for another).
+Run from the repository root. Lint, format, type check, tests, `build`, `size` and `e2e` cover
+every app and package; `dev` and `preview` run the student app (`npm run dev:admin` for the
+console, or add `-w @conote/<app>` to run any script in one app).
 
 | Command                        | What it does                                                |
 | ------------------------------ | ----------------------------------------------------------- |
@@ -42,7 +51,7 @@ Run from the repository root. Lint, format, type check and tests cover every app
 | `npm run lint`                 | ESLint, zero warnings allowed                               |
 | `npm run format`               | Format everything with Prettier                             |
 | `npm run typecheck`            | TypeScript project build, no output                         |
-| `npm run build`                | Production build into `apps/student/dist/`                  |
+| `npm run build`                | Production build of every app into `apps/<app>/dist/`       |
 | `npm run size`                 | Check the initial JavaScript against the 250 KB gzip budget |
 
 A pre-commit hook (Husky + lint-staged) formats, lints and runs related tests on staged files.

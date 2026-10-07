@@ -8,9 +8,9 @@ import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 // The error type a failing service throws.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The reporter (replaced by a recording fake below).
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 
 // Storage key builder, to plant data to be cleared.
 import { storageKey } from '@/lib/storage'
@@ -23,7 +23,7 @@ import { createTestServices, renderWithRouter } from '@/test/renderWithRouter'
 import { useAuth } from './useAuth'
 
 // Replace the reporter with a recording fake, so tests can check what was reported.
-vi.mock('@/lib/reportError', () => ({ reportError: vi.fn() }))
+vi.mock('@conote/core/reportError', () => ({ reportError: vi.fn() }))
 
 /** A tiny component that shows the auth state and offers sign-in and sign-out buttons. */
 function AuthProbe() {

@@ -58,6 +58,20 @@ Sent with every response (`"source": "/(.*)"`).
 
 ---
 
+## `apps/admin/vercel.json`
+
+The admin app's own Vercel project (Root Directory `apps/admin`, D66) reads this file. It matches the root `vercel.json` with three differences:
+
+| Line | What it does | Why |
+|---|---|---|
+| `"buildCommand": "npm run build"`, `"outputDirectory": "dist"` | The admin app's own build, into `apps/admin/dist` | Vercel runs these inside `apps/admin`; npm still installs the whole workspace from the root lock file |
+| No `sw.js` / `manifest.webmanifest` rule | Left out | The console has no service worker or manifest |
+| `X-Robots-Tag: noindex, nofollow` | Tells search engines not to list any console page or follow its links | **SECURITY:** the console isn't public; listing its sign-in page would advertise it to anyone looking for targets. `index.html` also carries a `robots` meta tag. |
+
+The CSP and the other security headers are the same as the student app's, and `npm run preview` in `apps/admin` serves them, so the admin browser tests run under the production policy.
+
+---
+
 ## `package.json` files (npm workspaces, D64)
 
 The repository is one npm workspace: a root `package.json`, one per app under `apps/`, and one per shared package under `packages/`. `npm ci` at the root installs everything into one `node_modules`, with one `package-lock.json`, and links each workspace in as `node_modules/@conote/<name>`.
@@ -75,7 +89,9 @@ The repository is one npm workspace: a root `package.json`, one per app under `a
 
 | Script | Command | What it does |
 |---|---|---|
-| `dev`, `build`, `preview`, `size`, `e2e` | `npm run <script> -w @conote/student` | Runs that script in the student app. Use `-w @conote/<app>` directly for another app. |
+| `dev`, `preview` | `npm run <script> -w @conote/student` | Runs that script in the student app |
+| `dev:admin` | `npm run dev -w @conote/admin` | The admin console's dev server (port 5174) |
+| `build`, `size`, `e2e` | `npm run <script> --workspaces --if-present` | Runs the script in every workspace that has it: both apps today. CI calls these, so every app is built, size-checked and browser-tested (D66). |
 | `lint` | `eslint . --max-warnings=0` | Lint every app and package with the root `eslint.config.js`; any warning fails |
 | `format` | `prettier --write .` | Reformat every file |
 | `format:check` | `prettier --check .` | Fail if any file isn't formatted (CI) |
@@ -111,17 +127,24 @@ Runs on the files staged for a commit, from the repository root.
 | `e2e` | `playwright test` | Browser tests in `apps/student/e2e` |
 | `icons` | `node scripts/generate-icons.mjs` | Redraws the app icons and iPhone launch images into `apps/student/public` |
 
-Its `dependencies` are the browser libraries listed below, plus `@conote/ui` and `@conote/domain`. Those two resolve to the workspace folders, never to the npm registry.
+Its `dependencies` are the browser libraries listed below, plus `@conote/ui`, `@conote/domain` and `@conote/core`; its `devDependencies` hold `@conote/testing`. All four resolve to the workspace folders, never to the npm registry.
 
-### `packages/ui/package.json` and `packages/domain/package.json`
+### `apps/admin/package.json`
+
+The same fields and scripts as the student app, minus `icons`: `@conote/admin`, version, `dev` (port 5174, set in `vite.config.ts`), `build`, `preview`, `size`, `e2e` (port 4174, so it can run next to the student's 4173). Its dependencies are the subset the console uses: React, React Router, TanStack Query, react-hook-form with `@hookform/resolvers`, zod, lucide-react, the font, and the four workspace packages. No PWA or editor libraries.
+
+### `packages/*/package.json` (`ui`, `domain`, `core`, `testing`)
 
 | Field | What it does | Why |
 |---|---|---|
-| `"name"` | `@conote/ui` / `@conote/domain` | The name apps import from, for example `@conote/ui/button` |
+| `"name"` | `@conote/ui`, `@conote/domain`, `@conote/core`, `@conote/testing` | The name apps import from, for example `@conote/ui/button` |
 | `"private": true` | Never published | **SECURITY:** as above |
-| `"exports"` | Maps import paths to source files: `@conote/ui/<name>` → `src/components/<name>.tsx`, `@conote/ui/utils` → `src/utils.ts`, `@conote/ui/styles/theme.css` and `…/tokens.css` → the stylesheets; `@conote/domain` → `src/index.ts` | Apps compile the package source directly (no build step for packages), and only the listed paths can be imported, so a package's internals stay private |
+| `"exports"` | Maps import paths to source files: `@conote/ui/<name>` → `src/components/<name>.tsx`, `@conote/ui/common/<name>` → `src/common/<name>.tsx`, `@conote/ui/forms/<name>` → `src/forms/<name>.tsx`, `@conote/ui/utils` → `src/utils.ts`, `@conote/ui/styles/theme.css` and `…/tokens.css` → the stylesheets; `@conote/domain` → `src/index.ts`; `@conote/core/<name>` and `@conote/testing/<name>` → `src/<name>.ts` | Apps compile the package source directly (no build step for packages), and only the listed paths can be imported, so a package's internals stay private |
 | `"dependencies"` (`ui`) | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | What the primitives use |
-| `"peerDependencies"` (`ui`) | `react`, `react-dom` | Supplied by the app, so there is only ever one copy of React |
+| `"peerDependencies"` (`ui`) | `react`, `react-dom`, `react-router` | Supplied by the app, so there is only ever one copy of each. `react-router` is needed by `SidebarLink` (D67). |
+| `"dependencies"` (`core`) | `zod` | `parseEnv` checks the environment variables with it |
+| `"devDependencies"` (`ui`) | `@conote/testing` | The common test setup for its component tests |
+| (`testing`) | no dependencies of its own | It uses the test tooling in the root `devDependencies` (Vitest, Testing Library, axe, Playwright). Test-only: no app imports it from shipped code. |
 
 ### Dependencies (shipped to the browser)
 
@@ -164,12 +187,12 @@ Listed in `apps/student/package.json`, except the last four rows, which `package
 
 ---
 
-## `apps/student/.size-limit.json`
+## `apps/student/.size-limit.json` and `apps/admin/.size-limit.json`
 
 | Field | Value | Why |
 |---|---|---|
 | `name` | "Initial JavaScript (entry chunk)" | Label in the report |
-| `path` | `dist/assets/index-*.js` (relative to `apps/student`) | The entry chunk every visitor downloads first; lazy-loaded pages are not counted |
+| `path` | `dist/assets/index-*.js` (relative to the app's folder) | The entry chunk every visitor downloads first; lazy-loaded pages are not counted |
 | `limit` | `250 KB` | The budget from NFR-3, so the first load stays fast on phones |
 | `gzip` | `true` | Measure the compressed size, which is what is actually transferred |
 

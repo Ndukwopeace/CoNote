@@ -13,11 +13,11 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 
 // Sets the tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Labelled field with its inline error.
-import { FormField } from '@/components/forms/FormField'
+import { FormField } from '@conote/ui/forms/FormField'
 // Error and success boxes.
-import { FormMessage } from '@/components/forms/FormMessage'
+import { FormMessage } from '@conote/ui/forms/FormMessage'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Standard text input.

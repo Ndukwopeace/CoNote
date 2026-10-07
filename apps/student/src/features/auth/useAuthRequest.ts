@@ -8,7 +8,7 @@ import { useCallback, useState } from 'react'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown into an AppError.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 
 /** The outcome of one request: its value, or a failure already shown to the student. */
 export type AuthRequestResult<T> = { ok: true; value: T } | { ok: false }

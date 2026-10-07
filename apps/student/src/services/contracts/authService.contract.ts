@@ -8,7 +8,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 // The error type a validation failure must be.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The session type, used to type the fake listener.
 import type { Session } from '@/types/auth'
 

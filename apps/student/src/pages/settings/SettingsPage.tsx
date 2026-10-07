@@ -7,7 +7,7 @@
 import { Link, Navigate, useParams } from 'react-router'
 
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // The five tabs.
 import { AccountTab } from '@/features/settings/AccountTab'
 import { HelpTab } from '@/features/settings/HelpTab'

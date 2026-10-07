@@ -94,7 +94,7 @@ If both pass the same suite, swapping the data source cannot change app behaviou
 
 ### 2.6 Coverage
 
-- **Enforced in CI:** 80% lines and 80% branches for `src/services`, `src/hooks`, `src/lib` and `src/features` in every app (the root `vitest.config.ts`).
+- **Enforced in CI:** 80% lines and 80% branches for `src/services`, `src/hooks`, `src/lib` and `src/features` in every app, and for `packages/core` (the root `vitest.config.ts`).
 - **Excluded:** the shared packages (`packages/ui` holds shadcn-style primitives, `packages/domain` holds types), type-only files and seed data.
 - Coverage is a floor that catches untested areas. It is not the goal. A test that runs code without asserting on it does not count, and reviewers reject it.
 
@@ -117,7 +117,7 @@ packages/* ──► other packages and libraries only (never an app's "@/" code
 
 These rules are enforced by ESLint (`no-restricted-imports` or `eslint-plugin-boundaries`). An import that breaks them fails lint. The rules are written once in the root `eslint.config.js` and apply to every app under `apps/`.
 
-**Shared packages (D64).** Code that two apps would otherwise copy goes in a package: design tokens and UI primitives in `packages/ui`, the shared vocabulary (roles and statuses) in `packages/domain`. A package never imports app code. App-specific view types stay in the app.
+**Shared packages (D64, D67).** Code that two apps would otherwise copy goes in a package: design tokens, UI primitives, form fields and common page parts in `packages/ui`; the shared vocabulary (roles and statuses) in `packages/domain`; shared logic (errors, safe redirects, environment checks, error reporting) in `packages/core`; test-only helpers in `packages/testing`. A package never imports app code. App-specific view types and wording (such as error messages) stay in the app.
 
 ### 3.2 Patterns and where they apply
 

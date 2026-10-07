@@ -4,9 +4,9 @@
  */
 
 // Makes the switch below fail the type check if a new error kind is added without wording.
-import { assertNever } from './assertNever'
+import { assertNever } from '@conote/core/assertNever'
 // The error type whose `kind` decides the message.
-import type { AppError } from './errors'
+import type { AppError } from '@conote/core/errors'
 
 /** Student-facing wording for each error kind: what happened and what to do next. */
 export function errorMessage(error: AppError): string {

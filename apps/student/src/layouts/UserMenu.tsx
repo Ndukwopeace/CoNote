@@ -28,7 +28,7 @@ import { useInstallOption } from '@/features/pwa/installPrompt'
 // The iOS "Add to Home Screen" steps.
 import { IosInstallDialog } from '@/features/pwa/IosInstallDialog'
 // "Victory Okafor" → "VO".
-import { initials } from '@/lib/initials'
+import { initials } from '@conote/core/initials'
 // Route constants and builders.
 import { ROUTES, routeTo } from '@/lib/routes'
 

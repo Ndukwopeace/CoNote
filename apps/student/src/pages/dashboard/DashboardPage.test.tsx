@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // The real route table.
 import { routes } from '@/app/routes'
 // Accessibility check.
-import { expectNoAxeViolations } from '@/test/axe'
+import { expectNoAxeViolations } from '@conote/testing/axe'
 // Empty, failing and hanging data.
 import { emptyCatalog, failingCatalog, hangingCatalog } from '@/test/catalogServices'
 // Session factory.

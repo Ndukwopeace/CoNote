@@ -7,7 +7,7 @@
 import { Link, Outlet } from 'react-router'
 
 // The CoNote mark and wordmark.
-import { Logo } from '@/components/common/Logo'
+import { Logo } from '@conote/ui/common/Logo'
 // "You're offline" banner (FR-PWA-4).
 import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 // Route constants.
