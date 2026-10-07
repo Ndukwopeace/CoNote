@@ -163,6 +163,8 @@ test('the splash shows at launch and leaves once the page is ready', async ({ pa
   // The first HTML carries the splash and the iPhone launch images.
   const html = await (await request.get('/login')).text()
   expect(html).toContain('id="splash"')
+  // It's an <output>, the native status element, so screen readers treat it as a live status.
+  expect(html).toContain('<output id="splash"')
   expect(html).toContain('rel="apple-touch-startup-image"')
   // iOS uses launch images for home-screen web apps, which this tag declares (D62).
   expect(html).toContain('name="apple-mobile-web-app-capable" content="yes"')

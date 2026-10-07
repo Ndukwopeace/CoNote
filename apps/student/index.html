@@ -178,9 +178,11 @@
   </head>
   <body>
     <!-- The launch splash (D61): shown before any script runs, removed by the app once the first
-         page is ready (src/features/pwa/splash.ts). role="status" with a label tells screen
-         readers the app is loading; the visible text inside is hidden from them to avoid repeats. -->
-    <div id="splash" role="status" aria-label="Loading CoNote">
+         page is ready (src/features/pwa/splash.ts). <output> is the native status element: with
+         its label it tells screen readers the app is loading, and the visible text inside is
+         hidden from them to avoid repeats. <output> holds only inline elements, so the children
+         are <span>s; the CSS above lays them out as a centred column. -->
+    <output id="splash" aria-label="Loading CoNote">
       <!-- The logo mark, reversed out of the brand colour: a white tile with the indigo C. -->
       <svg aria-hidden="true" width="80" height="80" viewBox="0 0 32 32">
         <rect width="32" height="32" rx="8" fill="#fff" />
@@ -194,11 +196,11 @@
         <circle cx="22" cy="16" r="2" fill="#4f46e5" />
       </svg>
       <!-- Name and tagline. -->
-      <p class="splash-name" aria-hidden="true">CoNote</p>
-      <p class="splash-tagline" aria-hidden="true">Your notes. Collective understanding.</p>
+      <span class="splash-name" aria-hidden="true">CoNote</span>
+      <span class="splash-tagline" aria-hidden="true">Your notes. Collective understanding.</span>
       <!-- Loading dots; decorative. -->
-      <div class="splash-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-    </div>
+      <span class="splash-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    </output>
     <!-- Without JavaScript the app can't run; say so instead of leaving the splash up. -->
     <noscript>
       <style>
