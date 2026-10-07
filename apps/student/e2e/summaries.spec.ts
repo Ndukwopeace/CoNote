@@ -98,8 +98,20 @@ test('notifications are read, and the bell follows', async ({ page }) => {
   await bell.click()
   await expect(page.getByRole('heading', { level: 1, name: 'Notifications' })).toBeVisible()
   await expectNoAxeViolations(page)
+  // How many notifications the demo backend has saved as read (its list in browser storage).
+  const savedAsRead = () =>
+    page.evaluate(
+      () =>
+        (JSON.parse(localStorage.getItem('conote:mock:read-notifications') ?? '[]') as unknown[])
+          .length,
+    )
+  const savedBefore = await savedAsRead()
   await page.getByRole('button', { name: 'Mark all as read' }).click()
+  // The bell clears at once (optimistic update)...
   await expect(bell).toHaveAccessibleName('Notifications')
+  // ...but the save lands only after the demo's simulated network delay. Reloading before then
+  // would drop it, so wait for it, as a student would wait for a real request to finish.
+  await expect.poll(savedAsRead).toBeGreaterThan(savedBefore)
 
   // Still read after a reload.
   await page.reload()
