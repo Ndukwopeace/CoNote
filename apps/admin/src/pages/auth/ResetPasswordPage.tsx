@@ -3,10 +3,8 @@
  * email. The link is checked first; only a valid one shows the form.
  */
 
-// Connects the zod rules to the form.
+// Connects the zod rules to the shared form.
 import { zodResolver } from '@hookform/resolvers/zod'
-// Form state.
-import { useForm } from 'react-hook-form'
 // Links, the address's query and navigation.
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -14,10 +12,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@conote/ui/button'
 // Spinner.
 import { FullPageLoader } from '@conote/ui/common/FullPageLoader'
-// Labelled field, message box and password input.
-import { FormField } from '@conote/ui/forms/FormField'
-import { FormMessage } from '@conote/ui/forms/FormMessage'
-import { PasswordInput } from '@conote/ui/forms/PasswordInput'
+// The shared new-password form.
+import { NewPasswordForm } from '@conote/ui/forms/NewPasswordForm'
 
 // The card around the page.
 import { AuthCard } from '@/components/common/AuthCard'
@@ -29,16 +25,12 @@ import { useResetLinkCheck } from '@/hooks/useResetLinkCheck'
 // The notice for the sign-in page.
 import { authNoticeState } from '@/lib/authNotice'
 // The form's rules.
-import {
-  ADMIN_MIN_PASSWORD_LENGTH,
-  resetPasswordSchema,
-  type ResetPasswordValues,
-} from '@/lib/authSchemas'
+import { ADMIN_MIN_PASSWORD_LENGTH, resetPasswordSchema } from '@/lib/authSchemas'
 // Route constants.
 import { ADMIN_ROUTES } from '@/lib/routes'
 
-/** The empty form. */
-const EMPTY: ResetPasswordValues = { password: '', confirmPassword: '' }
+/** The form's rules, connected once rather than on every render. */
+const RESOLVER = zodResolver(resetPasswordSchema)
 
 /** "Choose a new password", or "This link has expired". */
 export function ResetPasswordPage() {
@@ -78,19 +70,10 @@ function ResetForm({ code }: Readonly<{ code: string }>) {
   const { error, isPending, run } = useAuthRequest()
   // To leave for sign-in after success.
   const navigate = useNavigate()
-  // Form state with the zod rules.
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(resetPasswordSchema),
-    mode: 'onTouched',
-    defaultValues: EMPTY,
-  })
 
   /** Saves the new password, then shows sign-in with a confirmation. */
-  async function save({ password }: ResetPasswordValues) {
+  async function save(password: string) {
+    // Ask the service, which checks the code again; failures are shown by the runner.
     const result = await run(() => resetPassword(code, password))
     // replace: Back shouldn't return to a spent link.
     if (result.ok) {
@@ -103,48 +86,16 @@ function ResetForm({ code }: Readonly<{ code: string }>) {
 
   return (
     <AuthCard title="Choose a new password">
-      {/* Heading and the rules. */}
+      {/* Heading. */}
       <h1 className="text-2xl font-bold">Choose a new password</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Use at least {ADMIN_MIN_PASSWORD_LENGTH} characters, with a letter and a number.
-      </p>
-      {/* A failed save's message, such as a link used up in another tab. */}
-      {error && (
-        <FormMessage tone="error" className="mt-4">
-          {error}
-        </FormMessage>
-      )}
-      {/* noValidate: the zod rules give the messages, not the browser. */}
-      <form
-        noValidate
-        onSubmit={(event) => void handleSubmit(save)(event)}
-        className="mt-6 space-y-4"
-      >
-        {/* New password. */}
-        <FormField id="password" label="New password" error={errors.password?.message}>
-          {(field) => (
-            <PasswordInput {...field} autoComplete="new-password" {...register('password')} />
-          )}
-        </FormField>
-        {/* Confirmation. */}
-        <FormField
-          id="confirmPassword"
-          label="Confirm new password"
-          error={errors.confirmPassword?.message}
-        >
-          {(field) => (
-            <PasswordInput
-              {...field}
-              autoComplete="new-password"
-              {...register('confirmPassword')}
-            />
-          )}
-        </FormField>
-        {/* Submit. */}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Updating…' : 'Update password'}
-        </Button>
-      </form>
+      {/* The rules line, both fields and the submit, shared with the student portal. */}
+      <NewPasswordForm
+        resolver={RESOLVER}
+        minLength={ADMIN_MIN_PASSWORD_LENGTH}
+        error={error}
+        isPending={isPending}
+        onSubmit={save}
+      />
     </AuthCard>
   )
 }
