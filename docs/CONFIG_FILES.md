@@ -60,11 +60,13 @@ Sent with every response (`"source": "/(.*)"`).
 
 ## `apps/admin/vercel.json`
 
-The admin app's own Vercel project (Root Directory `apps/admin`, D66) reads this file. It matches the root `vercel.json` with three differences:
+The admin app's own Vercel project (Root Directory `apps/admin`, D66) reads this file. It matches the root `vercel.json` with these differences:
 
 | Line | What it does | Why |
 |---|---|---|
-| `"buildCommand": "npm run build"`, `"outputDirectory": "dist"` | The admin app's own build, into `apps/admin/dist` | Vercel runs these inside `apps/admin`; npm still installs the whole workspace from the root lock file |
+| `"installCommand": "cd ../.. && npm ci"` | Installs from the repository root | Vercel runs commands inside the Root Directory (`apps/admin`). The build tools (TypeScript, Vite, Tailwind) are declared once in the root `package.json`, so installing inside `apps/admin` left them out and the first deploy failed with `tsc: command not found`. Installing at the root gets every workspace and the shared tools, exactly as CI does. |
+| `"buildCommand": "cd ../.. && npm run build -w @conote/admin"` | Builds the admin app from the root | The same command CI and local builds use |
+| `"outputDirectory": "dist"` | Serves `apps/admin/dist` | Relative to the Root Directory, where Vite writes the build |
 | No `sw.js` / `manifest.webmanifest` rule | Left out | The console has no service worker or manifest |
 | `X-Robots-Tag: noindex, nofollow` | Tells search engines not to list any console page or follow its links | **SECURITY:** the console isn't public; listing its sign-in page would advertise it to anyone looking for targets. `index.html` also carries a `robots` meta tag. |
 
