@@ -8,8 +8,9 @@
 @import './tokens.css';
 
 /* Tailwind only generates the classes it finds in scanned files, and it doesn't scan outside the
-   app by default. This makes it scan the shared components too, so their classes exist. */
+   app by default. These lines make it scan the shared components too, so their classes exist. */
 @source '../components';
+@source '../common';
 
 /* Maps each token to a Tailwind name, e.g. --color-primary makes bg-primary and text-primary work.
    "inline" makes classes read the CSS variable, so a token change applies everywhere at once. */

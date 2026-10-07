@@ -9,7 +9,7 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router'
 
 // Sets the tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 
 // The page's sections, top to bottom.
 import { AboutSection } from './AboutSection'

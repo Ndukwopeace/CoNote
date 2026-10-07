@@ -1,10 +1,8 @@
 /**
- * Checks the `?redirect=` value the sign-in page receives before the app follows it.
- * Used by RedirectIfSignedIn after a student signs in (ENGINEERING_STANDARDS.md 6.2).
+ * Checks the `?redirect=` value a sign-in page receives before the app follows it
+ * (ENGINEERING_STANDARDS.md 6.2). Shared by every CoNote app (D64); each passes its own home page
+ * as the fallback.
  */
-
-// The route table, so the fallback destination is not a hard-coded string.
-import { ROUTES } from './routes'
 
 /**
  * True when the text contains an invisible control character (tab, newline, NUL, DEL…).
@@ -36,7 +34,7 @@ function looksProtocolRelative(path: string) {
 
 /**
  * True only for a relative path that stays on `origin`.
- * SECURITY: blocks open redirects. Without it, an attacker could send a student a genuine
+ * SECURITY: blocks open redirects. Without it, an attacker could send a user a genuine
  * CoNote sign-in link that forwards them to a look-alike site right after they log in, where
  * they would be asked for their password again.
  */
@@ -69,8 +67,12 @@ export function isSafeRedirect(path: string | null | undefined, origin: string):
   }
 }
 
-/** The path to go to after sign-in: the requested one if safe, otherwise the dashboard. */
-export function safeRedirectTarget(path: string | null | undefined, origin: string) {
-  // SECURITY: an unsafe or missing path never gets followed; the student lands on the dashboard.
-  return isSafeRedirect(path, origin) ? path : ROUTES.dashboard
+/** The path to go to after sign-in: the requested one if safe, otherwise the app's `fallback`. */
+export function safeRedirectTarget(
+  path: string | null | undefined,
+  origin: string,
+  fallback: string,
+) {
+  // SECURITY: an unsafe or missing path never gets followed; the user lands on `fallback`.
+  return isSafeRedirect(path, origin) ? path : fallback
 }

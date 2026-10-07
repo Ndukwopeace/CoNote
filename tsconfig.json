@@ -8,6 +8,7 @@
     { "path": "./apps/student" },
     { "path": "./packages/ui" },
     { "path": "./packages/domain" },
+    { "path": "./packages/core" },
     { "path": "./tsconfig.node.json" }
   ]
 }

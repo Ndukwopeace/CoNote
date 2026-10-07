@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react'
 
 // Sets the tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 
 /** One titled section of a legal page. */
 export interface LegalSection {

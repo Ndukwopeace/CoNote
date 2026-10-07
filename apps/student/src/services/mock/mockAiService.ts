@@ -5,7 +5,7 @@
 // The prepared replies.
 import { cannedReply } from '@/lib/aiReplies'
 // The error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 
 // The interface implemented.
 import type { AiService } from '../types'

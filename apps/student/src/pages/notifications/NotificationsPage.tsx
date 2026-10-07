@@ -15,7 +15,7 @@ import { LoadError } from '@/components/common/LoadError'
 // The type icon.
 import { NotificationTypeIcon } from '@/components/common/NotificationTypeIcon'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Loading placeholder.
 import { ListSkeleton } from '@/components/common/Skeletons'
 // Button and tabs.
@@ -29,7 +29,7 @@ import { useMarkAllRead, useMarkNotificationRead, useNotifications } from '@/hoo
 // Relative times.
 import { formatRelativeTime } from '@/lib/dates'
 // Checks a notification link stays inside CoNote.
-import { isSafeRedirect } from '@/lib/isSafeRedirect'
+import { isSafeRedirect } from '@conote/core/isSafeRedirect'
 // Reads ?tab= safely.
 import { parseTab } from '@/lib/tabs'
 // Class-name helper.

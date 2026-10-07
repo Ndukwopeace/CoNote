@@ -7,6 +7,7 @@
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./utils": "./src/utils.ts",
+    "./common/*": "./src/common/*.tsx",
     "./*": "./src/components/*.tsx"
   },
   "dependencies": {

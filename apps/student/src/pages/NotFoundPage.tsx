@@ -8,7 +8,7 @@ import { SearchX } from 'lucide-react'
 import { Link } from 'react-router'
 
 // Sets the tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Route constants.

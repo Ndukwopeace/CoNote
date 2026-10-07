@@ -8,9 +8,11 @@ import { useEffect } from 'react'
 import { Navigate, Outlet, useSearchParams } from 'react-router'
 
 // Spinner while the session is being checked.
-import { FullPageLoader } from '@/components/common/FullPageLoader'
+import { FullPageLoader } from '@conote/ui/common/FullPageLoader'
 // Picks a safe destination from ?redirect=.
-import { safeRedirectTarget } from '@/lib/isSafeRedirect'
+import { safeRedirectTarget } from '@conote/core/isSafeRedirect'
+// Route constants: the dashboard is where a signed-in student goes by default.
+import { ROUTES } from '@/lib/routes'
 
 // Screen for teachers and admins.
 import { NotStudentNotice } from './NotStudentNotice'
@@ -47,7 +49,11 @@ export function RedirectIfSignedIn() {
     // SECURITY: blocks open redirects. The ?redirect= value is followed only if it stays on
     // CoNote; otherwise the student goes to the dashboard. Without this, a crafted sign-in link
     // could forward a student to a fake site straight after they log in.
-    const target = safeRedirectTarget(searchParams.get('redirect'), window.location.origin)
+    const target = safeRedirectTarget(
+      searchParams.get('redirect'),
+      window.location.origin,
+      ROUTES.dashboard,
+    )
     // Replace (not push) so Back doesn't return to the sign-in page.
     return <Navigate to={target} replace />
   }

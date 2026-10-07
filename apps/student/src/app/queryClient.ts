@@ -10,7 +10,7 @@ import { OFFLINE_MAX_AGE_MS } from '@/lib/offlineCache'
 // Which failures are tried again.
 import { shouldRetryQuery } from '@/lib/queryRetry'
 // Reports failures to developers.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 
 // How long fetched data counts as fresh, in milliseconds.
 const THIRTY_SECONDS = 30_000

@@ -1,4 +1,4 @@
-// TypeScript settings for the shared @conote/ui package (D64). Apps compile its source
+// TypeScript settings for the shared @conote/core package (D64). Apps compile its source
 // directly, so these settings match the apps' strictness (ENGINEERING_STANDARDS.md section 4.1).
 {
   "compilerOptions": {
@@ -6,10 +6,10 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     // Modern JavaScript.
     "target": "es2023",
-    // Built-in types for the code in this package.
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    // jest-dom's matchers (toBeInTheDocument…) for the component tests.
-    "types": ["@testing-library/jest-dom/vitest"],
+    // Built-in types for the code in this package: modern JavaScript and URL parsing.
+    "lib": ["ES2023", "DOM"],
+    // Vite's import.meta.env, which the error reporter reads.
+    "types": ["vite/client"],
     // ES modules, resolved the way Vite resolves them.
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -21,8 +21,6 @@
     "moduleDetection": "force",
     // Only type-check; the apps build this code.
     "noEmit": true,
-    // Modern JSX transform: no need to import React in every file.
-    "jsx": "react-jsx",
     // All strict checks, plus the extra ones the apps use.
     "strict": true,
     "noUncheckedIndexedAccess": true,

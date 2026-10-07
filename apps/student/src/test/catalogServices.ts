@@ -4,7 +4,7 @@
  */
 
 // The app's error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The demo catalog, used as the base.
 import { createMockCatalog } from '@/services/mock/mockCatalog'
 // The interfaces being varied.

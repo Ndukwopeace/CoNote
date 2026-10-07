@@ -11,6 +11,8 @@ import { isSafeRedirect, safeRedirectTarget } from './isSafeRedirect'
 
 // A fixed origin, so results don't depend on where the tests run.
 const ORIGIN = 'https://conote.app'
+// Each app passes its own home page as the fallback; any path will do here.
+const HOME = '/home'
 
 describe('isSafeRedirect', () => {
   // Proves normal in-app paths still work, including query strings and fragments.
@@ -61,16 +63,16 @@ describe('isSafeRedirect', () => {
 describe('safeRedirectTarget', () => {
   // A safe path is followed as-is.
   it('returns the path when it is safe', () => {
-    expect(safeRedirectTarget('/notes/42', ORIGIN)).toBe('/notes/42')
+    expect(safeRedirectTarget('/notes/42', ORIGIN, HOME)).toBe('/notes/42')
   })
 
   // SECURITY: an unsafe path is replaced, never followed.
-  it('falls back to the dashboard when the path is unsafe', () => {
-    expect(safeRedirectTarget('//evil.com', ORIGIN)).toBe('/dashboard')
+  it("falls back to the app's home page when the path is unsafe", () => {
+    expect(safeRedirectTarget('//evil.com', ORIGIN, HOME)).toBe(HOME)
   })
 
   // No path means the default destination.
-  it('falls back to the dashboard when there is no path', () => {
-    expect(safeRedirectTarget(null, ORIGIN)).toBe('/dashboard')
+  it("falls back to the app's home page when there is no path", () => {
+    expect(safeRedirectTarget(null, ORIGIN, HOME)).toBe(HOME)
   })
 })

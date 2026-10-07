@@ -25,7 +25,7 @@ export class AppError extends Error {
   // Which of the known cases this is; the UI chooses its wording from this.
   readonly kind: AppErrorKind
 
-  // `cause` keeps the original error for debugging without showing it to students.
+  // `cause` keeps the original error for debugging without showing it to users.
   constructor(kind: AppErrorKind, message: string, options?: { cause?: unknown }) {
     // Let the built-in Error store the message and cause.
     super(message, options)
@@ -47,7 +47,7 @@ export function toAppError(error: unknown): AppError {
   if (error instanceof AppError) return error
   // Browsers report a failed fetch as a TypeError mentioning "fetch" or "network".
   if (error instanceof TypeError && /fetch|network/i.test(error.message)) {
-    // Treat it as a connection problem so the student is told to check their connection.
+    // Treat it as a connection problem so the user is told to check their connection.
     return new AppError('network', 'Network request failed', { cause: error })
   }
   // Everything else is "unknown", with a generic message.

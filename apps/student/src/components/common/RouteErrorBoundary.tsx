@@ -15,16 +15,16 @@ import { Button } from '@conote/ui/button'
 // Student-facing wording per error kind.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown into an AppError.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 // Sends the error to the reporter.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
 // The launch splash's ID (the constant lives in lib so components may import it).
 import { SPLASH_ID } from '@/lib/splash'
 
 // Sets the tab title.
-import { PageTitle } from './PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 
 /** Route-level error screen: the failure stays inside one page (ENGINEERING_STANDARDS.md 5). */
 export function RouteErrorBoundary() {

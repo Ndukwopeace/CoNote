@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { PlaceholderPage } from './PlaceholderPage'
 
 describe('PlaceholderPage', () => {
-  // Proves students see plain words, never the team's milestone names ("M3").
+  // Proves users see plain words, never the team's milestone names ("M3").
   it('says "Coming soon" without internal milestone names', () => {
     // Act.
     render(<PlaceholderPage title="My Courses" description="Your enrolled courses." />)

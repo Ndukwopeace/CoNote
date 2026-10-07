@@ -7,7 +7,7 @@
 import { Navigate, type RouteObject } from 'react-router'
 
 // Spinner shown while the first page's code downloads.
-import { FullPageLoader } from '@/components/common/FullPageLoader'
+import { FullPageLoader } from '@conote/ui/common/FullPageLoader'
 // The screen shown when a page crashes.
 import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary'
 // Guard for public pages (sends signed-in students on).

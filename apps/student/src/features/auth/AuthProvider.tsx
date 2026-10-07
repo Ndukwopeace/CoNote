@@ -13,7 +13,7 @@ import { clearOfflineData } from '@/features/offline/clearOfflineData'
 // Deletes cached responses that may hold student data (FR-PWA-7).
 import { clearRuntimeCaches } from '@/lib/pwa'
 // Reports failures without exposing them to the student.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 // Route constants; the landing page is the sign-out destination.
 import { ROUTES } from '@/lib/routes'
 // Removes CoNote's stored data from the browser.

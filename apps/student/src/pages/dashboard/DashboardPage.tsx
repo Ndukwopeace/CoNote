@@ -24,7 +24,7 @@ import { LoadError } from '@/components/common/LoadError'
 // The notification type icon.
 import { NotificationTypeIcon } from '@/components/common/NotificationTypeIcon'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Loading placeholders.
 import { CardGridSkeleton, ListSkeleton } from '@/components/common/Skeletons'
 // Stat card.
@@ -45,7 +45,7 @@ import { formatRelativeTime, greetingFor } from '@/lib/dates'
 // "Victory Okafor" → "Victory".
 import { firstName } from '@/lib/initials'
 // Checks a notification link stays inside CoNote.
-import { isSafeRedirect } from '@/lib/isSafeRedirect'
+import { isSafeRedirect } from '@conote/core/isSafeRedirect'
 // Route constants and builders.
 import { ROUTES, routeTo } from '@/lib/routes'
 // Shapes used below.

@@ -17,7 +17,7 @@ export function createErrorReporter({ isDev, log }: { isDev: boolean; log: Logge
   // The function the rest of the app calls.
   const report: ErrorReporter = (error, context) => {
     // SECURITY: log only in development. Production consoles can be read by anyone at the
-    // device, and errors may carry student details.
+    // device, and errors may carry personal details.
     if (isDev) log('[CoNote]', error, context)
   }
   // Hand the configured reporter back.

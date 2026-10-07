@@ -13,7 +13,7 @@ import { routes } from '@/app/routes'
 // The unsaved-changes flag the update toast reads.
 import { getHasUnsavedChanges } from '@/features/pwa/unsavedChanges'
 // The error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Draft storage.
 import { draftKey, saveDraft } from '@/lib/noteDrafts'
 // Accessibility check.

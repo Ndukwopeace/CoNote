@@ -3,7 +3,7 @@
  */
 
 // Makes the switch exhaustive; a new data source can't be forgotten here.
-import { assertNever } from '@/lib/assertNever'
+import { assertNever } from '@conote/core/assertNever'
 // The checked environment type.
 import type { AppEnv } from '@/lib/env'
 // The demo implementation.

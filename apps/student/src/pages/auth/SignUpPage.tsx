@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 
 // Sets the tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // Labelled field with its inline error.
 import { FormField } from '@/components/forms/FormField'
 // Error box above the form.

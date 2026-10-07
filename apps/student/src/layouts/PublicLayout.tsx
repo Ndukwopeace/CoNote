@@ -9,7 +9,7 @@ import { Menu } from 'lucide-react'
 import { Link, Outlet } from 'react-router'
 
 // The CoNote logo.
-import { Logo } from '@/components/common/Logo'
+import { Logo } from '@conote/ui/common/Logo'
 // Standard button styles.
 import { Button } from '@conote/ui/button'
 // The slide-in panel for the phone menu.

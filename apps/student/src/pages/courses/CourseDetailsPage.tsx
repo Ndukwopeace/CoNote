@@ -17,7 +17,7 @@ import { LoadError } from '@/components/common/LoadError'
 // Missing-course panel.
 import { NotFoundPanel } from '@/components/common/NotFoundPanel'
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // The notes list.
 import { NoteList } from '@/components/common/NoteList'
 // The summaries list.

@@ -23,7 +23,7 @@ describe('createErrorReporter', () => {
     expect(log).toHaveBeenCalledWith('[CoNote]', error, { where: 'NotesPage' })
   })
 
-  // SECURITY: proves production writes nothing to the console, where student data could be read.
+  // SECURITY: proves production writes nothing to the console, where personal data could be read.
   it('stays silent in production until an error tracker is connected', () => {
     // Arrange: a production reporter.
     const log = vi.fn()

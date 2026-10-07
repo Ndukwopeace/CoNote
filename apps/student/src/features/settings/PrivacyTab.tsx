@@ -14,7 +14,7 @@ import { useToast } from '@/features/toast/useToast'
 // The notes export.
 import { notesExport } from '@/lib/exportNotes'
 // Reports failures.
-import { reportError } from '@/lib/reportError'
+import { reportError } from '@conote/core/reportError'
 // The injected services, to read every note at the moment of export.
 import { useServices } from '@/services/useServices'
 

@@ -29,7 +29,7 @@ import { changePasswordSchema, type ChangePasswordValues } from '@/lib/authSchem
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 
 // The section card.
 import { SettingsSection } from './SettingsSection'

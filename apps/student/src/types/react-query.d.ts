@@ -4,7 +4,7 @@
  */
 
 // The app's error type.
-import type { AppError } from '@/lib/errors'
+import type { AppError } from '@conote/core/errors'
 
 // Adds to the library's own types instead of replacing them.
 declare module '@tanstack/react-query' {

@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 // The real providers.
 import { AppProviders } from '@/app/AppProviders'
 // The error type failures arrive as.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Service types.
 import type { NoteService, Services } from '@/services/types'
 // Instant demo services and a no-retry cache.

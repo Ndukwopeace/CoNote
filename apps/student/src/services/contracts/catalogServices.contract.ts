@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The error type a missing record must be.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 
 // The interfaces under test.
 import type { Services } from '../types'

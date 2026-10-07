@@ -12,6 +12,7 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@conote/core": "0.1.0",
     "@conote/domain": "0.1.0",
     "@conote/ui": "0.1.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",

@@ -9,7 +9,7 @@ import { z } from 'zod'
 // Picture rules.
 import { avatarProblem } from '@/lib/avatar'
 // The error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // Profile rules shared with the form.
 import { profileSchema } from '@/lib/profile'
 // The mock-data key prefix.

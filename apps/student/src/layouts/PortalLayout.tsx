@@ -7,7 +7,7 @@
 import { Outlet } from 'react-router'
 
 // Spinner for the moment before the session is known.
-import { FullPageLoader } from '@/components/common/FullPageLoader'
+import { FullPageLoader } from '@conote/ui/common/FullPageLoader'
 // Sign-in state, for the student's name and email.
 import { useAuth } from '@/features/auth/useAuth'
 // "You're offline" banner (FR-PWA-4).

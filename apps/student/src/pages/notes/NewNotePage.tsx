@@ -6,7 +6,7 @@
 import { useSearchParams } from 'react-router'
 
 // Tab title.
-import { PageTitle } from '@/components/common/PageTitle'
+import { PageTitle } from '@conote/ui/common/PageTitle'
 // The form.
 import { NoteForm } from '@/features/notes/NoteForm'
 

@@ -30,7 +30,7 @@ import { avatarProblem } from '@/lib/avatar'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
 // Normalises anything thrown.
-import { toAppError } from '@/lib/errors'
+import { toAppError } from '@conote/core/errors'
 // "Victory Okafor" → "VO".
 import { initials } from '@/lib/initials'
 // Profile rules.

@@ -7,7 +7,7 @@
 import { Link } from 'react-router'
 
 // The CoNote logo.
-import { Logo } from '@/components/common/Logo'
+import { Logo } from '@conote/ui/common/Logo'
 // Global search.
 import { GlobalSearch } from '@/features/search/GlobalSearch'
 // Route constants.

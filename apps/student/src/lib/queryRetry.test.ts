@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The error type the rule reads.
-import { AppError, type AppErrorKind } from './errors'
+import { AppError, type AppErrorKind } from '@conote/core/errors'
 // The rule under test.
 import { shouldRetryQuery } from './queryRetry'
 

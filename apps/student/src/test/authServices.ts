@@ -6,7 +6,7 @@
 // Builds a normal instant demo service to start from.
 import { createTestServices } from './renderWithRouter'
 // The app's error type.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The interface being varied.
 import type { AuthService } from '@/services/types'
 

@@ -13,7 +13,7 @@ import { Button } from '@conote/ui/button'
 // Student-facing wording for each error kind.
 import { errorMessage } from '@/lib/errorMessages'
 // The error type.
-import type { AppError } from '@/lib/errors'
+import type { AppError } from '@conote/core/errors'
 
 /** What the error panel needs. */
 interface LoadErrorProps {

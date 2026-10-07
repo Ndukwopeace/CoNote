@@ -6,7 +6,7 @@
 import { NavLink } from 'react-router'
 
 // The CoNote logo.
-import { Logo } from '@/components/common/Logo'
+import { Logo } from '@conote/ui/common/Logo'
 // Round avatar showing the student's initials.
 import { Avatar, AvatarFallback } from '@conote/ui/avatar'
 // Tooltips show labels while the rail hides them.

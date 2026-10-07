@@ -1,6 +1,6 @@
 /**
  * A temporary page body shown until the real page is built. It says "Coming soon" rather than
- * naming the team's milestone, which would mean nothing to a student.
+ * naming the team's milestone, which would mean nothing to the person using the app.
  */
 
 // Construction-sign icon.
@@ -37,7 +37,7 @@ export function PlaceholderPage({ title, description, children }: Readonly<Place
         {/* Decorative icon. */}
         <Construction aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
         <div>
-          {/* Plain words for students; docs/MILESTONES.md says which milestone builds it. */}
+          {/* Plain words for users; the milestones doc says which milestone builds it. */}
           <p className="font-semibold">Coming soon</p>
           {/* What the page will do. */}
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>

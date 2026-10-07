@@ -4,7 +4,7 @@
  */
 
 // The error a missing record becomes.
-import { AppError } from '@/lib/errors'
+import { AppError } from '@conote/core/errors'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
 

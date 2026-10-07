@@ -3,7 +3,7 @@
  */
 
 // Converts anything thrown into an AppError, so the kind can be read.
-import { toAppError, type AppErrorKind } from './errors'
+import { toAppError, type AppErrorKind } from '@conote/core/errors'
 
 /** Failures that give the same answer on a second try, so retrying only delays the message. */
 const FINAL_KINDS: ReadonlySet<AppErrorKind> = new Set([
