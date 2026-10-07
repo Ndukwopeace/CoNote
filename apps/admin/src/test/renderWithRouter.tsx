@@ -32,7 +32,13 @@ interface RenderOptions {
 
 /** Demo services over session storage, without delays. */
 export function createTestServices(): Services {
-  return { auth: createMockAuthService({ store: window.sessionStorage, latencyMs: 0 }) }
+  return {
+    auth: createMockAuthService({
+      store: window.sessionStorage,
+      demoStore: window.localStorage,
+      latencyMs: 0,
+    }),
+  }
 }
 
 /** A query cache that never retries, so failures show at once. */

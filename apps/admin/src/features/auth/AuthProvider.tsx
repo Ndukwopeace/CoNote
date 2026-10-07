@@ -64,6 +64,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     () => ({
       ...state,
       signIn: (input) => auth.signIn(input),
+      requestPasswordReset: (email) => auth.requestPasswordReset(email),
+      resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),
       signOut: async () => {
         try {
           await auth.signOut()

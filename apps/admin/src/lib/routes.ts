@@ -5,8 +5,10 @@
 
 /** Fixed page addresses. */
 export const ADMIN_ROUTES = {
-  // Sign-in; the only page a signed-out visitor can open.
+  // Sign-in, forgot password and reset password: the only pages a signed-out visitor can open.
   login: '/admin/login',
+  forgotPassword: '/admin/forgot-password',
+  resetPassword: '/admin/reset-password',
   // Platform overview.
   dashboard: '/admin/dashboard',
   // Students, teachers and admins.

@@ -108,7 +108,7 @@ export const routes: RouteObject[] = [
   // The bare addresses lead to the dashboard (the guard sends signed-out visitors to sign-in).
   { path: '/', element: <Navigate to={ADMIN_ROUTES.dashboard} replace /> },
   { path: '/admin', element: <Navigate to={ADMIN_ROUTES.dashboard} replace /> },
-  // Sign-in, for signed-out visitors only.
+  // Sign-in and password recovery, for signed-out visitors only.
   {
     element: <RedirectIfSignedIn />,
     errorElement: <RouteErrorBoundary />,
@@ -116,6 +116,18 @@ export const routes: RouteObject[] = [
       {
         path: ADMIN_ROUTES.login,
         lazy: async () => ({ Component: (await import('@/pages/auth/LoginPage')).LoginPage }),
+      },
+      {
+        path: ADMIN_ROUTES.forgotPassword,
+        lazy: async () => ({
+          Component: (await import('@/pages/auth/ForgotPasswordPage')).ForgotPasswordPage,
+        }),
+      },
+      {
+        path: ADMIN_ROUTES.resetPassword,
+        lazy: async () => ({
+          Component: (await import('@/pages/auth/ResetPasswordPage')).ResetPasswordPage,
+        }),
       },
     ],
   },

@@ -11,11 +11,19 @@ import { describe, expect, it, vi } from 'vitest'
 // The interface under test.
 import type { AuthService } from '../types'
 
-/** What a contract run needs: a fresh service and a valid admin account for it. */
+// Reset request shape.
+import type { PasswordResetRequest } from '@/types/auth'
+
+/** What a contract run needs: a fresh service, a valid admin account, and the reset code. */
 export interface AuthContractSetup {
   createService: () => AuthService
   admin: { email: string; password: string; fullName: string }
+  /** The code from a reset request (the demo returns a link; a real backend would email it). */
+  resetCodeFrom: (request: PasswordResetRequest) => string
 }
+
+/** A new password that meets the admin rules (12+ characters, a letter and a number). */
+const NEW_PASSWORD = 'new-password-2026'
 
 /** Registers the AuthService contract suite under `name`. */
 export function describeAuthServiceContract(name: string, setup: AuthContractSetup) {
@@ -72,6 +80,67 @@ export function describeAuthServiceContract(name: string, setup: AuthContractSet
       await service.signIn({ email: setup.admin.email, password: setup.admin.password })
       await service.signOut()
       await expect(service.getSession()).resolves.toBeNull()
+    })
+
+    // SECURITY: the answer is the same whether or not the email has an account, so the form can't
+    // be used to find out who has one (account enumeration).
+    it('accepts a reset request for any well-formed email', async () => {
+      const service = setup.createService()
+      await expect(service.requestPasswordReset(setup.admin.email)).resolves.toBeTypeOf('object')
+      await expect(service.requestPasswordReset('nobody@example.com')).resolves.toBeTypeOf('object')
+    })
+
+    // Proves a malformed email is refused before anything is sent.
+    it('refuses a reset request for a malformed email', async () => {
+      await expect(
+        setup.createService().requestPasswordReset('not-an-email'),
+      ).rejects.toMatchObject({ kind: 'validation' })
+    })
+
+    // SECURITY: a missing or made-up code never opens the reset form.
+    it.each([null, '', 'made-up-code'])('refuses the reset link %j', async (code) => {
+      await expect(setup.createService().checkResetLink(code)).resolves.toBe(false)
+    })
+
+    // Proves the whole reset: the link works once, the new password signs in, the old one doesn't.
+    it('resets the password once with a valid link', async () => {
+      const service = setup.createService()
+      const code = setup.resetCodeFrom(await service.requestPasswordReset(setup.admin.email))
+      await expect(service.checkResetLink(code)).resolves.toBe(true)
+      await service.resetPassword(code, NEW_PASSWORD)
+      // SECURITY: the code is spent, so the same link can't change the password again.
+      await expect(service.checkResetLink(code)).resolves.toBe(false)
+      await expect(service.resetPassword(code, 'another-pass-2026')).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'This reset link has expired. Request a new one.',
+      })
+      // The old password stops working; the new one works.
+      await expect(
+        service.signIn({ email: setup.admin.email, password: setup.admin.password }),
+      ).rejects.toMatchObject({ kind: 'validation' })
+      await expect(
+        service.signIn({ email: setup.admin.email, password: NEW_PASSWORD }),
+      ).resolves.toMatchObject({ user: { role: 'admin' } })
+    })
+
+    // SECURITY: a weak password is refused by the service too, not only by the form, and the
+    // link stays usable so the administrator can try again.
+    it('refuses a weak new password without spending the link', async () => {
+      const service = setup.createService()
+      const code = setup.resetCodeFrom(await service.requestPasswordReset(setup.admin.email))
+      await expect(service.resetPassword(code, 'short1')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+      await expect(service.checkResetLink(code)).resolves.toBe(true)
+    })
+
+    // SECURITY: only the newest link works, so an older email can't be used after a new request.
+    it('replaces an older link with a newer one', async () => {
+      const service = setup.createService()
+      const older = setup.resetCodeFrom(await service.requestPasswordReset(setup.admin.email))
+      const newer = setup.resetCodeFrom(await service.requestPasswordReset(setup.admin.email))
+      await expect(service.checkResetLink(older)).resolves.toBe(false)
+      await expect(service.checkResetLink(newer)).resolves.toBe(true)
     })
 
     // Proves listeners hear about sign-in and sign-out, and stop hearing once unsubscribed.

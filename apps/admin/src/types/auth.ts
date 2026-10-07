@@ -18,6 +18,15 @@ export interface Session {
   user: SessionUser
 }
 
+/** What a password reset request returns. */
+export interface PasswordResetRequest {
+  /**
+   * Demo mode only: the link the email would have contained, because no email is sent. A real
+   * service leaves it out, so the page shows the shortcut only when it exists.
+   */
+  demoResetPath?: string
+}
+
 /** What the sign-in form sends. */
 export interface SignInInput {
   email: string
