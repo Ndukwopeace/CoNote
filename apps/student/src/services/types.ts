@@ -12,7 +12,6 @@ import type {
   AppNotification,
   ClassSession,
   Course,
-  ID,
   Note,
   NotificationPrefs,
   StudentProfile,
@@ -69,25 +68,25 @@ export interface CourseService {
   /** Every course the student is enrolled in, in display order. */
   listMyCourses(): Promise<Course[]>
   /** One enrolled course. */
-  getCourse(courseId: ID): Promise<Course>
+  getCourse(courseId: string): Promise<Course>
 }
 
 /** Class sessions (FR-CLS). Unknown IDs reject with a not_found AppError. */
 export interface ClassService {
   /** One course's classes, in class-number order. */
-  listClasses(courseId: ID): Promise<ClassSession[]>
+  listClasses(courseId: string): Promise<ClassSession[]>
   /** Every class across the student's enrolled courses, soonest first. */
   listMyClasses(): Promise<ClassSession[]>
   /** One class. */
-  getClass(classId: ID): Promise<ClassSession>
+  getClass(classId: string): Promise<ClassSession>
 }
 
 /** Narrows a note list to one course or one class. */
 export interface NoteFilter {
   // Only notes for this course.
-  courseId?: ID
+  courseId?: string
   // Only notes for this class.
-  classId?: ID
+  classId?: string
 }
 
 /**
@@ -98,23 +97,23 @@ export interface NoteService {
   /** The signed-in student's notes, newest first. Never anyone else's (RLS, section 12.2). */
   listMyNotes(filter?: NoteFilter): Promise<Note[]>
   /** One of the student's notes. */
-  getNote(noteId: ID): Promise<Note>
+  getNote(noteId: string): Promise<Note>
   /** Creates a note for one of the student's classes. A blank title becomes the first line. */
   createNote(input: NoteInput): Promise<Note>
   /** Replaces a note's class, title, body and tags. */
-  updateNote(noteId: ID, input: NoteInput): Promise<Note>
+  updateNote(noteId: string, input: NoteInput): Promise<Note>
   /** Deletes a note for good (FR-NTE-8). */
-  deleteNote(noteId: ID): Promise<void>
+  deleteNote(noteId: string): Promise<void>
 }
 
 /** Published summaries. Draft content never reaches the client (section 4). */
 export interface SummaryService {
   /** Published summaries only, newest first. */
-  listPublished(filter?: { courseId?: ID }): Promise<Summary[]>
+  listPublished(filter?: { courseId?: string }): Promise<Summary[]>
   /** The published summary of one class; not_found when the class has none published. */
-  getByClass(classId: ID): Promise<Summary>
+  getByClass(classId: string): Promise<Summary>
   /** Records that the student opened a summary (FR-SUM-5). */
-  markViewed(summaryId: ID): Promise<void>
+  markViewed(summaryId: string): Promise<void>
 }
 
 /** The student's notifications. Unknown IDs reject with a not_found AppError. */
@@ -124,7 +123,7 @@ export interface NotificationService {
   /** How many are unread, for the bell's badge. */
   unreadCount(): Promise<number>
   /** Marks one as read (FR-NTF-3). */
-  markRead(notificationId: ID): Promise<void>
+  markRead(notificationId: string): Promise<void>
   /** Marks every one as read (FR-NTF-3). */
   markAllRead(): Promise<void>
 }

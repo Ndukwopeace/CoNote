@@ -16,7 +16,7 @@ import { sanitizeHtml } from '@/lib/sanitizeHtml'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
 // Shapes.
-import type { ClassSession, ID, Note } from '@/types/domain'
+import type { ClassSession, Note } from '@/types/domain'
 
 // The interface implemented.
 import type { NoteFilter, NoteService } from '../types'
@@ -42,7 +42,7 @@ interface MockNoteOptions {
   // The classes a note may belong to (the student's enrolled classes).
   classes: readonly ClassSession[]
   // The student every new note belongs to.
-  studentId: ID
+  studentId: string
   // Delay per call; tests pass 0.
   latencyMs: number
   // Optional persistence; tests usually leave it out.
@@ -117,7 +117,7 @@ export function createMockNoteService({
   }
 
   /** The note with this ID, or not_found. */
-  function find(noteId: ID) {
+  function find(noteId: string) {
     // SECURITY: only the student's own notes are ever found, as Row Level Security will ensure
     // on the real backend (section 12.2).
     const note = notes.find((n) => n.id === noteId && n.studentId === studentId)

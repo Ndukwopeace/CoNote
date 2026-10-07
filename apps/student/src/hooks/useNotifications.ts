@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 // The injected services.
 import { useServices } from '@/services/useServices'
 // Shapes.
-import type { AppNotification, ID } from '@/types/domain'
+import type { AppNotification } from '@/types/domain'
 
 // Error conversion for query functions.
 import { appQuery } from './appQuery'
@@ -89,7 +89,7 @@ export function useMarkNotificationRead() {
   const { notifications } = useServices()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (notificationId: ID) => appQuery(() => notifications.markRead(notificationId)),
+    mutationFn: (notificationId: string) => appQuery(() => notifications.markRead(notificationId)),
     // Before the call: the dot and the count change at once.
     onMutate: (notificationId) => markCachedRead(client, (n) => n.id === notificationId),
     // Failed: put them back.

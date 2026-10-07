@@ -7,8 +7,6 @@ import { useQuery } from '@tanstack/react-query'
 
 // The injected services.
 import { useServices } from '@/services/useServices'
-// Identifier type.
-import type { ID } from '@/types/domain'
 
 // Error conversion for query functions.
 import { appQuery } from './appQuery'
@@ -27,7 +25,7 @@ export function useMyCourses() {
 }
 
 /** One course; fails with a not_found AppError for an unknown ID. */
-export function useCourse(courseId: ID) {
+export function useCourse(courseId: string) {
   // The course service.
   const { courses } = useServices()
   // Cached course.

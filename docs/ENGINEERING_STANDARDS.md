@@ -117,7 +117,7 @@ packages/* ──► other packages and libraries only (never an app's "@/" code
 
 These rules are enforced by ESLint (`no-restricted-imports` or `eslint-plugin-boundaries`). An import that breaks them fails lint. The rules are written once in the root `eslint.config.js` and apply to every app under `apps/`.
 
-**Shared packages (D64).** Code that two apps would otherwise copy goes in a package: design tokens and UI primitives in `packages/ui`, the shared vocabulary (IDs, roles, statuses) in `packages/domain`. A package never imports app code. App-specific view types stay in the app.
+**Shared packages (D64).** Code that two apps would otherwise copy goes in a package: design tokens and UI primitives in `packages/ui`, the shared vocabulary (roles and statuses) in `packages/domain`. A package never imports app code. App-specific view types stay in the app.
 
 ### 3.2 Patterns and where they apply
 

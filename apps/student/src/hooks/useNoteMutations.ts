@@ -12,7 +12,7 @@ import type { NoteInput } from '@/lib/notes'
 // The injected services.
 import { useServices } from '@/services/useServices'
 // Shapes.
-import type { ID, Note } from '@/types/domain'
+import type { Note } from '@/types/domain'
 
 // Error conversion for query functions.
 import { appQuery } from './appQuery'
@@ -61,7 +61,7 @@ function changeCachedNotes(client: QueryClient, change: (note: Note) => Note | n
 }
 
 /** One note; fails with a not_found AppError for an unknown or someone else's note. */
-export function useNote(noteId: ID) {
+export function useNote(noteId: string) {
   // The note service.
   const { notes } = useServices()
   // Cached note.
@@ -92,7 +92,7 @@ export function useUpdateNote() {
   const { notes } = useServices()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ noteId, input }: { noteId: ID; input: NoteInput }) =>
+    mutationFn: ({ noteId, input }: { noteId: string; input: NoteInput }) =>
       appQuery(() => notes.updateNote(noteId, input)),
     // Before the call: remember the cache, then show the edit.
     onMutate: async ({ noteId, input }) => {
@@ -128,7 +128,7 @@ export function useDeleteNote() {
   const { notes } = useServices()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (noteId: ID) => appQuery(() => notes.deleteNote(noteId)),
+    mutationFn: (noteId: string) => appQuery(() => notes.deleteNote(noteId)),
     // Before the call: remember the cache, then drop the note from every list.
     onMutate: async (noteId) => {
       const snapshot = await snapshotNotes(client)

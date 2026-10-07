@@ -7,8 +7,6 @@
 import { AppError } from '@/lib/errors'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
-// The shapes served.
-import type { ID } from '@/types/domain'
 
 // The interfaces these services implement.
 import type {
@@ -75,7 +73,7 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
   }
 
   /** The course with this ID, or a not_found error. */
-  function findCourse(courseId: ID) {
+  function findCourse(courseId: string) {
     // Look it up among the enrolled courses.
     const course = seed.courses.find((c) => c.id === courseId)
     // Missing: the page shows its "not found" panel.

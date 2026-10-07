@@ -7,8 +7,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 // The injected services.
 import { useServices } from '@/services/useServices'
-// Identifier type.
-import type { ID } from '@/types/domain'
 
 // Error conversion for query functions.
 import { appQuery } from './appQuery'
@@ -16,7 +14,7 @@ import { appQuery } from './appQuery'
 import { queryKeys } from './queryKeys'
 
 /** Published summaries, newest first, optionally for one course. */
-export function usePublishedSummaries(filter: { courseId?: ID } = {}) {
+export function usePublishedSummaries(filter: { courseId?: string } = {}) {
   // The summary service.
   const { summaries } = useServices()
   // Cached list.
@@ -30,7 +28,7 @@ export function usePublishedSummaries(filter: { courseId?: ID } = {}) {
  * One class's published summary. Pass `enabled: false` until the class is known to be published,
  * so no request is made for a summary that can't be shown.
  */
-export function useClassSummary(classId: ID, { enabled }: Readonly<{ enabled: boolean }>) {
+export function useClassSummary(classId: string, { enabled }: Readonly<{ enabled: boolean }>) {
   // The summary service.
   const { summaries } = useServices()
   // Cached summary.
@@ -47,7 +45,7 @@ export function useMarkSummaryViewed() {
   const { summaries } = useServices()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (summaryId: ID) => appQuery(() => summaries.markViewed(summaryId)),
+    mutationFn: (summaryId: string) => appQuery(() => summaries.markViewed(summaryId)),
     // The dashboard's "New Summaries" count and the list badges read these.
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.summaries.all }),
   })

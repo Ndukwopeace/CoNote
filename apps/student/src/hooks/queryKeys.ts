@@ -5,7 +5,6 @@
 
 // Identifier and filter types used in keys.
 import type { NoteFilter } from '@/services/types'
-import type { ID } from '@/types/domain'
 
 /** Query keys, grouped by area. Each group's `all` key clears the whole area at once. */
 export const queryKeys = {
@@ -15,17 +14,17 @@ export const queryKeys = {
     // The enrolled course list.
     list: () => [...queryKeys.courses.all, 'list'] as const,
     // One course.
-    detail: (courseId: ID) => [...queryKeys.courses.all, 'detail', courseId] as const,
+    detail: (courseId: string) => [...queryKeys.courses.all, 'detail', courseId] as const,
   },
   classes: {
     // Every class query.
     all: ['classes'] as const,
     // One course's classes.
-    byCourse: (courseId: ID) => [...queryKeys.classes.all, 'course', courseId] as const,
+    byCourse: (courseId: string) => [...queryKeys.classes.all, 'course', courseId] as const,
     // Every class of every enrolled course.
     mine: () => [...queryKeys.classes.all, 'mine'] as const,
     // One class.
-    detail: (classId: ID) => [...queryKeys.classes.all, 'detail', classId] as const,
+    detail: (classId: string) => [...queryKeys.classes.all, 'detail', classId] as const,
   },
   notes: {
     // Every note query; M4 invalidates this after a save or delete.
@@ -33,15 +32,15 @@ export const queryKeys = {
     // A filtered note list. The filter object is part of the key, so each filter caches apart.
     list: (filter: NoteFilter = {}) => [...queryKeys.notes.all, 'list', filter] as const,
     // One note.
-    detail: (noteId: ID) => [...queryKeys.notes.all, 'detail', noteId] as const,
+    detail: (noteId: string) => [...queryKeys.notes.all, 'detail', noteId] as const,
   },
   summaries: {
     // Every summary query.
     all: ['summaries'] as const,
     // One class's published summary.
-    byClass: (classId: ID) => [...queryKeys.summaries.all, 'class', classId] as const,
+    byClass: (classId: string) => [...queryKeys.summaries.all, 'class', classId] as const,
     // Published summaries, optionally for one course.
-    published: (courseId?: ID) =>
+    published: (courseId?: string) =>
       [...queryKeys.summaries.all, 'published', courseId ?? 'all'] as const,
   },
   profile: {

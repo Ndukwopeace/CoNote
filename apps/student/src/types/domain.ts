@@ -1,10 +1,10 @@
 /** Domain types (REQUIREMENTS.md section 12). The UI sees only these shapes. */
 
-// The vocabulary shared by every CoNote app: IDs, roles and statuses (packages/domain, D64).
+// The vocabulary shared by every CoNote app: roles and statuses (packages/domain, D64).
 // Imported for use below and re-exported, so the app keeps importing everything from here.
-import type { CourseStatus, ID, NotificationType, Role, SummaryStatus } from '@conote/domain'
+import type { CourseStatus, NotificationType, Role, SummaryStatus } from '@conote/domain'
 
-export type { CourseStatus, ID, NotificationType, Role, SummaryStatus }
+export type { CourseStatus, NotificationType, Role, SummaryStatus }
 
 /** Which notifications a student wants, and where (FR-SET-3). */
 export interface NotificationPrefs {
@@ -19,7 +19,7 @@ export interface NotificationPrefs {
 /** The student's full profile (Settings → Profile). */
 export interface StudentProfile {
   // Account ID.
-  id: ID
+  id: string
   // Always "student" for people who get past the guards.
   role: Role
   // Display name.
@@ -41,7 +41,7 @@ export interface StudentProfile {
 /** A course's teacher, as students see them. */
 export interface Teacher {
   // Teacher account ID.
-  id: ID
+  id: string
   // Shown on course cards and summaries.
   fullName: string
   // Optional picture.
@@ -51,7 +51,7 @@ export interface Teacher {
 /** A course the student is enrolled in. */
 export interface Course {
   // Course ID.
-  id: ID
+  id: string
   // Short code, e.g. "SWE 311".
   code: string
   // Full title.
@@ -73,9 +73,9 @@ export interface Course {
 /** One dated lesson inside a course. */
 export interface ClassSession {
   // Class ID.
-  id: ID
+  id: string
   // The course it belongs to.
-  courseId: ID
+  courseId: string
   // Position in the course, e.g. 2 for "2. Software Requirements".
   number: number
   // Lesson title.
@@ -93,13 +93,13 @@ export interface ClassSession {
 /** A student's private note. Only its author can read it. */
 export interface Note {
   // Note ID.
-  id: ID
+  id: string
   // Author. Row Level Security will allow access only when this is the signed-in student.
-  studentId: ID
+  studentId: string
   // Course, kept for filtering.
-  courseId: ID
+  courseId: string
   // Class the note was written for.
-  classId: ID
+  classId: string
   // Optional title.
   title?: string
   // Rich-text body. Always shown through SafeHtml, never inserted directly.
@@ -115,19 +115,19 @@ export interface Note {
 /** A teacher-approved class summary. Students only ever receive published ones. */
 export interface Summary {
   // Summary ID.
-  id: ID
+  id: string
   // The class it summarises.
-  classId: ID
+  classId: string
   // The course, for filtering.
-  courseId: ID
+  courseId: string
   // Opening paragraph.
   overview: string
   // Main ideas, each with an explanation.
-  keyConcepts: { id: ID; title: string; explanation: string }[]
+  keyConcepts: { id: string; title: string; explanation: string }[]
   // Where students were confused, each with the approved clarification.
-  confusionAreas: { id: ID; issue: string; clarification: string }[]
+  confusionAreas: { id: string; issue: string; clarification: string }[]
   // Topic list for the Key Topics tab.
-  keyTopics: { id: ID; name: string; description?: string }[]
+  keyTopics: { id: string; name: string; description?: string }[]
   // How many notes the AI read, shown as "Based on n student notes".
   notesAnalyzedCount: number
   // The approving teacher.
@@ -141,7 +141,7 @@ export interface Summary {
 /** One notification. */
 export interface AppNotification {
   // Notification ID.
-  id: ID
+  id: string
   // Category.
   type: NotificationType
   // Headline.
@@ -161,15 +161,15 @@ export interface AiContext {
   // Everything, one course, or one class.
   scope: 'all' | 'course' | 'class'
   // Set when scope is "course" or "class".
-  courseId?: ID
+  courseId?: string
   // Set when scope is "class".
-  classId?: ID
+  classId?: string
 }
 
 /** One message in an Ask AI conversation. */
 export interface AiMessage {
   // Message ID.
-  id: ID
+  id: string
   // Who wrote it.
   role: 'user' | 'assistant'
   // Plain text. Never rendered as HTML (ENGINEERING_STANDARDS.md 6.1).

@@ -10,7 +10,7 @@ one backend and a set of packages:
 | ----------------- | ----------------- | --------------------------------------------------------- |
 | `apps/student`    | `@conote/student` | The student portal: an installable web app (built, M1–M5) |
 | `packages/ui`     | `@conote/ui`      | Design tokens, Tailwind theme and shared UI primitives    |
-| `packages/domain` | `@conote/domain`  | Shared IDs, roles and statuses                            |
+| `packages/domain` | `@conote/domain`  | Shared roles and statuses                                 |
 
 The admin and teacher portals will be added as `apps/admin` and `apps/teacher`. See
 [`docs/MILESTONES.md`](docs/MILESTONES.md) for progress.

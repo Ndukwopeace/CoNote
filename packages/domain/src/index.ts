@@ -1,11 +1,9 @@
 /**
- * The shared CoNote vocabulary (decision D64): identifiers, roles and statuses that the student,
- * teacher and admin apps, and later the database, must all spell the same way. Each app builds
- * its own view types on top of these. Changing a value here is a change for every app.
+ * The shared CoNote vocabulary (decision D64): roles and statuses that the student, teacher and
+ * admin apps, and later the database, must all spell the same way. Each app builds its own view
+ * types on top of these. Changing a value here is a change for every app. Record IDs are plain
+ * strings, so mock IDs and database UUIDs both fit.
  */
-
-/** Every record's identifier. A plain string, so mock IDs and database UUIDs both fit. */
-export type ID = string
 
 /** Account roles, as stored in `profiles.role`. Each app admits only its own role. */
 export type Role = 'student' | 'teacher' | 'admin'

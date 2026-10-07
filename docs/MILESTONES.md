@@ -228,7 +228,7 @@ Added after M1 at the team's request. It comes straight after M2 so the icons us
 Done between M5 and M6, before the admin portal starts. No change for students.
 
 - The student portal moved to `apps/student` with its history kept (`git mv`).
-- Shared packages: `packages/ui` (tokens, Tailwind theme, UI primitives, `cn`) and `packages/domain` (IDs, roles, statuses).
+- Shared packages: `packages/ui` (tokens, Tailwind theme, UI primitives, `cn`) and `packages/domain` (roles and statuses).
 - One root config each for ESLint, Prettier, TypeScript, Vitest and lint-staged, covering every app and package. CI runs the same commands from the root.
 - Vercel deploys the student app from the root `vercel.json` without a settings change. Each new app gets its own Vercel project with its folder as the Root Directory.
 

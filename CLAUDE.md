@@ -7,7 +7,7 @@ The CoNote monorepo (decision D64). Students write private notes per class. An A
 | `apps/student`                       | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.** |
 | `apps/admin`, `apps/teacher`         | Not built yet. Each role's screens go in its own app.                                                             |
 | `packages/ui` (`@conote/ui`)         | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `cn`                                       |
-| `packages/domain` (`@conote/domain`) | Shared vocabulary: IDs, roles, statuses. Every app and the database spell these the same way.                     |
+| `packages/domain` (`@conote/domain`) | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                       |
 
 Packages must not import app code (`@/…`); ESLint enforces it. Apps import packages by name (`@conote/ui/button`).
 

@@ -3,12 +3,12 @@
  */
 
 // Shared ID and role types.
-import type { ID, Role } from './domain'
+import type { Role } from './domain'
 
 /** The signed-in person, as the app sees them. */
 export interface SessionUser {
   // Unique account ID.
-  id: ID
+  id: string
   // student, teacher or admin. Only students may use this portal.
   role: Role
   // Shown in the sidebar, menu and greeting.
