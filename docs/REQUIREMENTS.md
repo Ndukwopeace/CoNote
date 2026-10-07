@@ -5,6 +5,8 @@
 **Sources:** Original written brief (partial, cut off during Sign Up) and the wireframes in [`docs/wireframes/`](./wireframes)
 **Related:** [`MILESTONES.md`](./MILESTONES.md), [`USER_FLOWS.md`](./USER_FLOWS.md) (sitemap, user flows, user journeys), [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md) (testing, architecture, security, review)
 
+**Where the code is:** the student portal lives in `apps/student/` of the CoNote monorepo (D64). Paths in this document, such as `src/lib/splash.ts`, are relative to that folder. The decisions log (section 15) covers the whole repository.
+
 Items marked **[Default]** are working decisions made to unblock the build. They can change later. Section 15 lists every one of them in a single table.
 
 ---
@@ -104,13 +106,14 @@ There is one summary per class session. The backend moves it through these state
 
 ### 5.1 Folder structure
 
+Inside `apps/student/`:
+
 ```
 src/
   app/            router, providers, query client
   pages/          one folder per route (landing, auth, dashboard, courses, ...)
   layouts/        PublicLayout, AuthLayout, PortalLayout
   components/
-    ui/           shadcn primitives (generated)
     common/       shared app components (StatCard, EmptyState, StatusBadge, PageHeader)
     <feature>/    feature components (notes/, courses/, summary/, ai/, ...)
   features/auth/  AuthProvider, useAuth, RequireStudent route guard
@@ -120,8 +123,10 @@ src/
     supabase/     Supabase implementation (stubbed in v1)
   types/          domain types (section 12)
   lib/            utils, date formatting, sanitising, constants
-  styles/         tokens.css, globals.css
+  styles/         globals.css (imports the shared theme)
 ```
+
+Shared with the other apps (D64): `packages/ui` holds the shadcn primitives, `cn`, the design tokens (`tokens.css`) and the Tailwind theme (`theme.css`); `packages/domain` holds the shared IDs, roles and statuses.
 
 ### 5.2 Data source switch
 
@@ -627,6 +632,7 @@ Taken from the wireframes:
 | D61 | Splash screen | Asked for after M5 | A branded splash (indigo, the reversed logo tile, the name, the tagline and three pulsing dots) is written into `index.html`, so it paints before any script loads. The app removes it with a 250 ms fade once the first page's code has loaded and sign-in is known, so no loading spinner flashes. The error screen removes it too, so a crash is never hidden. Reduced motion turns off the pulse and the fade. The manifest's background colour is now the brand indigo, so Android's launch screen flows into it. Ten iPhone launch images (one per screen size, drawn by `scripts/generate-icons.mjs`) replace iOS's white launch screen; they are left out of the offline download. |
 | D62 | Launch without black or white screens | Reported after D61: a first open showed black, then white, then the splash | **White:** the built page linked its stylesheet in the head, and a browser draws nothing until such a file has downloaded, so the splash waited behind a blank page (2,084 ms on a throttled test connection). A build step (`src/lib/inlineStylesheets.ts`, wired in `vite.config.ts`) now puts the stylesheet inside `index.html` and drops the separate file; the first paint came at 56 ms in the same test. The build fails if the CSS contains `</style` or relative `url()` paths. **Black:** iOS shows its own launch screen until the page paints, and uses the launch images only for pages marked as home-screen web apps, so `apple-mobile-web-app-capable` (and `mobile-web-app-capable`) were added, plus a launch image for iPhone Air (1260x2736). iOS fetches launch images and the icon when the app is added to the home screen, so an existing install must be removed and added again. `e2e/pwa.spec.ts` checks the first paint happens under 1 s with every built file delayed by 2 s. |
 | D63 | Minimum splash time | Asked for after D62: the splash left too quickly | The splash stays up for at least 1.5 s from launch (`SPLASH_MIN_MS` in `src/lib/splash.ts`), then fades over 250 ms as before. On a fast start it previously left after about 0.7 s. If loading takes longer than 1.5 s, it leaves as soon as the first page is ready, so nothing gets slower. Time is measured with `performance.now()`, which counts from the start of page load. A page crash still removes it at once (`RouteErrorBoundary`). Covered by unit tests in `splash.test.tsx` and a timed check in `e2e/pwa.spec.ts`. |
+| D64 | Monorepo for all portals | The admin portal brief asked for separate frontends on one backend; the student portal's docs already said so | One repository with npm workspaces. `apps/student` is the student portal, moved without behaviour changes; `apps/admin` and `apps/teacher` will join it. Shared code lives in packages: `@conote/ui` (tokens, Tailwind theme, shadcn-style primitives, `cn`) and `@conote/domain` (IDs, roles, course, summary and notification statuses). Packages are compiled from source by each app, with no build step, and may not import app code (ESLint). One root config each for ESLint, Prettier, TypeScript (project references), Vitest (one project per app, coverage at the root) and lint-staged. Rejected: one app for every role, because admin and teacher code would ride along in the student PWA's offline download and every admin release would prompt students to update; separate repositories, because shared names and statuses drift apart. Vercel keeps deploying from the root `vercel.json`, which now builds `@conote/student`; each future app gets its own Vercel project. Tailwind now scans only the app and `packages/ui`, so two unused classes that came from words in the docs (`grow`, `contents`) are no longer generated. |
 
 ---
 

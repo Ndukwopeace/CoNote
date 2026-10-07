@@ -1,0 +1,103 @@
+/*
+ * The CoNote design system for Tailwind CSS, shared by every CoNote app (decision D64): the
+ * tokens, their Tailwind class names and the page-wide base styles. An app's stylesheet imports
+ * it after Tailwind itself.
+ */
+
+/* CoNote's colour and shape tokens. */
+@import './tokens.css';
+
+/* Tailwind only generates the classes it finds in scanned files, and it doesn't scan outside the
+   app by default. This makes it scan the shared components too, so their classes exist. */
+@source '../components';
+
+/* Maps each token to a Tailwind name, e.g. --color-primary makes bg-primary and text-primary work.
+   "inline" makes classes read the CSS variable, so a token change applies everywhere at once. */
+@theme inline {
+  /* Default font, with system fallbacks if it fails to load. */
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* shadcn/ui colour names. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  /* Extra brand shades. */
+  --color-primary-dark: var(--brand-primary-dark);
+  --color-primary-light: var(--brand-primary-light);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* Card and panel background. */
+  --color-surface: var(--brand-surface);
+
+  /* Status colours and their badge pairs. */
+  --color-success: var(--brand-success);
+  --color-success-soft: var(--brand-success-soft);
+  --color-success-strong: var(--brand-success-strong);
+  --color-warning: var(--brand-warning);
+  --color-warning-soft: var(--brand-warning-soft);
+  --color-warning-strong: var(--brand-warning-strong);
+  --color-error: var(--brand-error);
+  --color-error-soft: var(--brand-error-soft);
+  --color-error-strong: var(--brand-error-strong);
+
+  /* Course accents. */
+  --color-course-1: var(--brand-accent-1);
+  --color-course-1-soft: var(--brand-accent-1-soft);
+  --color-course-2: var(--brand-accent-2);
+  --color-course-2-soft: var(--brand-accent-2-soft);
+  --color-course-3: var(--brand-accent-3);
+  --color-course-3-soft: var(--brand-accent-3-soft);
+  --color-course-4: var(--brand-accent-4);
+  --color-course-4-soft: var(--brand-accent-4-soft);
+
+  /* Corner radii derived from the base radius. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Base styles, applied before utility classes so utilities can override them. */
+@layer base {
+  /* Every element: default border colour and a soft focus outline colour. */
+  * {
+    @apply border-border outline-ring/50;
+  }
+  /* Page background, so overscroll areas match. */
+  html {
+    @apply bg-background;
+  }
+  /* Page font and colours; antialiased text renders thinner and crisper on Mac screens. */
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    /* Keep content clear of the notch when an iPhone is turned sideways (index.html sets
+       viewport-fit=cover). Zero on every other device. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Accessibility (NFR-2): when the device asks for reduced motion, make animations and
+       transitions effectively instant. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

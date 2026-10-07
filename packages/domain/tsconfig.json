@@ -1,0 +1,34 @@
+// TypeScript settings for the shared @conote/domain package (D64). Apps compile its source
+// directly, so these settings match the apps' strictness (ENGINEERING_STANDARDS.md section 4.1).
+{
+  "compilerOptions": {
+    // Where incremental build info is cached.
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    // Modern JavaScript.
+    "target": "es2023",
+    // Built-in types for the code in this package.
+    "lib": ["ES2023"],
+    // ES modules, resolved the way Vite resolves them.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    // Don't type-check library declaration files.
+    "skipLibCheck": true,
+    // Keep imports exactly as written; requires `import type` for types.
+    "verbatimModuleSyntax": true,
+    // Every file is a module.
+    "moduleDetection": "force",
+    // Only type-check; the apps build this code.
+    "noEmit": true,
+    // All strict checks, plus the extra ones the apps use.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true
+  },
+  // The package source.
+  "include": ["src"]
+}

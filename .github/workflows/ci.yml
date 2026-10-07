@@ -102,7 +102,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report
-          path: playwright-report
+          # Each app writes its report in its own folder (D64).
+          path: apps/*/playwright-report
           retention-days: 7
 
       # SECURITY: fails on any known high or critical vulnerability in a dependency.
