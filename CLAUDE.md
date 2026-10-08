@@ -7,7 +7,7 @@ The CoNote monorepo (decision D64). Students write private notes per class. An A
 | `apps/student`                         | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.**      |
 | `apps/admin`                           | The admin console (React + TypeScript + Vite web app, routes under `/admin`). Admin screens only. Spec: `docs/admin/`. |
 | `apps/teacher`                         | Not built yet. Teacher screens go here.                                                                                |
-| `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `cn`            |
+| `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`   |
 | `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                            |
 | `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`           |
 | `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                             |
@@ -56,11 +56,12 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - The service worker registers only in production builds (the plugin's hook is a no-op in `npm run dev` and in Vitest). Test offline behaviour with Playwright (`apps/student/e2e/pwa.spec.ts`).
 - Any runtime cache that may hold student data must be named with `RUNTIME_CACHE_PREFIX` from `lib/pwa.ts`, or sign-out won't delete it.
 - The shadcn registry is not reachable from every environment. The primitives in `packages/ui/src/components/` follow the shadcn new-york source and can be edited directly. A new primitive imports `cn` from `'../utils'`, never through the `@/` alias, since every app defines `@/` as its own `src/`.
-- Tailwind scans only the app's own files plus `packages/ui/src/components` (the `@source` line in `packages/ui/src/styles/theme.css`). A class used anywhere else is not generated.
+- Tailwind scans only the app's own files plus the `packages/ui/src` folders named by the `@source` lines in `packages/ui/src/styles/theme.css` (`components`, `common`, `forms`, `toast`). A class used anywhere else is not generated; a new folder needs its own `@source` line.
 - Vercel builds the student app from the root `vercel.json` (`buildCommand` and `outputDirectory`). The admin app is its own Vercel project with Root Directory `apps/admin`, using `apps/admin/vercel.json`.
 - Admin demo sign-in: `admin@conote.example` / `password1` (also `teacher@` and `student@conote.example`, which the guard turns away). The admin e2e server uses port 4174, the student's 4173.
 - An admin password changed through the demo reset flow is kept in local storage (`conote-admin-demo:` keys) and survives sign-out, like server data. Clear the site's storage to get `password1` back.
 - The admin dashboard reads one seeded demo platform (D69). Its health card is all "Operational" unless local storage key `conote-admin-demo:health` says otherwise, for example `{"storage":"degraded"}`. Admin page tests pass their own `platform` records to `renderWithRouter`.
+- Admin demo changes to users (invitations, status changes, edits) are saved under local storage key `conote-admin-demo:platform` and restored over the seed (D70). Clear the site's storage to start from the seed again.
 - Test helpers may import demo services; tests themselves import them through `src/test/` (the import-boundary rule).
 - App icons and iPhone launch images: `npm run icons -w @conote/student` (needs `PW_CHROMIUM_PATH` here).
 

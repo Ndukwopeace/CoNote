@@ -9,7 +9,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, NotebookPen, Plus } from 'lucide-
 import { Link, useParams, useSearchParams } from 'react-router'
 
 // Empty state.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Missing-class panel.

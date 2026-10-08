@@ -14,6 +14,42 @@ export interface UserRecord {
   status: AccountStatus
   fullName: string
   email: string
+  // The human-readable IDs (`profiles.student_number`, `profiles.staff_number`), separate from `id`.
+  studentNumber: string | null
+  staffNumber: string | null
+  // Students' and teachers' department; null for administrators.
+  department: string | null
+  // A student's year of study, e.g. "300 Level"; null for other roles.
+  level: string | null
+  phone: string | null
+  // When the account was created (invited).
+  createdAt: string
+  // The latest activity, or null if the account has never been used.
+  lastActiveAt: string | null
+}
+
+/** A student in a course (`enrollments`). */
+export interface EnrollmentRecord {
+  courseId: string
+  studentId: string
+}
+
+/**
+ * One recorded platform action (`audit_logs`). Append-only: written by the backend, never by the
+ * browser. A user's status history is read from these entries.
+ */
+export interface AuditEntry {
+  id: string
+  at: string
+  // Who did it; null for the system.
+  actorId: string | null
+  // What happened, e.g. "user.status_changed".
+  action: string
+  // What it happened to.
+  entityType: string
+  entityId: string
+  // Details, e.g. { from: "active", to: "suspended" }. Never note content.
+  metadata: Record<string, string | null>
 }
 
 /** A course (`courses`). */
@@ -97,6 +133,8 @@ export interface PlatformSettings {
 /** Everything the dashboard services read. */
 export interface PlatformData {
   users: UserRecord[]
+  enrollments: EnrollmentRecord[]
+  auditLog: AuditEntry[]
   courses: CourseRecord[]
   classes: ClassRecord[]
   summaries: SummaryRecord[]
@@ -112,6 +150,8 @@ export interface PlatformData {
 export function emptyPlatformData(overrides: Partial<PlatformData> = {}): PlatformData {
   return {
     users: [],
+    enrollments: [],
+    auditLog: [],
     courses: [],
     classes: [],
     summaries: [],
@@ -121,6 +161,25 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     storageErrors: [],
     securityEvents: [],
     settings: { termStartsOn: '2026-09-01', termEndsOn: '2026-12-18', reviewAlertDays: 3 },
+    ...overrides,
+  }
+}
+
+/** A user with sensible defaults, for tests to override only what they check. */
+export function userRecord(
+  overrides: Partial<UserRecord> & Pick<UserRecord, 'id' | 'role'>,
+): UserRecord {
+  return {
+    status: 'active',
+    fullName: overrides.id,
+    email: `${overrides.id}@conote.example`,
+    studentNumber: null,
+    staffNumber: null,
+    department: null,
+    level: null,
+    phone: null,
+    createdAt: '2026-09-01T09:00:00.000Z',
+    lastActiveAt: null,
     ...overrides,
   }
 }

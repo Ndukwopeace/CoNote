@@ -9,7 +9,7 @@ import { Mail, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // FAQ accordion and button.
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@conote/ui/accordion'
 import { Button } from '@conote/ui/button'

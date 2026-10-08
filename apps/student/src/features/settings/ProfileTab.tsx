@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback } from '@conote/ui/avatar'
 import { buttonVariants, Button } from '@conote/ui/button'
 import { Input } from '@conote/ui/input'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useProfile, useUpdateProfile, useUploadAvatar } from '@/hooks/useProfile'
 // Picture rules.

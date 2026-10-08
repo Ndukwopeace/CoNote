@@ -35,12 +35,15 @@ import { ADMIN_ROUTES } from '@/lib/routes'
 /** The empty form. */
 const EMPTY: SignInValues = { email: '', password: '' }
 
+/** Sign-in's own wording: an account an administrator deactivated or suspended is told so. */
+const LOGIN_MESSAGES = { forbidden: 'This account is not active. Contact your administrator.' }
+
 /** "CoNote Admin": email, password, Sign In. */
 export function LoginPage() {
   // Sign-in; on success the page's guard sends the admin on.
   const { signIn } = useAuth()
   // Pending and error state.
-  const { error, isPending, run } = useAuthRequest()
+  const { error, isPending, run } = useAuthRequest(LOGIN_MESSAGES)
   // A notice another page asked for. SECURITY: only known keys show (readAuthNotice).
   const notice = readAuthNotice(useLocation().state)
   // Form state with the zod rules; errors show once a field has been left.

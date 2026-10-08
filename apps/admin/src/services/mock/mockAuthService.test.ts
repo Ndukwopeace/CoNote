@@ -10,7 +10,13 @@ import { describe, expect, it } from 'vitest'
 import { describeAuthServiceContract } from '../contracts/authService.contract'
 
 // The unit under test.
-import { createMockAuthService, DEMO_ACCOUNTS, DEMO_PASSWORD, SESSION_KEY } from './mockAuthService'
+import {
+  createMockAuthService,
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
+  readStoredSession,
+  SESSION_KEY,
+} from './mockAuthService'
 
 /** A demo service over the test's storage, with no simulated delay. */
 function createService(store: Storage = window.sessionStorage) {
@@ -34,6 +40,35 @@ describeAuthServiceContract('mock', {
 })
 
 describe('mock AuthService', () => {
+  // Proves an account an administrator has deactivated or suspended can't sign in (section 6.2).
+  it('refuses accounts that are not active', async () => {
+    // Arrange: the teacher account is suspended.
+    const service = createMockAuthService({
+      store: window.sessionStorage,
+      demoStore: window.localStorage,
+      latencyMs: 0,
+      accountStatus: (email) => (email === 'teacher@conote.example' ? 'suspended' : 'active'),
+    })
+
+    // Act and assert.
+    await expect(
+      service.signIn({ email: 'teacher@conote.example', password: DEMO_PASSWORD }),
+    ).rejects.toMatchObject({
+      kind: 'forbidden',
+      message: 'This account is not active. Contact your administrator.',
+    })
+    await expect(service.getSession()).resolves.toBeNull()
+  })
+
+  // Proves the stored session can be read without the service, for the other demo services.
+  it('reads the stored session for other services', async () => {
+    // Arrange.
+    await createService().signIn({ email: admin.email, password: DEMO_PASSWORD })
+
+    // Act and assert.
+    expect(readStoredSession(window.sessionStorage)?.user.id).toBe(admin.id)
+  })
+
   // Proves the demo offers one account per role, so the admin-only guard can be tried out.
   it('has a demo account for each role', () => {
     expect(DEMO_ACCOUNTS.map((account) => account.role).sort()).toEqual([

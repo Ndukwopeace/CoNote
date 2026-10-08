@@ -9,7 +9,7 @@ import { BellOff, CheckCheck } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 
 // Empty state.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // The type icon.
@@ -22,7 +22,7 @@ import { ListSkeleton } from '@/components/common/Skeletons'
 import { Button } from '@conote/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@conote/ui/tabs'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useNow } from '@/hooks/useNow'
 import { useMarkAllRead, useMarkNotificationRead, useNotifications } from '@/hooks/useNotifications'

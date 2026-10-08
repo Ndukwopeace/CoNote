@@ -3,6 +3,9 @@
  * only through useServices(), so the demo data and Supabase are interchangeable (D66).
  */
 
+// The shared vocabulary.
+import type { AccountStatus } from '@conote/domain'
+
 // Session shapes.
 import type { PasswordResetRequest, Session, SignInInput } from '@/types/auth'
 // Dashboard shapes.
@@ -14,6 +17,15 @@ import type {
   PlatformAlert,
   PlatformOverview,
 } from '@/types/dashboard'
+// User shapes.
+import type {
+  InviteUserInput,
+  UpdateUserInput,
+  UserDetails,
+  UserFilter,
+  UserFilterOptions,
+  UserPage,
+} from '@/types/users'
 
 /** Signing in and out, and the current session. */
 export interface AuthService {
@@ -56,10 +68,35 @@ export interface HealthService {
   getHealth(): Promise<HealthReport>
 }
 
+/**
+ * The accounts on the platform (admin REQUIREMENTS section 11). Every change writes an audit
+ * entry. In the backend stage, invite and status changes run in Edge Functions.
+ */
+export interface UserService {
+  /** One page of one role's accounts, searched, filtered and sorted. */
+  listUsers(filter: UserFilter): Promise<UserPage>
+  /** The departments and courses the filters offer. */
+  listFilterOptions(): Promise<UserFilterOptions>
+  /** One account's details; rejects with not_found for an unknown ID. */
+  getUser(userId: string): Promise<UserDetails>
+  /** Creates an invited (pending) account; rejects with conflict when the email is taken. */
+  inviteUser(input: InviteUserInput): Promise<UserDetails>
+  /** Changes profile fields. */
+  updateUser(userId: string, input: UpdateUserInput): Promise<UserDetails>
+  /**
+   * Activates, deactivates or suspends an account. Rejects a change the rules don't allow, and
+   * any change to the administrator's own account.
+   */
+  setUserStatus(userId: string, status: AccountStatus): Promise<UserDetails>
+  /** Sends a password reset link to an active account. */
+  sendPasswordReset(userId: string): Promise<void>
+}
+
 /** Every service the admin app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
   analytics: AnalyticsService
   alerts: AlertService
   health: HealthService
+  users: UserService
 }

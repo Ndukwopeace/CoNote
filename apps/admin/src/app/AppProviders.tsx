@@ -1,6 +1,6 @@
 /**
- * Everything the console needs around its pages: services, the query cache, sign-in state and
- * tooltip settings.
+ * Everything the console needs around its pages: services, the query cache, sign-in state,
+ * tooltip settings and toasts.
  */
 
 // Query cache provider.
@@ -8,6 +8,8 @@ import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 // Children type.
 import type { ReactNode } from 'react'
 
+// Short confirmations after a change.
+import { ToastProvider } from '@conote/ui/toast'
 // Tooltip settings for the icon rail.
 import { TooltipProvider } from '@conote/ui/tooltip'
 
@@ -33,8 +35,10 @@ export function AppProviders({ services, queryClient, children }: Readonly<AppPr
       <QueryClientProvider client={queryClient}>
         {/* Sign-in state, available to every page. */}
         <AuthProvider>
-          {/* Tooltip settings, then the console itself. */}
-          <TooltipProvider>{children}</TooltipProvider>
+          {/* Tooltip settings, toasts, then the console itself. */}
+          <TooltipProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ServicesProvider>

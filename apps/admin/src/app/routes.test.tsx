@@ -44,7 +44,8 @@ describe('admin routes', () => {
 
   // Proves each detail address has its page.
   it.each([
-    ['/admin/users/u1', 'User details'],
+    // The test platform has no users, so the details page says so.
+    ['/admin/users/u1', 'User not found'],
     ['/admin/courses/c1', 'Course details'],
     ['/admin/classes/k1', 'Class details'],
     ['/admin/resources/r1', 'Resource details'],
@@ -104,7 +105,7 @@ describe('admin layout', () => {
   // Proves a detail page keeps its section marked as current.
   it('keeps the section current on a detail page', async () => {
     renderAsAdmin('/admin/users/u1')
-    await screen.findByRole('heading', { level: 1, name: 'User details' })
+    await screen.findByRole('heading', { level: 1, name: 'User not found' })
     const nav = screen.getByRole('navigation', { name: 'Admin navigation' })
     expect(within(nav).getByRole('link', { name: 'Users' })).toHaveAttribute('aria-current', 'page')
   })

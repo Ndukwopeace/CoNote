@@ -348,6 +348,34 @@ Note content is never shown. There is no "view this student's notes" action.
 
 This prompt assumes (a).
 
+**As built (A4, D70):**
+
+- **Tabs and filters:**
+  - The tab is `?tab=students|teachers|admins`. The dashboard's `?role=` links open the matching tab.
+  - Search (`q`), `status`, `department`, `course`, `sort` and `page` are kept in the address too. Values typed in by hand that the console doesn't know are ignored.
+  - Search runs after a 300 ms pause in typing. Any filter change goes back to page 1.
+- **The table:**
+  - 20 people per page, sorted by name (A to Z) unless chosen otherwise. Name, Created and Last active can be sorted.
+  - Below the tablet width the same table shows each person as a card, every value beside its column name.
+  - Course counts include only courses that are not archived.
+- **Statuses:**
+  - Shown as Active, Invited (`pending`), Inactive or Suspended.
+  - Allowed changes:
+    - active → inactive or suspended
+    - inactive → active or suspended
+    - suspended → active
+    - pending → inactive (withdrawing the invitation)
+  - Deactivating and suspending ask first. An administrator can't change their own status.
+  - A deactivated or suspended account is refused at sign-in with "This account is not active. Contact your administrator." The backend also revokes its sessions.
+- **Password reset links:** only active accounts can be sent one.
+- **Status history:** read from the audit log (`user.invited`, `user.status_changed`).
+- **Audit:** every change writes an audit entry: `user.invited`, `user.updated`, `user.status_changed` or `user.password_reset_sent`.
+- **Invite form:** role, name, email, and a department for students and teachers. An email already in use is refused.
+- **Edit form:** the profile fields only. The email can't be changed here.
+- **Later milestones:**
+  - "Assign to course" for teachers comes with Courses (A5).
+  - Column visibility in tables comes with Finishing (A11).
+
 ---
 
 ## 12. Courses
@@ -596,7 +624,7 @@ Same pattern as the student portal:
 | Service | Functions |
 |---|---|
 | `AuthService` | `signIn`, `signOut`, `requestPasswordReset`, `checkResetLink`, `resetPassword`, `getSession`, `onAuthChange` |
-| `UserService` | `listUsers(filter)`, `getUser`, `inviteUser`, `updateUser`, `setUserStatus`, `sendPasswordReset` |
+| `UserService` | `listUsers(filter)`, `listFilterOptions` (A4), `getUser`, `inviteUser`, `updateUser`, `setUserStatus`, `sendPasswordReset` |
 | `CourseService` | `listCourses(filter)`, `getCourse`, `createCourse`, `updateCourse`, `archiveCourse`, `restoreCourse`, `assignTeacher`, `removeTeacher`, `listEnrollments`, `enrollStudents`, `removeStudent` |
 | `ClassService` | `listClasses(filter)`, `getClass`, `createClass`, `updateClass`, `archiveClass` |
 | `ResourceService` | `listResources(filter)`, `getResource`, `createResource`, `uploadFile`, `updateResource`, `setResourceStatus`, `deleteResource` |

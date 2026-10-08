@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The units under test.
+import { EmptyState } from './EmptyState'
 import { ErrorPanel } from './ErrorPanel'
 import { StatCard } from './StatCard'
 
@@ -48,6 +49,24 @@ describe('ErrorPanel', () => {
     // Assert.
     expect(screen.getByRole('alert')).toHaveTextContent('Unable to load alerts.')
     expect(onRetry).toHaveBeenCalledOnce()
+    await expectNoAxeViolations(container)
+  })
+})
+
+describe('EmptyState', () => {
+  // Proves the title, message and action all show.
+  it('shows a title, a message and an action', async () => {
+    // Act.
+    const { container } = render(
+      <EmptyState icon={BookOpen} title="No courses" action={<button type="button">Clear</button>}>
+        Nothing here yet.
+      </EmptyState>,
+    )
+
+    // Assert.
+    expect(screen.getByText('No courses')).toBeInTheDocument()
+    expect(screen.getByText('Nothing here yet.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
     await expectNoAxeViolations(container)
   })
 })

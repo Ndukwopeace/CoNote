@@ -8,6 +8,8 @@
 
 // The shared error type.
 import { AppError } from '@conote/core/errors'
+// The shared vocabulary.
+import type { AccountStatus } from '@conote/domain'
 // Shape checks for the stored session.
 import { z } from 'zod'
 
@@ -81,6 +83,8 @@ interface MockAuthOptions {
   store: Storage
   demoStore: Storage
   latencyMs: number
+  // The account's status on the platform; accounts that aren't active can't sign in.
+  accountStatus?: (email: string) => AccountStatus | undefined
 }
 
 /** Reads JSON from `store` and checks it against `schema`; anything else counts as absent. */
@@ -106,11 +110,32 @@ function assertRule(schema: z.ZodType, value: unknown) {
   }
 }
 
+/**
+ * The session stored in `store`, if it is present and well-formed. The other demo services use it
+ * to know who is acting.
+ */
+export function readStoredSession(store: Storage): Session | null {
+  // Nothing stored: signed out.
+  const raw = store.getItem(SESSION_KEY)
+  if (raw === null) return null
+  // SECURITY: storage can be edited by hand or by a script, so its contents are checked before
+  // use. Anything that isn't a well-formed session is removed and treated as signed out.
+  try {
+    const parsed = sessionSchema.safeParse(JSON.parse(raw))
+    if (parsed.success) return parsed.data
+  } catch {
+    // Not JSON: handled below like any other malformed value.
+  }
+  store.removeItem(SESSION_KEY)
+  return null
+}
+
 /** Builds the demo AuthService over `store`. */
 export function createMockAuthService({
   store,
   demoStore,
   latencyMs,
+  accountStatus,
 }: MockAuthOptions): AuthService {
   // Everyone listening for session changes.
   const listeners = new Set<(session: Session | null) => void>()
@@ -130,28 +155,11 @@ export function createMockAuthService({
     return readChecked(demoStore, RESET_KEY, resetSchema)
   }
 
-  /** The stored session, if it is present and well-formed. */
-  function readSession(): Session | null {
-    // Nothing stored: signed out.
-    const raw = store.getItem(SESSION_KEY)
-    if (raw === null) return null
-    // SECURITY: storage can be edited by hand or by a script, so its contents are checked before
-    // use. Anything that isn't a well-formed session is removed and treated as signed out.
-    try {
-      const parsed = sessionSchema.safeParse(JSON.parse(raw))
-      if (parsed.success) return parsed.data
-    } catch {
-      // Not JSON: handled below like any other malformed value.
-    }
-    store.removeItem(SESSION_KEY)
-    return null
-  }
-
   return {
     async getSession() {
       // Behave like a network call.
       await simulateLatency(latencyMs)
-      return readSession()
+      return readStoredSession(store)
     },
 
     async signIn({ email, password }) {
@@ -164,6 +172,13 @@ export function createMockAuthService({
       // reveal which emails have accounts (account enumeration).
       if (!account || password !== passwordFor(account.email)) {
         throw new AppError('validation', WRONG_DETAILS)
+      }
+      // SECURITY: a deactivated or suspended account is refused even with the right password
+      // (admin REQUIREMENTS section 6.2). Said only after the password matched, so it reveals
+      // nothing to someone guessing.
+      const status = accountStatus?.(account.email) ?? 'active'
+      if (status !== 'active') {
+        throw new AppError('forbidden', 'This account is not active. Contact your administrator.')
       }
       // Keep a copy of the account as the session, then tell listeners.
       const session: Session = { user: { ...account } }

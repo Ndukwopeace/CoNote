@@ -7,8 +7,8 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 | A1 | App setup | Done |
 | A2 | Sign-in polish: forgot and reset password | Done |
 | A3 | Dashboard: statistics, activity chart, system health, alerts | Done |
-| A4 | Users: tabs, search, filters, details, invite, status changes | Next |
-| A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | |
+| A4 | Users: tabs, search, filters, details, invite, status changes | Done |
+| A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | Next |
 | A6 | Classes: create, edit, archive, details | |
 | A7 | Resources: upload, publish, archive, assign | |
 | A8 | AI & Summaries: counters, tables, failed jobs, retry, pipeline details | |
@@ -94,5 +94,38 @@ In Vercel, add a second project from the same GitHub repository with **Root Dire
   - an alert opens its screen
   - the range, series and table view work
   - the health states show in words
+  - axe finds no problems
+  - there are no CSP violations
+
+---
+
+## A4 — Users
+
+**Delivered**
+
+- The Users page (REQUIREMENTS section 11):
+  - Students, Teachers and Admins tabs, with each tab's columns
+  - search, status, department and course filters, sorting and 20-per-page lists, all kept in the address
+  - a card per person on phones
+  - empty, no-match and error states
+- User details: profile, courses, status history (from the audit log), and the actions.
+- Actions, from the row menu and the details page:
+  - edit
+  - activate, deactivate and suspend (asking first before blocking)
+  - send a password reset link
+  - invite user
+- `UserService` with a contract suite. Every change writes an audit entry.
+- The demo saves users, enrolments and the audit log in local storage (`conote-admin-demo:platform`), so changes survive a reload.
+- Sign-in refuses accounts that are not active.
+- Moved to `@conote/ui`: `ConfirmDialog`, `EmptyState` and the toasts. Added `NativeSelect`.
+
+**Done when**
+
+- The service rules are proven by contract tests, the forms' and filters' rules by unit tests, and both pages by page tests (states, dialogs, address).
+- In the browser, on desktop and phone:
+  - filters survive a reload
+  - an invitation is listed as Invited after a reload
+  - a suspended account can't sign in
+  - phones show cards with no sideways scrolling
   - axe finds no problems
   - there are no CSP violations

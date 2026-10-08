@@ -13,7 +13,7 @@ import { ListSkeleton } from '@/components/common/Skeletons'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
 // Shapes.

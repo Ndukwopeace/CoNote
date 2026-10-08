@@ -20,7 +20,7 @@ import { HEALTH_OVERRIDE_KEY, makeSession } from '@/test/factories'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 // The records the demo services read.
-import { emptyPlatformData, type PlatformData } from '@/services/platformData'
+import { emptyPlatformData, userRecord, type PlatformData } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 
@@ -36,9 +36,9 @@ function hoursAgo(hours: number) {
 function smallPlatform(): PlatformData {
   return emptyPlatformData({
     users: [
-      { id: 's1', role: 'student', status: 'active', fullName: 'A', email: 'a@x.example' },
-      { id: 's2', role: 'student', status: 'pending', fullName: 'B', email: 'b@x.example' },
-      { id: 't1', role: 'teacher', status: 'active', fullName: 'C', email: 'c@x.example' },
+      userRecord({ id: 's1', role: 'student' }),
+      userRecord({ id: 's2', role: 'student', status: 'pending' }),
+      userRecord({ id: 't1', role: 'teacher' }),
     ],
     courses: [
       { id: 'c1', code: 'SWE 311', title: 'SE', teacherId: 't1', archivedAt: null },

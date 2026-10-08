@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Tab title.

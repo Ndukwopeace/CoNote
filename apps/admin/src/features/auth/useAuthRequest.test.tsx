@@ -43,4 +43,15 @@ describe('useAuthRequest', () => {
     })
     expect(result.current.error).toBe('Not that.')
   })
+
+  // Proves a form can give its own wording for an error kind, such as an inactive account.
+  it('uses the form’s own wording for a kind when given', async () => {
+    const { result } = renderHook(() =>
+      useAuthRequest({ forbidden: 'This account is not active. Contact your administrator.' }),
+    )
+    await act(async () => {
+      await result.current.run(() => Promise.reject(new AppError('forbidden', 'raw detail')))
+    })
+    expect(result.current.error).toBe('This account is not active. Contact your administrator.')
+  })
 })
