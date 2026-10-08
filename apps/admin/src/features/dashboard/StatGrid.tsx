@@ -80,11 +80,11 @@ export function StatGrid() {
   // Loading: six card-shaped blocks, announced once.
   if (isPending) {
     return (
-      <div role="status" aria-label="Loading platform statistics" className={GRID}>
+      <output aria-label="Loading platform statistics" className={GRID}>
         {CARDS.map((card) => (
           <Skeleton key={card.key} className="h-[86px] rounded-xl" />
         ))}
-      </div>
+      </output>
     )
   }
 

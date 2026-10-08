@@ -95,9 +95,9 @@ export function ActivityCard() {
     // First load: a chart-sized block.
     if (isPending) {
       return (
-        <div role="status" aria-label="Loading activity">
+        <output className="block" aria-label="Loading activity">
           <Skeleton className="h-56" />
-        </div>
+        </output>
       )
     }
     // Nothing happened in the period: say so rather than draw a flat line.
@@ -123,7 +123,9 @@ export function ActivityCard() {
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           {/* Range: one pressed button at a time. */}
-          <div role="group" aria-label="Date range" className="flex rounded-md border p-0.5">
+          <fieldset className="flex rounded-md border p-0.5">
+            {/* Names the buttons as one set for screen readers. */}
+            <legend className="sr-only">Date range</legend>
             {RANGES.map((days) => (
               <button
                 key={days}
@@ -143,7 +145,7 @@ export function ActivityCard() {
                 {days} days
               </button>
             ))}
-          </div>
+          </fieldset>
           {/* Series: a native select, which works the same everywhere. */}
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Show</span>

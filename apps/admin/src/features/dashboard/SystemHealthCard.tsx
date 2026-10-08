@@ -53,11 +53,11 @@ function HealthBody() {
   // Loading: a block per part, announced once.
   if (isPending) {
     return (
-      <div role="status" aria-label="Loading system health" className="space-y-3">
+      <output aria-label="Loading system health" className="block space-y-3">
         {HEALTH_COMPONENTS.map((component) => (
           <Skeleton key={component} className="h-6" />
         ))}
-      </div>
+      </output>
     )
   }
 

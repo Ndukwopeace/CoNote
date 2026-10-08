@@ -11,6 +11,11 @@ export interface Scale {
 /** The smallest axis top, so a quiet day doesn't look like a cliff. */
 const MIN_TOP = 4
 
+/** The first of 1, 2, 5 and 10 at or above `normalized` (a number from 1 to 10). */
+function stepFactor(normalized: number): number {
+  return [1, 2, 5].find((factor) => normalized <= factor) ?? 10
+}
+
 /**
  * A round axis for values up to `max`: about five steps of 1, 2 or 5 times a power of ten,
  * ending at the first step at or above `max`.
@@ -23,8 +28,7 @@ export function niceScale(max: number): Scale {
   const magnitude = 10 ** Math.floor(Math.log10(rough))
   const normalized = rough / magnitude
   // Round the step up to 1, 2, 5 or 10 times the power of ten; never below 1, as counts are whole.
-  const factor = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10
-  const step = Math.max(1, factor * magnitude)
+  const step = Math.max(1, stepFactor(normalized) * magnitude)
   // The first step at or above the value.
   const top = Math.ceil(value / step) * step
   // Every step from 0 to the top.

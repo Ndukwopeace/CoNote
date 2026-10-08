@@ -43,7 +43,10 @@ function tooltipAlignment(index: number, lastIndex: number) {
 function summarise(points: ActivityPoint[], label: string) {
   // Total, and the busiest day (the first one, if several tie).
   const total = points.reduce((sum, point) => sum + point.count, 0)
-  const peak = points.reduce((best, point) => (point.count > best.count ? point : best))
+  const peak = points.reduce(
+    (best, point) => (point.count > best.count ? point : best),
+    points[0] ?? { date: '', count: 0 },
+  )
   const first = points[0]
   const last = points.at(-1)
   return `${label} per day, ${dayLabel(first?.date ?? '')} to ${dayLabel(last?.date ?? '')}: ${total} in total, most on ${dayLabel(peak.date)} (${peak.count}).`

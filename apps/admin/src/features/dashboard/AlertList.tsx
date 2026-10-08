@@ -29,10 +29,10 @@ function AlertBody() {
   // Loading: a few rows, announced once.
   if (isPending) {
     return (
-      <div role="status" aria-label="Loading alerts" className="space-y-3">
+      <output aria-label="Loading alerts" className="block space-y-3">
         <Skeleton className="h-10" />
         <Skeleton className="h-10" />
-      </div>
+      </output>
     )
   }
 

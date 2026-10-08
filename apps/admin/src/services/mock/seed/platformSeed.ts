@@ -40,7 +40,8 @@ function sequence(seed: number) {
   let state = seed
   // The next number in [0, 1).
   return () => {
-    state = (state + 0x6d2b79f5) | 0
+    // Kept as an unsigned 32-bit number, so it wraps instead of growing.
+    state = (state + 0x6d2b79f5) >>> 0
     let t = Math.imul(state ^ (state >>> 15), 1 | state)
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296
@@ -137,23 +138,19 @@ function buildUsers(): UserRecord[] {
   return users
 }
 
-/** Builds the demo platform for the clock `now`. */
-export function createPlatformSeed(now: Date): PlatformData {
-  // The same numbers every time.
-  const random = sequence(20_261_008)
-  // A whole number in [min, max].
-  const between = (min: number, max: number) => min + Math.floor(random() * (max - min + 1))
-  // Times relative to now.
-  const nowMs = now.getTime()
-  const ago = (ms: number) => new Date(nowMs - ms).toISOString()
-  // Local midnight today, the anchor for class times.
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+/** The clock the seed is built around. */
+interface SeedClock {
+  // Now, in milliseconds.
+  nowMs: number
+  // Local midnight today.
+  today: Date
+  // `ms` before now, as ISO text.
+  ago: (ms: number) => string
+}
 
-  // The term: seven weeks ago to eight weeks ahead, so today is always inside it.
-  const termStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 49)
-  const termEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 56)
-
-  // The courses in use.
+/** The courses in use, plus an archived course from last term. */
+function buildCourses(clock: SeedClock): CourseRecord[] {
+  // The courses in use; the ID is the code in lower case, joined with a hyphen.
   const courses: CourseRecord[] = COURSES.map(([code, title, teacherId]) => ({
     id: code.toLowerCase().replace(' ', '-'),
     code,
@@ -167,11 +164,15 @@ export function createPlatformSeed(now: Date): PlatformData {
     code: 'GST 111',
     title: 'Communication in English',
     teacherId: 'teacher-adeyemi',
-    archivedAt: ago(10 * DAY),
+    archivedAt: clock.ago(10 * DAY),
   })
+  return courses
+}
 
-  // Weekly classes for each course in use, each course on its own weekday and hour.
+/** Weekly classes for each course in use, and the archived course's three. */
+function buildClasses(courses: CourseRecord[], termStart: Date, clock: SeedClock): ClassRecord[] {
   const classes: ClassRecord[] = []
+  // Each course in use on its own weekday and hour.
   courses.slice(0, COURSES.length).forEach((course, index) => {
     for (let week = 0; week < WEEKS; week += 1) {
       classes.push({
@@ -194,18 +195,21 @@ export function createPlatformSeed(now: Date): PlatformData {
       id: `gst-111-${n}`,
       courseId: 'gst-111',
       title: `Communication in English, week ${n}`,
-      startsAt: ago((120 - n * 7) * DAY),
-      archivedAt: n === 3 ? null : ago(10 * DAY),
+      startsAt: clock.ago((120 - n * 7) * DAY),
+      archivedAt: n === 3 ? null : clock.ago(10 * DAY),
     })
   }
+  return classes
+}
 
-  // Summaries and AI jobs for the classes that have started.
+/** Summaries and AI jobs for the classes that have started, plus jobs in progress and failed. */
+function buildSummariesAndJobs(classes: ClassRecord[], clock: SeedClock, random: () => number) {
   const summaries: SummaryRecord[] = []
   const aiJobs: AiJobRecord[] = []
   for (const cls of classes) {
     // Days since the class started; nothing for classes still to come or the archived course.
     const startMs = Date.parse(cls.startsAt)
-    const age = (nowMs - startMs) / DAY
+    const age = (clock.nowMs - startMs) / DAY
     if (age < 1 || cls.courseId === 'gst-111') continue
     // The summary was generated three hours after the class.
     const generatedAt = new Date(startMs + 3 * HOUR).toISOString()
@@ -218,50 +222,86 @@ export function createPlatformSeed(now: Date): PlatformData {
     // SWE 311's class from four to ten days ago is still waiting for its teacher (an alert);
     // other classes from the last four days are in review; older ones are published.
     const waiting = age < 4 || (cls.courseId === 'swe-311' && age < 11)
+    // Published two days after the class, between 1 and 8 hours into that day.
+    const publishedAt = new Date(startMs + 2 * DAY + (1 + Math.floor(random() * 8)) * HOUR)
     summaries.push({
       id: `summary-${cls.id}`,
       classId: cls.id,
       status: waiting ? 'in_review' : 'published',
       inReviewSince: waiting ? generatedAt : null,
-      publishedAt: waiting
-        ? null
-        : new Date(startMs + 2 * DAY + between(1, 8) * HOUR).toISOString(),
+      publishedAt: waiting ? null : publishedAt.toISOString(),
     })
   }
   // Two jobs in progress, and failures three hours and thirty hours ago (only one is recent).
   aiJobs.push(
     { id: 'job-running', classId: 'cse-205-8', status: 'running', finishedAt: null },
     { id: 'job-queued', classId: 'bus-207-8', status: 'queued', finishedAt: null },
-    { id: 'job-failed-recent', classId: 'mth-202-7', status: 'failed', finishedAt: ago(3 * HOUR) },
-    { id: 'job-failed-older', classId: 'phy-101-6', status: 'failed', finishedAt: ago(30 * HOUR) },
+    {
+      id: 'job-failed-recent',
+      classId: 'mth-202-7',
+      status: 'failed',
+      finishedAt: clock.ago(3 * HOUR),
+    },
+    {
+      id: 'job-failed-older',
+      classId: 'phy-101-6',
+      status: 'failed',
+      finishedAt: clock.ago(30 * HOUR),
+    },
   )
+  return { summaries, aiJobs }
+}
 
-  // Measured activity for each of the last 90 days: busier on weekdays.
+/** A typical weekday's count for each kind of measured activity. */
+const TYPICAL_ACTIVITY: Record<ActivityEventKind, number> = {
+  sign_in: 60,
+  note_created: 30,
+  summary_viewed: 20,
+  resource_opened: 25,
+  ai_question: 15,
+}
+
+/** Measured activity for each of the last 90 days: busier on weekdays. */
+function buildActivity(clock: SeedClock, random: () => number): ActivityEvent[] {
   const activity: ActivityEvent[] = []
-  // A typical weekday's count for each kind.
-  const typical: Record<ActivityEventKind, number> = {
-    sign_in: 60,
-    note_created: 30,
-    summary_viewed: 20,
-    resource_opened: 25,
-    ai_question: 15,
-  }
+  const { today, nowMs } = clock
   for (let offset = ACTIVITY_DAYS - 1; offset >= 0; offset -= 1) {
     // Midnight of that day, and how much of it has happened (all of it, except today).
     const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset)
     const span = offset === 0 ? Math.max(nowMs - dayStart.getTime(), 1) : DAY
     // Weekends are quieter.
     const weekday = dayStart.getDay() % 6 !== 0
-    for (const [kind, base] of Object.entries(typical) as [ActivityEventKind, number][]) {
+    for (const [kind, base] of Object.entries(TYPICAL_ACTIVITY) as [ActivityEventKind, number][]) {
       // About the typical count on a weekday, a quarter of it at weekends, scaled to the part of
       // the day that has passed. A whole day always has at least one.
       const expected = (weekday ? base : base / 4) * (0.7 + random() * 0.6) * (span / DAY)
       const count = offset === 0 ? Math.round(expected) : Math.max(1, Math.round(expected))
+      // Each event at a random moment of the part of the day that has passed.
       for (let n = 0; n < count; n += 1) {
         activity.push({ kind, at: new Date(dayStart.getTime() + random() * span).toISOString() })
       }
     }
   }
+  return activity
+}
+
+/** Builds the demo platform for the clock `now`. */
+export function createPlatformSeed(now: Date): PlatformData {
+  // The same numbers every time.
+  const random = sequence(20_261_008)
+  // Times relative to now, and local midnight today, the anchor for class times.
+  const nowMs = now.getTime()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const clock: SeedClock = { nowMs, today, ago: (ms) => new Date(nowMs - ms).toISOString() }
+  // The term: seven weeks ago to eight weeks ahead, so today is always inside it.
+  const termStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 49)
+  const termEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 56)
+
+  // The records, built in a fixed order so the random numbers fall the same way each time.
+  const courses = buildCourses(clock)
+  const classes = buildClasses(courses, termStart, clock)
+  const { summaries, aiJobs } = buildSummariesAndJobs(classes, clock, random)
+  const activity = buildActivity(clock, random)
 
   return {
     users: buildUsers(),
@@ -272,13 +312,15 @@ export function createPlatformSeed(now: Date): PlatformData {
     activity,
     // Two notifications that bounced today.
     deliveryFailures: [
-      { id: 'delivery-1', at: ago(2 * HOUR) },
-      { id: 'delivery-2', at: ago(5 * HOUR) },
+      { id: 'delivery-1', at: clock.ago(2 * HOUR) },
+      { id: 'delivery-2', at: clock.ago(5 * HOUR) },
     ],
     // Storage has been fine.
     storageErrors: [],
     // Repeated failed sign-ins on one account an hour ago.
-    securityEvents: [{ id: 'security-1', action: 'auth.repeated_failed_sign_in', at: ago(HOUR) }],
+    securityEvents: [
+      { id: 'security-1', action: 'auth.repeated_failed_sign_in', at: clock.ago(HOUR) },
+    ],
     settings: {
       termStartsOn: localDateKey(termStart),
       termEndsOn: localDateKey(termEnd),
