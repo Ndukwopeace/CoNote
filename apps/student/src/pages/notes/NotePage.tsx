@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Missing-note panel.
@@ -25,7 +25,7 @@ import { HeaderSkeleton, ListSkeleton } from '@/components/common/Skeletons'
 // Button styles.
 import { Button, buttonVariants } from '@conote/ui/button'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'

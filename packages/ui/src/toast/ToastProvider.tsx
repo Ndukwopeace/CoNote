@@ -1,13 +1,16 @@
 /**
  * Toasts: short messages at the bottom of the screen after a save, a delete or a failure
- * (FR-NTE-6, section 11). Built here rather than added as a library (decision D44): the app
- * needs two tones and a timer.
+ * (student FR-NTE-6, section 11). Built here rather than added as a library (decision D44): the
+ * apps need two tones and a timer. Shared by every portal.
  */
 
 // Icons: tick, warning and close.
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react'
 // State, stable callbacks, memoised value and the timer clean-up.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+
+// Class-name helper.
+import { cn } from '../utils'
 
 // The context and its type.
 import { ToastContext, type ToastApi } from './ToastContext'
@@ -27,8 +30,15 @@ interface Toast {
   message: string
 }
 
+/** What the provider wraps, and where the toasts sit. */
+interface ToastProviderProps {
+  children: ReactNode
+  // True in apps with a bottom navigation bar on phones, so toasts sit above it.
+  aboveBottomNav?: boolean
+}
+
 /** Holds the toasts and renders them above the page. */
-export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
+export function ToastProvider({ children, aboveBottomNav = false }: Readonly<ToastProviderProps>) {
   // The toasts showing.
   const [toasts, setToasts] = useState<Toast[]>([])
   // The next ID.
@@ -88,8 +98,14 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {/* The stack: above the phone bottom bar, bottom right on larger screens. */}
-      <div className="pointer-events-none fixed inset-x-4 bottom-24 z-50 flex flex-col items-center gap-2 md:inset-x-auto md:right-6 md:bottom-6 md:items-end">
+      {/* The stack: bottom centre on phones (above the bottom bar where there is one), bottom
+          right on larger screens. */}
+      <div
+        className={cn(
+          'pointer-events-none fixed inset-x-4 z-50 flex flex-col items-center gap-2 md:inset-x-auto md:right-6 md:bottom-6 md:items-end',
+          aboveBottomNav ? 'bottom-24' : 'bottom-6',
+        )}
+      >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}

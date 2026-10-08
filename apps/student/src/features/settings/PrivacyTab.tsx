@@ -10,7 +10,7 @@ import { useState } from 'react'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // The notes export.
 import { notesExport } from '@/lib/exportNotes'
 // Reports failures.

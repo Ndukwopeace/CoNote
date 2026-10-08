@@ -8,7 +8,7 @@
 import { AlertDialog } from 'radix-ui'
 
 // Button styles.
-import { buttonVariants } from '@conote/ui/button'
+import { buttonVariants } from '../components/button'
 
 /** What the dialog asks and does. */
 interface ConfirmDialogProps {

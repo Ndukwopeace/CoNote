@@ -15,7 +15,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useBlocker, useNavigate } from 'react-router'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Loading placeholder.
@@ -34,7 +34,7 @@ import { useAuth } from '@/features/auth/useAuth'
 // The flag the update toast reads.
 import { setHasUnsavedChanges } from '@/features/pwa/unsavedChanges'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'

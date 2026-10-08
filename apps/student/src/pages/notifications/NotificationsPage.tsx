@@ -22,7 +22,7 @@ import { ListSkeleton } from '@/components/common/Skeletons'
 import { Button } from '@conote/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@conote/ui/tabs'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useNow } from '@/hooks/useNow'
 import { useMarkAllRead, useMarkNotificationRead, useNotifications } from '@/hooks/useNotifications'

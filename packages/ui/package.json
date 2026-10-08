@@ -9,6 +9,7 @@
     "./utils": "./src/utils.ts",
     "./common/*": "./src/common/*.tsx",
     "./forms/*": "./src/forms/*.tsx",
+    "./toast": "./src/toast/index.ts",
     "./*": "./src/components/*.tsx"
   },
   "dependencies": {

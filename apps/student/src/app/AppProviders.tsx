@@ -15,7 +15,7 @@ import { AuthProvider } from '@/features/auth/AuthProvider'
 // Keeps opened notes readable offline.
 import { OfflineSync } from '@/features/offline/OfflineSync'
 // Toast messages.
-import { ToastProvider } from '@/features/toast/ToastProvider'
+import { ToastProvider } from '@conote/ui/toast'
 // Injected service implementations.
 import { ServicesProvider } from '@/services/ServicesProvider'
 // Their type.
@@ -44,7 +44,7 @@ export function AppProviders({ services, queryClient, children }: Readonly<AppPr
           <OfflineSync />
           {/* Tooltip settings, toasts, then the app itself. */}
           <TooltipProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider aboveBottomNav>{children}</ToastProvider>
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Labelled field, the error box and the password input.
 import { FormField } from '@conote/ui/forms/FormField'
 import { FormMessage } from '@conote/ui/forms/FormMessage'
@@ -23,7 +23,7 @@ import { Button } from '@conote/ui/button'
 // Sign-in state and actions.
 import { useAuth } from '@/features/auth/useAuth'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Password rules.
 import { changePasswordSchema, type ChangePasswordValues } from '@/lib/authSchemas'
 // Student-facing wording for errors.

@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
 // Yes/no dialog.
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Empty states.
 import { EmptyState } from '@/components/common/EmptyState'
 // Failed-load panel.
@@ -29,7 +29,7 @@ import { Button, buttonVariants } from '@conote/ui/button'
 import { Input } from '@conote/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@conote/ui/tabs'
 // Toast messages.
-import { useToast } from '@/features/toast/useToast'
+import { useToast } from '@conote/ui/toast'
 // Data hooks.
 import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
