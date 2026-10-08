@@ -14,8 +14,10 @@ import type {
   ActivityEvent,
   ActivityEventKind,
   AiJobRecord,
+  AuditEntry,
   ClassRecord,
   CourseRecord,
+  EnrollmentRecord,
   PlatformData,
   SummaryRecord,
   UserRecord,
@@ -98,44 +100,195 @@ const STUDENT_PORTAL_TEACHERS = [
   ['teacher-okoro', 'Mr. Okoro'],
 ] as const
 
+/** Each teacher's department, by ID. */
+const TEACHER_DEPARTMENTS: Record<string, string> = {
+  'teacher-1': 'Mathematics',
+  'teacher-smith': 'Software Engineering',
+  'teacher-adeyemi': 'English',
+  'teacher-bello': 'Computer Science',
+  'teacher-okoro': 'Business Administration',
+  'teacher-6': 'Physics',
+}
+
+/** The departments generated students belong to, in turn. */
+const STUDENT_DEPARTMENTS = [
+  'Software Engineering',
+  'Computer Science',
+  'Business Administration',
+  'Mathematics',
+]
+
+/** Years of study, in turn. */
+const LEVELS = ['100 Level', '200 Level', '300 Level', '400 Level']
+
+/** Students 2 to 48 whose status isn't active: two invited, one suspended, one inactive. */
+const SPECIAL_STATUS: Partial<Record<number, AccountStatus>> = {
+  2: 'pending',
+  3: 'pending',
+  4: 'suspended',
+  5: 'inactive',
+}
+
+/** A name for the n-th generated person, cycling through both lists. */
+function personName(n: number) {
+  return `${GIVEN[n % GIVEN.length]} ${FAMILY[(n * 7) % FAMILY.length]}`
+}
+
+/** A staff member's record: a sign-in teacher or administrator, or one of the generated teachers. */
+function staffRecord(
+  base: Pick<UserRecord, 'id' | 'role' | 'fullName' | 'email'>,
+  n: number,
+  clock: SeedClock,
+): UserRecord {
+  return {
+    ...base,
+    status: 'active',
+    // Administrators have no staff number on the console; teachers do.
+    staffNumber: base.role === 'teacher' ? `STF-${String(100 + n).padStart(4, '0')}` : null,
+    studentNumber: null,
+    department: TEACHER_DEPARTMENTS[base.id] ?? null,
+    level: null,
+    phone: `+234 803 555 ${String(1000 + n).slice(-4)}`,
+    // Staff joined about a year ago.
+    createdAt: clock.ago((380 - n) * DAY),
+    // Active within the last day or two.
+    lastActiveAt: clock.ago((n % 5) * 7 * HOUR + HOUR),
+  }
+}
+
+/** Student `n` (1 is the sign-in account), with a status-appropriate history. */
+function studentRecord(n: number, clock: SeedClock): UserRecord {
+  // The sign-in student keeps their name and email.
+  const account = DEMO_ACCOUNTS.find((candidate) => candidate.id === `student-${n}`)
+  const status = SPECIAL_STATUS[n] ?? 'active'
+  // Invited students were invited in the last few days; the rest joined at the start of the year.
+  const createdAt = status === 'pending' ? clock.ago(n * DAY) : clock.ago((200 - n) * DAY)
+  // When each kind of account was last used: never for invitations, weeks ago for blocked ones.
+  const lastActive: Record<AccountStatus, string | null> = {
+    pending: null,
+    suspended: clock.ago(12 * DAY),
+    inactive: clock.ago(40 * DAY),
+    active: clock.ago((n % 9) * 5 * HOUR + 30 * 60_000),
+  }
+  return {
+    id: `student-${n}`,
+    role: 'student',
+    status,
+    fullName: account?.fullName ?? personName(n),
+    email: account?.email ?? `student${n}@conote.example`,
+    studentNumber: `U2023/${String(5000 + n)}`,
+    staffNumber: null,
+    // The sign-in student studies Software Engineering, like the student portal's demo student.
+    department: n === 1 ? 'Software Engineering' : (STUDENT_DEPARTMENTS[n % 4] ?? null),
+    level: n === 1 ? '300 Level' : (LEVELS[n % 4] ?? null),
+    // Every third student left a phone number.
+    phone: n % 3 === 0 ? `+234 802 555 ${String(2000 + n).slice(-4)}` : null,
+    createdAt,
+    lastActiveAt: lastActive[status],
+  }
+}
+
 /** The demo's users: the three sign-in accounts, five more teachers and 47 more students. */
-function buildUsers(): UserRecord[] {
-  // The sign-in accounts, active.
-  const users: UserRecord[] = DEMO_ACCOUNTS.map((account) => ({
-    ...account,
-    status: 'active',
-  }))
-  // A name for the n-th generated person, cycling through both lists.
-  const name = (n: number) => `${GIVEN[n % GIVEN.length]} ${FAMILY[(n * 7) % FAMILY.length]}`
+function buildUsers(clock: SeedClock): UserRecord[] {
+  // The sign-in administrator and teacher.
+  const users: UserRecord[] = DEMO_ACCOUNTS.filter((account) => account.role !== 'student').map(
+    (account, index) => staffRecord(account, index, clock),
+  )
   // The student portal's four teachers, then one more.
-  for (const [id, fullName] of STUDENT_PORTAL_TEACHERS) {
-    users.push({ id, role: 'teacher', status: 'active', fullName, email: `${id}@conote.example` })
-  }
-  users.push({
-    id: 'teacher-6',
-    role: 'teacher',
-    status: 'active',
-    fullName: name(26),
-    email: 'teacher6@conote.example',
+  STUDENT_PORTAL_TEACHERS.forEach(([id, fullName], index) => {
+    users.push(
+      staffRecord(
+        { id, role: 'teacher', fullName, email: `${id}@conote.example` },
+        index + 2,
+        clock,
+      ),
+    )
   })
-  // Students 2 to 48: two invited, one suspended, one inactive, the rest active.
-  const special: Partial<Record<number, AccountStatus>> = {
-    2: 'pending',
-    3: 'pending',
-    4: 'suspended',
-    5: 'inactive',
-  }
-  for (let n = 2; n <= 48; n += 1) {
-    const status = special[n] ?? 'active'
-    users.push({
-      id: `student-${n}`,
-      role: 'student',
-      status,
-      fullName: name(n),
-      email: `student${n}@conote.example`,
+  users.push(
+    staffRecord(
+      {
+        id: 'teacher-6',
+        role: 'teacher',
+        fullName: personName(26),
+        email: 'teacher6@conote.example',
+      },
+      6,
+      clock,
+    ),
+  )
+  // Students 1 (the sign-in account) to 48.
+  for (let n = 1; n <= 48; n += 1) users.push(studentRecord(n, clock))
+  return users
+}
+
+/**
+ * Who studies what: the sign-in student takes the student portal's four courses; every other
+ * student who has signed up takes three of the courses in use.
+ */
+function buildEnrollments(users: UserRecord[], courses: CourseRecord[]): EnrollmentRecord[] {
+  // The courses in use (not the archived one).
+  const inUse = courses.slice(0, COURSES.length).map((course) => course.id)
+  const enrollments: EnrollmentRecord[] = []
+  users.forEach((user, index) => {
+    // Students who have accepted their invitation.
+    if (user.role !== 'student' || user.status === 'pending') return
+    // The sign-in student: the student portal's courses.
+    const courseIds =
+      user.id === 'student-1'
+        ? ['swe-311', 'eng-201', 'cse-205', 'bus-207']
+        : [0, 2, 4].map((step) => inUse[(index + step) % inUse.length] ?? 'swe-311')
+    for (const courseId of courseIds) enrollments.push({ courseId, studentId: user.id })
+  })
+  return enrollments
+}
+
+/** The audit history behind the users: each invitation, and the status changes since. */
+function buildAuditLog(users: UserRecord[], clock: SeedClock): AuditEntry[] {
+  // Every account was invited by the demo administrator when it was created.
+  const log: AuditEntry[] = users.map((user) => ({
+    id: `audit-invite-${user.id}`,
+    at: user.createdAt,
+    actorId: 'admin-1',
+    action: 'user.invited',
+    entityType: 'user',
+    entityId: user.id,
+    metadata: { role: user.role, status: 'pending' },
+  }))
+  // Each account that has signed in became active a day after its invitation.
+  for (const user of users) {
+    if (user.status === 'pending') continue
+    log.push({
+      id: `audit-activated-${user.id}`,
+      at: new Date(Date.parse(user.createdAt) + DAY).toISOString(),
+      actorId: user.id,
+      action: 'user.status_changed',
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { from: 'pending', to: 'active' },
     })
   }
-  return users
+  // The suspended and the deactivated student.
+  log.push(
+    {
+      id: 'audit-suspended-student-4',
+      at: clock.ago(12 * DAY),
+      actorId: 'admin-1',
+      action: 'user.status_changed',
+      entityType: 'user',
+      entityId: 'student-4',
+      metadata: { from: 'active', to: 'suspended' },
+    },
+    {
+      id: 'audit-deactivated-student-5',
+      at: clock.ago(40 * DAY),
+      actorId: 'admin-1',
+      action: 'user.status_changed',
+      entityType: 'user',
+      entityId: 'student-5',
+      metadata: { from: 'active', to: 'inactive' },
+    },
+  )
+  return log
 }
 
 /** The clock the seed is built around. */
@@ -303,8 +456,11 @@ export function createPlatformSeed(now: Date): PlatformData {
   const { summaries, aiJobs } = buildSummariesAndJobs(classes, clock, random)
   const activity = buildActivity(clock, random)
 
+  const users = buildUsers(clock)
   return {
-    users: buildUsers(),
+    users,
+    enrollments: buildEnrollments(users, courses),
+    auditLog: buildAuditLog(users, clock),
     courses,
     classes,
     summaries,

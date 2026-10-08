@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { AccountStatus, Role } from '@conote/domain'
 
 // The data the services read, and an empty starting set.
-import { emptyPlatformData, type PlatformData } from '../platformData'
+import { emptyPlatformData, userRecord, type PlatformData } from '../platformData'
 // The interface under test.
 import type { AnalyticsService } from '../types'
 
@@ -43,13 +43,8 @@ export function describeAnalyticsServiceContract(name: string, create: CreateAna
     // Proves students and teachers are counted by role, whatever their status, and admins aren't.
     it('counts students and teachers by role', async () => {
       // Arrange.
-      const user = (id: string, role: Role, status: AccountStatus = 'active') => ({
-        id,
-        role,
-        status,
-        fullName: id,
-        email: `${id}@conote.example`,
-      })
+      const user = (id: string, role: Role, status: AccountStatus = 'active') =>
+        userRecord({ id, role, status })
       const data = emptyPlatformData({
         users: [
           user('s1', 'student'),

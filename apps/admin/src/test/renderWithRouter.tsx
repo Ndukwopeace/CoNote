@@ -19,8 +19,13 @@ import { AppProviders } from '@/app/AppProviders'
 // The demo services, with no simulated delay.
 import { createMockAlertService } from '@/services/mock/mockAlertService'
 import { createMockAnalyticsService } from '@/services/mock/mockAnalyticsService'
-import { createMockAuthService, SESSION_KEY } from '@/services/mock/mockAuthService'
+import {
+  createMockAuthService,
+  readStoredSession,
+  SESSION_KEY,
+} from '@/services/mock/mockAuthService'
 import { createMockHealthService } from '@/services/mock/mockHealthService'
+import { createMockUserService } from '@/services/mock/mockUserService'
 // The records the demo services read.
 import { emptyPlatformData, type PlatformData } from '@/services/platformData'
 // Service types.
@@ -52,6 +57,12 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
     analytics: createMockAnalyticsService({ data: platform, now, latencyMs: 0 }),
     alerts: createMockAlertService({ data: platform, now, latencyMs: 0 }),
     health: createMockHealthService({ demoStore: window.localStorage, now, latencyMs: 0 }),
+    users: createMockUserService({
+      data: platform,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: 0,
+    }),
   }
 }
 
