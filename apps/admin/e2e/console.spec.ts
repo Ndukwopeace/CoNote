@@ -9,17 +9,18 @@ import { expect, test } from '@playwright/test'
 // Admin helpers.
 import { expectNoAxeViolations, signInAs, watchCspViolations } from './helpers.ts'
 
-// The nine sections, in sidebar order, with their page headings.
-const SECTIONS = [
-  'Dashboard',
-  'Users',
-  'Courses',
-  'Classes',
-  'Resources',
-  'AI & Summaries',
-  'Analytics',
-  'Audit Logs',
-  'Settings',
+// The nine sections, in sidebar order, with their page headings. The dashboard's heading is its
+// greeting (admin REQUIREMENTS section 10).
+const SECTIONS: [string, string | RegExp][] = [
+  ['Dashboard', /^Good /],
+  ['Users', 'Users'],
+  ['Courses', 'Courses'],
+  ['Classes', 'Classes'],
+  ['Resources', 'Resources'],
+  ['AI & Summaries', 'AI & Summaries'],
+  ['Analytics', 'Analytics'],
+  ['Audit Logs', 'Audit Logs'],
+  ['Settings', 'Settings'],
 ]
 
 test('a signed-out visitor signs in and returns to the page they asked for', async ({ page }) => {
@@ -42,8 +43,8 @@ test('every section opens from the navigation', async ({ page, isMobile }) => {
   // Sign in.
   await page.goto('/admin/login')
   await signInAs(page)
-  await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
-  for (const section of SECTIONS) {
+  await expect(page.getByRole('heading', { level: 1, name: /^Good / })).toBeVisible()
+  for (const [section, heading] of SECTIONS) {
     // Phones open the menu panel first; larger screens use the sidebar.
     if (isMobile) await page.getByRole('button', { name: 'Open navigation' }).click()
     const nav = page.getByRole('navigation', {
@@ -51,7 +52,7 @@ test('every section opens from the navigation', async ({ page, isMobile }) => {
     })
     await nav.getByRole('link', { name: section }).click()
     // The section's page opens, and the panel has closed on phones.
-    await expect(page.getByRole('heading', { level: 1, name: section })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
     if (isMobile) await expect(page.getByRole('dialog', { name: 'Navigation' })).toBeHidden()
   }
 })
@@ -98,7 +99,7 @@ test('unknown addresses show not-found', async ({ page }) => {
   // Sign in, then open an address the console doesn't have.
   await page.goto('/admin/login')
   await signInAs(page)
-  await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^Good / })).toBeVisible()
   await page.goto('/admin/nothing-here')
   await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
   await expectNoAxeViolations(page)

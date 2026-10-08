@@ -31,6 +31,21 @@ describe.each(nows)('createPlatformSeed at %s', (now) => {
     }
   })
 
+  // Proves the student portal's four courses and teachers appear with the same IDs and names.
+  it("shares the student portal's courses and teachers", () => {
+    // Each shared course with its teacher's name.
+    const taughtBy = (courseId: string) => {
+      const teacherId = data.courses.find((course) => course.id === courseId)?.teacherId
+      return data.users.find((user) => user.id === teacherId)?.fullName
+    }
+    expect(['swe-311', 'eng-201', 'cse-205', 'bus-207'].map(taughtBy)).toEqual([
+      'Dr. Smith',
+      'Mrs. Adeyemi',
+      'Dr. Bello',
+      'Mr. Okoro',
+    ])
+  })
+
   // Proves record IDs are unique, so later milestones can look them up.
   it('uses unique IDs', () => {
     for (const records of [data.users, data.courses, data.classes, data.summaries, data.aiJobs]) {

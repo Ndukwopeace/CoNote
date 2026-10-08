@@ -3,11 +3,11 @@
  */
 
 // Converts anything thrown into an AppError.
-import { toAppError } from '@conote/core/errors'
+import { toAppError } from './errors'
 
 /**
  * Runs `load` and turns any failure into an AppError, which is the error type the query cache
- * promises pages (see types/react-query.d.ts).
+ * promises pages (see each app's types/react-query.d.ts).
  */
 export async function appQuery<T>(load: () => Promise<T>): Promise<T> {
   try {

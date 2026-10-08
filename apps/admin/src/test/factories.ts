@@ -4,6 +4,8 @@
 
 // The demo password, re-exported for sign-in tests (test helpers may reach the demo service).
 export { DEMO_PASSWORD } from '@/services/mock/mockAuthService'
+// Where the demo health override lives, for dashboard tests that set a part's state.
+export { HEALTH_OVERRIDE_KEY } from '@/services/mock/mockHealthService'
 // Session shape.
 import type { Session } from '@/types/auth'
 // The shared role names.

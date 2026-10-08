@@ -65,7 +65,7 @@ describe('admin route guard', () => {
       path: '/admin/login',
       session: makeSession('admin'),
     })
-    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    await screen.findByRole('heading', { level: 1, name: /^Good / })
     expect(router.state.location.pathname).toBe('/admin/dashboard')
   })
 

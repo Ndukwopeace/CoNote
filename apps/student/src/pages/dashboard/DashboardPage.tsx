@@ -28,7 +28,7 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 // Loading placeholders.
 import { CardGridSkeleton, ListSkeleton } from '@/components/common/Skeletons'
 // Stat card.
-import { StatCard } from '@/components/common/StatCard'
+import { StatCard } from '@conote/ui/common/StatCard'
 // Sign-in state, for the name.
 import { useAuth } from '@/features/auth/useAuth'
 // Data hooks.

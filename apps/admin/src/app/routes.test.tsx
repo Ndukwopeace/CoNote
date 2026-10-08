@@ -27,7 +27,8 @@ function renderAsAdmin(path: string) {
 describe('admin routes', () => {
   // Proves each section in the admin brief has a page with its name as the heading.
   it.each([
-    ['/admin/dashboard', 'Dashboard'],
+    // The dashboard's heading is its greeting (admin REQUIREMENTS section 10).
+    ['/admin/dashboard', /^Good (morning|afternoon|evening)/],
     ['/admin/users', 'Users'],
     ['/admin/courses', 'Courses'],
     ['/admin/classes', 'Classes'],
@@ -56,7 +57,7 @@ describe('admin routes', () => {
   // Proves the bare addresses lead to the dashboard.
   it.each(['/', '/admin'])('sends %s to the dashboard', async (path) => {
     const { router } = renderAsAdmin(path)
-    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    await screen.findByRole('heading', { level: 1, name: /^Good / })
     expect(router.state.location.pathname).toBe('/admin/dashboard')
   })
 
@@ -119,7 +120,7 @@ describe('admin layout', () => {
   // Proves the layout has no detectable accessibility problems.
   it('passes axe', async () => {
     const { container } = renderAsAdmin('/admin/dashboard')
-    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    await screen.findByRole('heading', { level: 1, name: /^Good / })
     await expectNoAxeViolations(container)
   })
 })

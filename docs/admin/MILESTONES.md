@@ -6,8 +6,8 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 |---|---|---|
 | A1 | App setup | Done |
 | A2 | Sign-in polish: forgot and reset password | Done |
-| A3 | Dashboard: statistics, activity chart, system health, alerts | Next |
-| A4 | Users: tabs, search, filters, details, invite, status changes | |
+| A3 | Dashboard: statistics, activity chart, system health, alerts | Done |
+| A4 | Users: tabs, search, filters, details, invite, status changes | Next |
 | A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | |
 | A6 | Classes: create, edit, archive, details | |
 | A7 | Resources: upload, publish, archive, assign | |
@@ -64,3 +64,35 @@ In Vercel, add a second project from the same GitHub repository with **Root Dire
 
 - The whole recovery flow works in the browser on desktop and phone: request, demo link, new password, confirmation, sign-in with the new password, the old one refused, and the used link refused (Playwright).
 - Unit, contract and page tests pass; axe finds no problems; no CSP violations.
+
+---
+
+## A3 — Dashboard
+
+**Delivered**
+
+- The dashboard (REQUIREMENTS section 10):
+  - the greeting by time of day
+  - six counts linking to their lists
+  - one activity chart with a 7 / 30 / 90-day range, a series picker, a hover and keyboard crosshair, and a table view
+  - alerts linking to the screen that fixes each problem
+  - system health with "Unknown" for anything the check doesn't report
+- New services, each with a contract suite:
+  - `AnalyticsService` (`getOverview`, `getActivitySeries`)
+  - `AlertService` (`listAlerts`)
+  - `HealthService` (`getHealth`)
+- The demo platform (D69): users, courses, classes, summaries, AI jobs, 90 days of activity and a few problems. It is built relative to the current time from a fixed pseudo-random sequence. Its first four courses and teachers match the student portal's demo.
+- Moved to shared packages: `StatCard` and the new `ErrorPanel` (`@conote/ui/common`), and `appQuery` (`@conote/core`).
+- The chart is plain SVG with HTML labels. No chart library.
+
+**Done when**
+
+- Counts, series and alerts are computed from records, proven by contract tests on hand-built data.
+- Every part shows loading, empty and error states on its own (page tests). The chart works by pointer and keyboard (component tests).
+- In the browser, on desktop and phone:
+  - the counts and alerts show
+  - an alert opens its screen
+  - the range, series and table view work
+  - the health states show in words
+  - axe finds no problems
+  - there are no CSP violations

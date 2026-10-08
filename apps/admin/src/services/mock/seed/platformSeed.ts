@@ -4,6 +4,9 @@
  * Numbers come from a fixed pseudo-random sequence, so the same clock gives the same data.
  */
 
+// The shared vocabulary.
+import type { AccountStatus } from '@conote/domain'
+
 // The local day key, for the term dates.
 import { localDateKey } from '@/lib/activity'
 // The record shapes.
@@ -72,16 +75,27 @@ const FAMILY = [
   'Lawal',
 ]
 
-/** The courses: code, title and teacher (null: none assigned yet). */
+/**
+ * The courses: code, title and teacher (null: none assigned yet). The first four are the student
+ * portal's demo courses, with the same IDs, titles and teachers, so both apps describe one platform.
+ */
 const COURSES: readonly (readonly [string, string, string | null])[] = [
-  ['SWE 311', 'Software Engineering', 'teacher-1'],
-  ['ENG 201', 'Technical Writing', 'teacher-2'],
-  ['CSE 205', 'Data Structures', 'teacher-3'],
-  ['BUS 207', 'Entrepreneurship', 'teacher-4'],
-  ['MTH 202', 'Linear Algebra', 'teacher-5'],
+  ['SWE 311', 'Software Engineering', 'teacher-smith'],
+  ['ENG 201', 'Academic Writing', 'teacher-adeyemi'],
+  ['CSE 205', 'Data Structures & Algorithms II', 'teacher-bello'],
+  ['BUS 207', 'Entrepreneurship & Innovation', 'teacher-okoro'],
+  ['MTH 202', 'Linear Algebra', 'teacher-1'],
   ['PHY 101', 'General Physics', 'teacher-6'],
   ['CSC 301', 'Operating Systems', null],
 ]
+
+/** The student portal's demo teachers (apps/student/src/services/mock/seed), by ID and name. */
+const STUDENT_PORTAL_TEACHERS = [
+  ['teacher-smith', 'Dr. Smith'],
+  ['teacher-adeyemi', 'Mrs. Adeyemi'],
+  ['teacher-bello', 'Dr. Bello'],
+  ['teacher-okoro', 'Mr. Okoro'],
+] as const
 
 /** The demo's users: the three sign-in accounts, five more teachers and 47 more students. */
 function buildUsers(): UserRecord[] {
@@ -92,19 +106,26 @@ function buildUsers(): UserRecord[] {
   }))
   // A name for the n-th generated person, cycling through both lists.
   const name = (n: number) => `${GIVEN[n % GIVEN.length]} ${FAMILY[(n * 7) % FAMILY.length]}`
-  // Teachers 2 to 6.
-  for (let n = 2; n <= 6; n += 1) {
-    users.push({
-      id: `teacher-${n}`,
-      role: 'teacher',
-      status: 'active',
-      fullName: name(n + 20),
-      email: `teacher${n}@conote.example`,
-    })
+  // The student portal's four teachers, then one more.
+  for (const [id, fullName] of STUDENT_PORTAL_TEACHERS) {
+    users.push({ id, role: 'teacher', status: 'active', fullName, email: `${id}@conote.example` })
   }
-  // Students 2 to 48: a few invited, one suspended, one inactive, the rest active.
+  users.push({
+    id: 'teacher-6',
+    role: 'teacher',
+    status: 'active',
+    fullName: name(26),
+    email: 'teacher6@conote.example',
+  })
+  // Students 2 to 48: two invited, one suspended, one inactive, the rest active.
+  const special: Partial<Record<number, AccountStatus>> = {
+    2: 'pending',
+    3: 'pending',
+    4: 'suspended',
+    5: 'inactive',
+  }
   for (let n = 2; n <= 48; n += 1) {
-    const status = n <= 3 ? 'pending' : n === 4 ? 'suspended' : n === 5 ? 'inactive' : 'active'
+    const status = special[n] ?? 'active'
     users.push({
       id: `student-${n}`,
       role: 'student',
@@ -145,7 +166,7 @@ export function createPlatformSeed(now: Date): PlatformData {
     id: 'gst-111',
     code: 'GST 111',
     title: 'Communication in English',
-    teacherId: 'teacher-2',
+    teacherId: 'teacher-adeyemi',
     archivedAt: ago(10 * DAY),
   })
 
