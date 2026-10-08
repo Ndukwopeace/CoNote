@@ -21,7 +21,7 @@ import { hasUserFilters } from '@/lib/userFilters'
 // The list.
 import { useUsers } from '@/hooks/useUsers'
 // The filter shape.
-import type { UserFilter, UserFilterChange } from '@/types/users'
+import type { UserFilter, UserFilterChange, UserListItem } from '@/types/users'
 
 // The filters, and the row menu.
 import { UserActionsMenu } from './UserActionsMenu'
@@ -34,6 +34,11 @@ interface UserListProps {
   label: string
   onChange: (change: UserFilterChange, replace?: boolean) => void
   onClear: () => void
+}
+
+/** The row menu for one person, defined once outside the component. */
+function renderActions(user: UserListItem) {
+  return <UserActionsMenu user={user} />
 }
 
 /** The list for one tab. */
@@ -82,7 +87,7 @@ export function UserList({ filter, label, onChange, onClear }: Readonly<UserList
           onSortChange={(sort) => {
             onChange({ sort })
           }}
-          actions={(user) => <UserActionsMenu user={user} />}
+          actions={renderActions}
         />
         <Pagination
           page={data.page}
