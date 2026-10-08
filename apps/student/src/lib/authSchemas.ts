@@ -3,6 +3,8 @@
  * and the demo auth service share these, so the browser and the "server" can never disagree.
  */
 
+// The shared new-password rules (packages/core).
+import { createNewPasswordSchema } from '@conote/core/passwordRules'
 // zod describes each form's shape and rules, and gives the error messages.
 import { z } from 'zod'
 
@@ -27,21 +29,10 @@ const emailField = z
   .pipe(z.email('Enter a valid email address.'))
 
 /**
- * A new password: at least 8 characters with a letter and a number (FR-AUTH-3).
- * SECURITY: a length floor plus mixed characters makes guessing and dictionary attacks slower.
- * Checked again by the auth service, so skipping the form does not skip the rule.
+ * A new password: at least 8 characters with a letter and a number (FR-AUTH-3). The rules are
+ * shared with the other apps (packages/core); students use the 8-character minimum.
  */
-export const newPasswordSchema = z
-  // Must be text. Not trimmed: spaces are allowed in passwords and count as characters.
-  .string()
-  // Empty gets a direct request rather than a length message.
-  .min(1, 'Enter a password.')
-  // The length rule.
-  .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters.`)
-  // At least one letter, from any alphabet.
-  .regex(/\p{L}/u, 'Include at least one letter.')
-  // At least one digit.
-  .regex(/\d/, 'Include at least one number.')
+export const newPasswordSchema = createNewPasswordSchema(MIN_PASSWORD_LENGTH)
 
 /** A full name: 2–80 characters after trimming (FR-AUTH-3). */
 export const fullNameSchema = z

@@ -232,6 +232,13 @@ No student or teacher navigation appears anywhere.
 - Admins are invited by another admin (through an Edge Function) or created from the Supabase dashboard.
 - A user who isn't an active admin gets the wrong-role message after signing in. A student or teacher password works for authentication but never opens the portal.
 
+**Password recovery (A2, D68).**
+- **Forgot password** (`/admin/forgot-password`): the administrator enters an email and always sees "If an account exists for that email, we sent a link to reset its password.", whether or not the account exists. In demo mode a "Continue to reset (demo)" button stands in for the email.
+- **Reset password** (`/admin/reset-password?code=…`): the link is checked first. A missing, made-up, replaced or used link shows "This link has expired" with "Request a new link". A valid link shows New password and Confirm new password.
+- **Rules:** at least 12 characters with a letter and a number, longer than the students' 8, because an admin account can change the whole platform. The service checks them again.
+- **Links:** each reset link works once, and a new request replaces the older link. The service checks the link again when saving, so a page left open on an old link can't change the password.
+- **After saving:** the administrator lands on sign-in with "Your password has been updated. Sign in with your new password." The notice travels as a key, never as text.
+
 ---
 
 ## 10. Dashboard

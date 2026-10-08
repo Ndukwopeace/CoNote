@@ -15,6 +15,11 @@ const DEMO_LATENCY_MS = 300
 export function createMockServices(): Services {
   return {
     // Sessions live in session storage: closing the tab signs the administrator out.
-    auth: createMockAuthService({ store: window.sessionStorage, latencyMs: DEMO_LATENCY_MS }),
+    auth: createMockAuthService({
+      store: window.sessionStorage,
+      // Changed passwords and reset links outlive the tab, like server data would.
+      demoStore: window.localStorage,
+      latencyMs: DEMO_LATENCY_MS,
+    }),
   }
 }

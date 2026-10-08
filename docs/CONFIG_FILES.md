@@ -143,9 +143,9 @@ The same fields and scripts as the student app, minus `icons`: `@conote/admin`, 
 | `"private": true` | Never published | **SECURITY:** as above |
 | `"exports"` | Maps import paths to source files: `@conote/ui/<name>` → `src/components/<name>.tsx`, `@conote/ui/common/<name>` → `src/common/<name>.tsx`, `@conote/ui/forms/<name>` → `src/forms/<name>.tsx`, `@conote/ui/utils` → `src/utils.ts`, `@conote/ui/styles/theme.css` and `…/tokens.css` → the stylesheets; `@conote/domain` → `src/index.ts`; `@conote/core/<name>` and `@conote/testing/<name>` → `src/<name>.ts` | Apps compile the package source directly (no build step for packages), and only the listed paths can be imported, so a package's internals stay private |
 | `"dependencies"` (`ui`) | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | What the primitives use |
-| `"peerDependencies"` (`ui`) | `react`, `react-dom`, `react-router` | Supplied by the app, so there is only ever one copy of each. `react-router` is needed by `SidebarLink` (D67). |
+| `"peerDependencies"` (`ui`) | `react`, `react-dom`, `react-router`, `react-hook-form` | Supplied by the app, so there is only ever one copy of each. `react-router` is needed by `SidebarLink` (D67); `react-hook-form` by the shared password-recovery forms (D68). |
 | `"dependencies"` (`core`) | `zod` | `parseEnv` checks the environment variables with it |
-| `"devDependencies"` (`ui`) | `@conote/testing` | The common test setup for its component tests |
+| `"devDependencies"` (`ui`) | `@conote/testing`, `@hookform/resolvers`, `zod` | The common test setup for its component tests; sample rules for the password-recovery form tests (the apps bring their own rules) |
 | (`testing`) | no dependencies of its own | It uses the test tooling in the root `devDependencies` (Vitest, Testing Library, axe, Playwright). Test-only: no app imports it from shipped code. |
 
 ### Dependencies (shipped to the browser)

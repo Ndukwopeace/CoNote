@@ -59,6 +59,7 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - Tailwind scans only the app's own files plus `packages/ui/src/components` (the `@source` line in `packages/ui/src/styles/theme.css`). A class used anywhere else is not generated.
 - Vercel builds the student app from the root `vercel.json` (`buildCommand` and `outputDirectory`). The admin app is its own Vercel project with Root Directory `apps/admin`, using `apps/admin/vercel.json`.
 - Admin demo sign-in: `admin@conote.example` / `password1` (also `teacher@` and `student@conote.example`, which the guard turns away). The admin e2e server uses port 4174, the student's 4173.
+- An admin password changed through the demo reset flow is kept in local storage (`conote-admin-demo:` keys) and survives sign-out, like server data. Clear the site's storage to get `password1` back.
 - Test helpers may import demo services; tests themselves import them through `src/test/` (the import-boundary rule).
 - App icons and iPhone launch images: `npm run icons -w @conote/student` (needs `PW_CHROMIUM_PATH` here).
 

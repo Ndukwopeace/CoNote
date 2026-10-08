@@ -5,8 +5,8 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 | # | Milestone | Status |
 |---|---|---|
 | A1 | App setup | Done |
-| A2 | Sign-in polish: forgot and reset password | Next |
-| A3 | Dashboard: statistics, activity chart, system health, alerts | |
+| A2 | Sign-in polish: forgot and reset password | Done |
+| A3 | Dashboard: statistics, activity chart, system health, alerts | Next |
 | A4 | Users: tabs, search, filters, details, invite, status changes | |
 | A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | |
 | A6 | Classes: create, edit, archive, details | |
@@ -42,4 +42,25 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 
 **Deploying the admin app (one-time, by the repository owner)**
 
-In Vercel, add a second project from the same GitHub repository with **Root Directory** set to `apps/admin` and the environment variable `VITE_DATA_SOURCE=mock`. Vercel reads `apps/admin/vercel.json` for the build, rewrites and security headers. The student project stays as it is.
+In Vercel, add a second project from the same GitHub repository with **Root Directory** set to `apps/admin` and the environment variable `VITE_DATA_SOURCE=mock`. Vercel reads `apps/admin/vercel.json` for the install and build commands (both run from the repository root, so the shared build tools are installed), the rewrites and the security headers. The student project stays as it is.
+
+---
+
+## A2 — Sign-in polish: forgot and reset password
+
+**Delivered**
+
+- "Forgot password?" on sign-in, and the forgot-password and reset-password pages (REQUIREMENTS section 9).
+- `AuthService` gains `requestPasswordReset`, `checkResetLink` and `resetPassword`, with contract tests every implementation must pass:
+  - the same answer for any well-formed email
+  - links that work once
+  - newer links replace older ones
+  - weak passwords refused without spending the link
+- Admin passwords need 12+ characters with a letter and a number (D68).
+- Shared with the student app (packages/core): the new-password rules (`createNewPasswordSchema`) and the sign-in notices (`createNavigationNotices`).
+- Demo: changed passwords and the current reset link are kept in local storage under `conote-admin-demo:`, standing in for the server, so sign-out keeps them.
+
+**Done when**
+
+- The whole recovery flow works in the browser on desktop and phone: request, demo link, new password, confirmation, sign-in with the new password, the old one refused, and the used link refused (Playwright).
+- Unit, contract and page tests pass; axe finds no problems; no CSP violations.

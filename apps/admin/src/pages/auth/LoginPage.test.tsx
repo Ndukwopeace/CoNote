@@ -72,6 +72,25 @@ describe('LoginPage', () => {
     expect(router.state.location.pathname).toBe('/admin/dashboard')
   })
 
+  // Proves the way to recover a forgotten password.
+  it('links to the forgot-password page', async () => {
+    renderLogin()
+    expect(await screen.findByRole('link', { name: 'Forgot password?' })).toHaveAttribute(
+      'href',
+      '/admin/forgot-password',
+    )
+  })
+
+  // SECURITY: proves a notice only shows for a known key, never as text from navigation state.
+  it('shows only known notices from navigation state', async () => {
+    renderWithRouter({
+      routes,
+      path: { pathname: '/admin/login', state: { notice: 'Your account is locked' } },
+    })
+    await screen.findByRole('heading', { level: 1, name: 'CoNote Admin' })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   // Proves the demo hint names the demo account, so a reviewer can get in.
   it('shows the demo account in demo mode', async () => {
     renderLogin()

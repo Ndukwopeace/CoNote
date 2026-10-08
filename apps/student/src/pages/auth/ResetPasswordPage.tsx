@@ -3,23 +3,19 @@
  * (or the demo link). Checks the link first, then asks for the new password twice.
  */
 
-// Connects zod schemas to react-hook-form.
+// Connects the zod rules to the shared form.
 import { zodResolver } from '@hookform/resolvers/zod'
 // Spinner icon for the checking state.
 import { LoaderCircle } from 'lucide-react'
-// Form state, validation timing and field registration.
-import { useForm } from 'react-hook-form'
 // Links, navigation after success, and the code in the address.
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
 // Sets the tab title.
 import { PageTitle } from '@conote/ui/common/PageTitle'
-// Labelled field with its inline error.
-import { FormField } from '@conote/ui/forms/FormField'
 // Error box.
 import { FormMessage } from '@conote/ui/forms/FormMessage'
-// Password input with the show/hide toggle.
-import { PasswordInput } from '@conote/ui/forms/PasswordInput'
+// The shared new-password form.
+import { NewPasswordForm } from '@conote/ui/forms/NewPasswordForm'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // The update action.
@@ -30,13 +26,13 @@ import { useAuthRequest } from '@/features/auth/useAuthRequest'
 import { useResetLinkCheck } from '@/features/auth/useResetLinkCheck'
 // The notice shown on the sign-in page afterwards.
 import { authNoticeState } from '@/lib/authNotice'
-// The reset rules and the form's value type.
-import { resetPasswordSchema, type ResetPasswordValues } from '@/lib/authSchemas'
+// The reset rules and the minimum length.
+import { MIN_PASSWORD_LENGTH, resetPasswordSchema } from '@/lib/authSchemas'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
 
-/** Empty starting values. */
-const EMPTY: ResetPasswordValues = { password: '', confirmPassword: '' }
+/** The form's rules, connected once rather than on every render. */
+const RESOLVER = zodResolver(resetPasswordSchema)
 
 /** Set a new password from a reset link. */
 export function ResetPasswordPage() {
@@ -99,31 +95,21 @@ export function ResetPasswordPage() {
     // The code works: show the form. `valid` is only reached with a code, so "" never occurs.
     // The key gives each code a fresh form, so typed passwords don't carry over between links.
     case 'valid':
-      return <NewPasswordForm key={code} code={code ?? ''} />
+      return <ResetForm key={code} code={code ?? ''} />
   }
 }
 
 /** The new password form, shown once the link's `code` has been checked. */
-function NewPasswordForm({ code }: Readonly<{ code: string }>) {
+function ResetForm({ code }: Readonly<{ code: string }>) {
   // The reset action, the sign-in status and sign-out.
   const { resetPassword, status, signOut } = useAuth()
   // Busy flag, server error and the request runner.
   const { error, isPending, run } = useAuthRequest()
   // Navigation after success.
   const navigate = useNavigate()
-  // The form. Errors appear when a field loses focus and on submit (FR-AUTH-3).
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(resetPasswordSchema),
-    mode: 'onTouched',
-    defaultValues: EMPTY,
-  })
 
   /** Saves the password and, on success, goes to sign in with a notice. */
-  async function save({ password }: { password: string }) {
+  async function save(password: string) {
     // Ask the service, which checks the code again; failures are already shown by the runner.
     const result = await run(() => resetPassword(code, password))
     // Stay here after a failure so the student can try again.
@@ -143,47 +129,15 @@ function NewPasswordForm({ code }: Readonly<{ code: string }>) {
       <PageTitle title="Reset password" />
       {/* Page heading. */}
       <h1 className="text-2xl font-bold">Choose a new password</h1>
-      {/* The rules, stated up front so nobody has to guess them. */}
-      <p className="mt-1 text-sm text-muted-foreground">
-        Use at least 8 characters, with a letter and a number.
-      </p>
-      {/* The server error, when there is one (FR-AUTH-6). */}
-      {error && (
-        <FormMessage tone="error" className="mt-4">
-          {error}
-        </FormMessage>
-      )}
-      {/* noValidate: the app reports errors itself. */}
-      <form
-        noValidate
-        onSubmit={(event) => void handleSubmit(save)(event)}
-        className="mt-6 space-y-4"
-      >
-        {/* New password; "new-password" lets password managers suggest and save it. */}
-        <FormField id="password" label="New password" error={errors.password?.message}>
-          {(field) => (
-            <PasswordInput {...field} autoComplete="new-password" {...register('password')} />
-          )}
-        </FormField>
-        {/* The same again, to catch typos. */}
-        <FormField
-          id="confirmPassword"
-          label="Confirm new password"
-          error={errors.confirmPassword?.message}
-        >
-          {(field) => (
-            <PasswordInput
-              {...field}
-              autoComplete="new-password"
-              {...register('confirmPassword')}
-            />
-          )}
-        </FormField>
-        {/* Submit; disabled and relabelled while in flight (FR-AUTH-6). */}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Updating…' : 'Update password'}
-        </Button>
-      </form>
+      {/* The rules line, both fields and the submit (FR-AUTH-3, FR-AUTH-6), shared with the
+          admin console. */}
+      <NewPasswordForm
+        resolver={RESOLVER}
+        minLength={MIN_PASSWORD_LENGTH}
+        error={error}
+        isPending={isPending}
+        onSubmit={save}
+      />
     </div>
   )
 }
