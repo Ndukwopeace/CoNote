@@ -13,7 +13,7 @@ import { Link, useSearchParams } from 'react-router'
 // Yes/no dialog.
 import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 // Empty states.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Tab title.

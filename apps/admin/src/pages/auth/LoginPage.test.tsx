@@ -12,6 +12,8 @@ import { expectNoAxeViolations } from '@conote/testing/axe'
 
 // The real route table.
 import { routes } from '@/app/routes'
+// Platform records, for an inactive account.
+import { emptyPlatformData, userRecord } from '@/services/platformData'
 // Demo credentials.
 import { DEMO_PASSWORD } from '@/test/factories'
 // Render helper.
@@ -50,6 +52,35 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('Password', { exact: true }), 'wrong-password')
     await user.click(screen.getByRole('button', { name: 'Sign In' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect email or password.')
+  })
+
+  // Proves an account an administrator deactivated or suspended is told so after the right password.
+  it('says when the account is not active', async () => {
+    // Arrange: the demo admin's account is suspended on the platform.
+    const { user } = renderWithRouter({
+      routes,
+      path: '/admin/login',
+      platform: emptyPlatformData({
+        users: [
+          userRecord({
+            id: 'admin-1',
+            role: 'admin',
+            email: 'admin@conote.example',
+            status: 'suspended',
+          }),
+        ],
+      }),
+    })
+
+    // Act.
+    await user.type(await screen.findByLabelText('Email'), 'admin@conote.example')
+    await user.type(screen.getByLabelText('Password', { exact: true }), DEMO_PASSWORD)
+    await user.click(screen.getByRole('button', { name: 'Sign In' }))
+
+    // Assert.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This account is not active. Contact your administrator.',
+    )
   })
 
   // Proves a successful sign-in goes to the page the admin first asked for.

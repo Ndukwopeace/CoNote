@@ -14,15 +14,18 @@ export interface UserFilter {
   // The tab.
   role: Role
   // Matches name, email, student number and staff number, ignoring case.
-  q?: string
-  status?: AccountStatus
-  department?: string
+  q?: string | undefined
+  status?: AccountStatus | undefined
+  department?: string | undefined
   // Students enrolled in it, or teachers teaching it.
-  courseId?: string
-  sort?: UserSort
+  courseId?: string | undefined
+  sort?: UserSort | undefined
   // From 1.
-  page?: number
+  page?: number | undefined
 }
+
+/** A change to the filter: a value sets that part, undefined clears it. */
+export type UserFilterChange = Partial<UserFilter>
 
 /** One row of the list. */
 export interface UserListItem {
@@ -87,7 +90,7 @@ export interface InviteUserInput {
   fullName: string
   email: string
   // Students' and teachers' department.
-  department?: string
+  department?: string | undefined
 }
 
 /** The profile fields an administrator can change. */

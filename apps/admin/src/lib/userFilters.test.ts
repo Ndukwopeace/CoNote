@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The units under test.
-import { readUserFilter, writeUserFilter } from './userFilters'
+import { hasUserFilters, readUserFilter, writeUserFilter } from './userFilters'
 
 /** The filter read from a query string. */
 function read(query: string) {
@@ -67,5 +67,14 @@ describe('writeUserFilter', () => {
       page: 2,
     }
     expect(read(new URLSearchParams(writeUserFilter(filter)).toString())).toEqual(filter)
+  })
+})
+
+describe('hasUserFilters', () => {
+  // Proves the search and filters count, and the tab, sort and page don't.
+  it('counts the search and filters only', () => {
+    expect(hasUserFilters({ role: 'teacher', sort: '-created', page: 3 })).toBe(false)
+    expect(hasUserFilters({ role: 'student', q: 'ada' })).toBe(true)
+    expect(hasUserFilters({ role: 'student', courseId: 'c1' })).toBe(true)
   })
 })

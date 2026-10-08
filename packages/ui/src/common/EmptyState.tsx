@@ -1,6 +1,6 @@
 /**
  * What a list shows when it has nothing in it: an icon, one sentence and, where it helps, one
- * action (REQUIREMENTS.md section 11).
+ * action (student REQUIREMENTS section 11, admin section 22). Shared by every portal.
  */
 
 // Icon component type.

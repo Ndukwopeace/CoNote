@@ -88,3 +88,8 @@ export function writeUserFilter(filter: UserFilter): Record<string, string> {
   if (filter.page && filter.page > 1) params.page = String(filter.page)
   return params
 }
+
+/** True when the search or any filter is set (the tab, sort and page don't count). */
+export function hasUserFilters(filter: UserFilter): boolean {
+  return [filter.q, filter.status, filter.department, filter.courseId].some(Boolean)
+}

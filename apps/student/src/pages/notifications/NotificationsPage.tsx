@@ -9,7 +9,7 @@ import { BellOff, CheckCheck } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 
 // Empty state.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // The type icon.

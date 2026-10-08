@@ -11,7 +11,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 // One class row.
 import { ClassListItem } from '@/components/common/ClassListItem'
 // Empty states.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Missing-course panel.

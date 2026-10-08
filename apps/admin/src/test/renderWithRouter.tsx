@@ -53,6 +53,8 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
       store: window.sessionStorage,
       demoStore: window.localStorage,
       latencyMs: 0,
+      // Sign-in checks the account's status on the test platform, as the app does.
+      accountStatus: (email) => platform.users.find((user) => user.email === email)?.status,
     }),
     analytics: createMockAnalyticsService({ data: platform, now, latencyMs: 0 }),
     alerts: createMockAlertService({ data: platform, now, latencyMs: 0 }),

@@ -5,8 +5,6 @@
 // Rendering, queries and user input.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-// Icon for the empty state.
-import { BookOpen } from 'lucide-react'
 // A router for components that render links.
 import { MemoryRouter } from 'react-router'
 // Vitest building blocks.
@@ -20,7 +18,6 @@ import { expectNoAxeViolations } from '@conote/testing/axe'
 // The units under test.
 import { ClassListItem } from './ClassListItem'
 import { CourseIcon } from './CourseIcon'
-import { EmptyState } from './EmptyState'
 import { LoadError } from './LoadError'
 import { NotFoundPanel } from './NotFoundPanel'
 import { PrivacyBanner } from './PrivacyBanner'
@@ -54,24 +51,6 @@ describe('CourseIcon', () => {
 
     // Assert.
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true')
-  })
-})
-
-describe('EmptyState', () => {
-  // Proves the title, message and action all show.
-  it('shows a title, a message and an action', async () => {
-    // Act.
-    const { container } = render(
-      <EmptyState icon={BookOpen} title="No courses" action={<button type="button">Clear</button>}>
-        Nothing here yet.
-      </EmptyState>,
-    )
-
-    // Assert.
-    expect(screen.getByText('No courses')).toBeInTheDocument()
-    expect(screen.getByText('Nothing here yet.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
-    await expectNoAxeViolations(container)
   })
 })
 

@@ -11,7 +11,7 @@ import { useSearchParams } from 'react-router'
 // One course card.
 import { CourseCard } from '@/components/common/CourseCard'
 // Empty states.
-import { EmptyState } from '@/components/common/EmptyState'
+import { EmptyState } from '@conote/ui/common/EmptyState'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // Tab title.

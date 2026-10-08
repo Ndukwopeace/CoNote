@@ -9,6 +9,8 @@
 import { AppError } from '@conote/core/errors'
 // The shared vocabulary.
 import type { AccountStatus } from '@conote/domain'
+// The schema type the form rules share.
+import type { ZodType } from 'zod'
 
 // The form rules, enforced here too.
 import { editUserSchema, inviteUserSchema } from '@/lib/userSchemas'
@@ -48,14 +50,7 @@ interface MockUserOptions {
 }
 
 /** Throws a validation AppError with the schema's first message if `value` breaks it. */
-function parseOrThrow<T>(
-  schema: {
-    safeParse: (
-      value: unknown,
-    ) => { success: true; data: T } | { success: false; error: { issues: { message: string }[] } }
-  },
-  value: unknown,
-): T {
+function parseOrThrow<T>(schema: ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value)
   if (!result.success) {
     throw new AppError('validation', result.error.issues[0]?.message ?? 'Check the details.')
@@ -119,6 +114,16 @@ export function createMockUserService({
         const course = courses.get(enrollment.courseId)
         return course ? [{ id: course.id, code: course.code, title: course.title }] : []
       })
+  }
+
+  /** The IDs of a course's students, or of its teacher when listing teachers. */
+  function membersOf(courseId: string, role: UserFilter['role']): Set<string | null> {
+    // The teacher who teaches it.
+    if (role === 'teacher') {
+      return new Set(data.courses.filter((c) => c.id === courseId).map((c) => c.teacherId))
+    }
+    // The students enrolled in it.
+    return new Set(data.enrollments.filter((e) => e.courseId === courseId).map((e) => e.studentId))
   }
 
   /** The list row for `user`. */
@@ -212,15 +217,7 @@ export function createMockUserService({
       await simulateLatency(latencyMs)
       // The search, in lower case, and the course's members.
       const q = filter.q?.trim().toLowerCase()
-      const inCourse = filter.courseId
-        ? new Set(
-            filter.role === 'teacher'
-              ? data.courses.filter((c) => c.id === filter.courseId).map((c) => c.teacherId)
-              : data.enrollments
-                  .filter((e) => e.courseId === filter.courseId)
-                  .map((e) => e.studentId),
-          )
-        : null
+      const inCourse = filter.courseId ? membersOf(filter.courseId, filter.role) : null
       // The matching accounts, sorted.
       const matches = data.users
         .filter(
