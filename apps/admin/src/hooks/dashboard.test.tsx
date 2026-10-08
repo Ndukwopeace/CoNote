@@ -16,7 +16,7 @@ import { AppError } from '@conote/core/errors'
 // The providers the hooks need.
 import { AppProviders } from '@/app/AppProviders'
 // The records the demo services read.
-import { emptyPlatformData } from '@/services/platformData'
+import { courseRecord, emptyPlatformData } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 // Demo services and a cache that doesn't retry.
@@ -42,7 +42,9 @@ describe('dashboard hooks', () => {
     // Arrange: one untaught course.
     const services = createTestServices(
       emptyPlatformData({
-        courses: [{ id: 'c1', code: 'A', title: 'A', teacherId: null, archivedAt: null }],
+        courses: [
+          courseRecord({ id: 'c1', code: 'A', title: 'A', teacherId: null, archivedAt: null }),
+        ],
       }),
     )
     const wrapper = wrapperFor(services)

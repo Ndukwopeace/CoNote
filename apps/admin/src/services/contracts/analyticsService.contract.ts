@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { AccountStatus, Role } from '@conote/domain'
 
 // The data the services read, and an empty starting set.
-import { emptyPlatformData, userRecord, type PlatformData } from '../platformData'
+import { courseRecord, emptyPlatformData, userRecord, type PlatformData } from '../platformData'
 // The interface under test.
 import type { AnalyticsService } from '../types'
 
@@ -67,8 +67,14 @@ export function describeAnalyticsServiceContract(name: string, create: CreateAna
       // Arrange: a term from 1 September to 18 December 2026.
       const data = emptyPlatformData({
         courses: [
-          { id: 'c1', code: 'A', title: 'A', teacherId: 't1', archivedAt: null },
-          { id: 'c2', code: 'B', title: 'B', teacherId: null, archivedAt: daysAgo(10) },
+          courseRecord({ id: 'c1', code: 'A', title: 'A', teacherId: 't1', archivedAt: null }),
+          courseRecord({
+            id: 'c2',
+            code: 'B',
+            title: 'B',
+            teacherId: null,
+            archivedAt: daysAgo(10),
+          }),
         ],
         classes: [
           // Inside the term, on its first and last days.

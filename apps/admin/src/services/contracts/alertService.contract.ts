@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The data the services read, and an empty starting set.
-import { emptyPlatformData, type PlatformData } from '../platformData'
+import { courseRecord, emptyPlatformData, type PlatformData } from '../platformData'
 // The interface under test.
 import type { AlertService } from '../types'
 
@@ -24,7 +24,7 @@ function hoursAgo(hours: number) {
 
 /** A course with the given teacher and archive state. */
 function course(id: string, teacherId: string | null, archivedAt: string | null = null) {
-  return { id, code: id, title: id, teacherId, archivedAt }
+  return courseRecord({ id, code: id, title: id, teacherId, archivedAt })
 }
 
 /** Registers the AlertService contract suite under `name`. */
