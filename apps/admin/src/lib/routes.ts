@@ -63,3 +63,13 @@ export const routeTo = {
       ? `${ADMIN_ROUTES.login}?redirect=${encodeURIComponent(redirect)}`
       : ADMIN_ROUTES.login,
 }
+
+/**
+ * `path` with `params` as its query string, for links that open a list already filtered.
+ * SECURITY: URLSearchParams encodes every value, so a value can't add parameters or a fragment.
+ */
+export function withQuery(path: string, params: Record<string, string>): string {
+  // No parameters, no question mark.
+  const query = new URLSearchParams(params).toString()
+  return query ? `${path}?${query}` : path
+}

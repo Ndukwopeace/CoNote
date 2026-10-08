@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The unit under test.
-import { ADMIN_ROUTES, NAV_ROUTES, routeTo } from './routes'
+import { ADMIN_ROUTES, NAV_ROUTES, routeTo, withQuery } from './routes'
 
 describe('ADMIN_ROUTES', () => {
   // Proves every admin page lives under /admin, as the admin brief's route list requires.
@@ -55,5 +55,19 @@ describe('routeTo', () => {
     expect(routeTo.login('/admin/users?tab=teachers')).toBe(
       '/admin/login?redirect=%2Fadmin%2Fusers%3Ftab%3Dteachers',
     )
+  })
+})
+
+describe('withQuery', () => {
+  // Proves parameters become an encoded query string.
+  it('adds encoded parameters', () => {
+    expect(withQuery('/admin/users', { role: 'student', q: 'a&b=c' })).toBe(
+      '/admin/users?role=student&q=a%26b%3Dc',
+    )
+  })
+
+  // Proves no parameters leave the path alone.
+  it('leaves the path alone without parameters', () => {
+    expect(withQuery('/admin/courses', {})).toBe('/admin/courses')
   })
 })

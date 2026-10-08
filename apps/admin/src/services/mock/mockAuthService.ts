@@ -23,6 +23,9 @@ import type { Session } from '@/types/auth'
 // The interface implemented here.
 import type { AuthService } from '../types'
 
+// Fake network delay.
+import { simulateLatency } from './latency'
+
 /** The demo password for every demo account. Demo mode only; the login page shows it. */
 export const DEMO_PASSWORD = 'password1'
 
@@ -103,12 +106,6 @@ function assertRule(schema: z.ZodType, value: unknown) {
   }
 }
 
-/** Resolves after `ms` milliseconds, so the demo shows real loading states. */
-function wait(ms: number) {
-  // No timer at all when there is no delay, which keeps tests fast.
-  return ms > 0 ? new Promise<void>((resolve) => setTimeout(resolve, ms)) : Promise.resolve()
-}
-
 /** Builds the demo AuthService over `store`. */
 export function createMockAuthService({
   store,
@@ -153,13 +150,13 @@ export function createMockAuthService({
   return {
     async getSession() {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       return readSession()
     },
 
     async signIn({ email, password }) {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       // Emails are matched as people type them: any letter case, spaces trimmed.
       const normalised = email.trim().toLowerCase()
       const account = DEMO_ACCOUNTS.find((candidate) => candidate.email === normalised)
@@ -177,7 +174,7 @@ export function createMockAuthService({
 
     async signOut() {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       // Forget the session, then tell listeners.
       store.removeItem(SESSION_KEY)
       notify(null)
@@ -185,7 +182,7 @@ export function createMockAuthService({
 
     async requestPasswordReset(email) {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       // Only the format is checked: the same rule as the form.
       const parsed = forgotPasswordSchema.safeParse({ email })
       if (!parsed.success) throw new AppError('validation', 'Enter a valid email address.')
@@ -202,14 +199,14 @@ export function createMockAuthService({
 
     async checkResetLink(code) {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       // SECURITY: a missing, made-up, replaced or used code is refused.
       return code !== null && code !== '' && readReset()?.code === code
     },
 
     async resetPassword(code, newPassword) {
       // Behave like a network call.
-      await wait(latencyMs)
+      await simulateLatency(latencyMs)
       // SECURITY: the same strength rules as the form, enforced here too. Checked first, so a
       // weak password doesn't spend the link and the administrator can try again.
       assertRule(newAdminPasswordSchema, newPassword)
