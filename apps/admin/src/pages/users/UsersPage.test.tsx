@@ -6,7 +6,7 @@
 // Queries and waiting.
 import { screen, waitFor, within } from '@testing-library/react'
 // Vitest building blocks.
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 // The shared error type.
 import { AppError } from '@conote/core/errors'
@@ -22,7 +22,7 @@ import type { Services } from '@/services/types'
 // Session builder.
 import { makeSession } from '@/test/factories'
 // Render helper.
-import { renderWithRouter } from '@/test/renderWithRouter'
+import { createTestServices, renderWithRouter } from '@/test/renderWithRouter'
 
 /** The platform: the signed-in admin, one teacher, 25 students (s03 suspended). */
 function platform(): PlatformData {
@@ -96,6 +96,21 @@ describe('UsersPage', () => {
     ])
     expect(rows).toHaveLength(21)
     expect(screen.getByText('Showing 1–20 of 25')).toBeInTheDocument()
+  })
+
+  // Proves listing people doesn't load each person's details (the row dialogs load only when used).
+  it('loads no details just to list people', async () => {
+    // Arrange: a working user service that counts detail loads.
+    const data = platform()
+    const services = createTestServices(data)
+    const getUser = vi.spyOn(services.users, 'getUser')
+
+    // Act.
+    renderUsers('/admin/users', data, { users: services.users })
+    await tableRows()
+
+    // Assert.
+    expect(getUser).not.toHaveBeenCalled()
   })
 
   // Proves the tabs change the list and the address.

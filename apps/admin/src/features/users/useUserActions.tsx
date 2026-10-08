@@ -100,22 +100,25 @@ export function useUserActions(user: UserListItem) {
     edit: () => {
       setEditing(true)
     },
-    // The confirmation and the edit form.
+    // The confirmation and the edit form, mounted only while open, so a list of rows doesn't
+    // load every person's details or build a dialog per row.
     dialogs: (
       <>
-        <ConfirmDialog
-          open={pending !== null}
-          onOpenChange={(open) => {
-            if (!open) setPending(null)
-          }}
-          title={pending ? `${pending.label} ${user.fullName}?` : ''}
-          description={pending ? confirmText(pending, user) : ''}
-          confirmLabel={pending?.label ?? ''}
-          onConfirm={() => {
-            if (pending) apply(pending)
-          }}
-        />
-        <EditUserDialog userId={user.id} open={editing} onOpenChange={setEditing} />
+        {pending && (
+          <ConfirmDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setPending(null)
+            }}
+            title={`${pending.label} ${user.fullName}?`}
+            description={confirmText(pending, user)}
+            confirmLabel={pending.label}
+            onConfirm={() => {
+              apply(pending)
+            }}
+          />
+        )}
+        {editing && <EditUserDialog userId={user.id} open onOpenChange={setEditing} />}
       </>
     ),
   }
