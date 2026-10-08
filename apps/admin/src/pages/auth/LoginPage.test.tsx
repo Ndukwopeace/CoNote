@@ -68,7 +68,7 @@ describe('LoginPage', () => {
     await user.type(await screen.findByLabelText('Email'), 'admin@conote.example')
     await user.type(screen.getByLabelText('Password', { exact: true }), DEMO_PASSWORD)
     await user.click(screen.getByRole('button', { name: 'Sign In' }))
-    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    await screen.findByRole('heading', { level: 1, name: /^Good / })
     expect(router.state.location.pathname).toBe('/admin/dashboard')
   })
 

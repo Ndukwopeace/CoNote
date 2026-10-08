@@ -52,7 +52,7 @@ test('an administrator resets a forgotten password', async ({ page }) => {
   // The new one does.
   await page.getByLabel('Password', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Sign In' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^Good / })).toBeVisible()
 
   // SECURITY: the used link can't be used again. Sign out first, since sign-in pages send a
   // signed-in admin to the dashboard.

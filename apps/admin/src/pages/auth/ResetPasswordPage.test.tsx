@@ -67,7 +67,7 @@ describe('ResetPasswordPage', () => {
     await user.type(screen.getByLabelText('Email'), 'admin@conote.example')
     await user.type(screen.getByLabelText('Password', { exact: true }), 'new-password-2026')
     await user.click(screen.getByRole('button', { name: 'Sign In' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /^Good / })).toBeInTheDocument()
   })
 
   // Proves a link used up in another tab while this page was open fails safely, with a message.

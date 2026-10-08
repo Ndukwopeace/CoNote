@@ -17,7 +17,12 @@ import { RouterProvider } from 'react-router/dom'
 // The app's providers.
 import { AppProviders } from '@/app/AppProviders'
 // The demo services, with no simulated delay.
+import { createMockAlertService } from '@/services/mock/mockAlertService'
+import { createMockAnalyticsService } from '@/services/mock/mockAnalyticsService'
 import { createMockAuthService, SESSION_KEY } from '@/services/mock/mockAuthService'
+import { createMockHealthService } from '@/services/mock/mockHealthService'
+// The records the demo services read.
+import { emptyPlatformData, type PlatformData } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 // Session shape.
@@ -28,16 +33,25 @@ interface RenderOptions {
   routes: RouteObject[]
   path: InitialEntry
   session?: Session
+  // The platform records the services read; empty unless the test needs some.
+  platform?: PlatformData
+  // Replaces individual services, for example one that fails.
+  overrides?: Partial<Services>
 }
 
-/** Demo services over session storage, without delays. */
-export function createTestServices(): Services {
+/** Demo services over `platform` and test storage, without delays, on the real clock. */
+export function createTestServices(platform: PlatformData = emptyPlatformData()): Services {
+  // The real clock; tests that need a fixed time use vi.setSystemTime.
+  const now = () => new Date()
   return {
     auth: createMockAuthService({
       store: window.sessionStorage,
       demoStore: window.localStorage,
       latencyMs: 0,
     }),
+    analytics: createMockAnalyticsService({ data: platform, now, latencyMs: 0 }),
+    alerts: createMockAlertService({ data: platform, now, latencyMs: 0 }),
+    health: createMockHealthService({ demoStore: window.localStorage, now, latencyMs: 0 }),
   }
 }
 
@@ -49,11 +63,11 @@ export function createTestQueryClient() {
 }
 
 /** Renders `routes` at `path`, signed in as `session` when given. */
-export function renderWithRouter({ routes, path, session }: RenderOptions) {
+export function renderWithRouter({ routes, path, session, platform, overrides }: RenderOptions) {
   // Sign in by storing the session where the demo service looks.
   if (session) window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
   // Fresh services, cache and router for each test.
-  const services = createTestServices()
+  const services = { ...createTestServices(platform), ...overrides }
   const queryClient = createTestQueryClient()
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   // Render with the real providers.

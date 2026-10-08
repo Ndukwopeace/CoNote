@@ -25,7 +25,6 @@ import { LoadError } from './LoadError'
 import { NotFoundPanel } from './NotFoundPanel'
 import { PrivacyBanner } from './PrivacyBanner'
 import { ListSkeleton } from './Skeletons'
-import { StatCard } from './StatCard'
 import { StatusBadge } from './StatusBadge'
 import { SummaryStateCard } from './SummaryStateCard'
 
@@ -136,21 +135,6 @@ describe('NotFoundPanel', () => {
       '/courses',
     )
     await expectNoAxeViolations(container)
-  })
-})
-
-describe('StatCard', () => {
-  // Proves the whole card is one link named by its value and label (FR-DSH-2).
-  it('links to its list', () => {
-    // Act.
-    render(
-      <MemoryRouter>
-        <StatCard label="My Courses" value={4} icon={BookOpen} to="/courses" />
-      </MemoryRouter>,
-    )
-
-    // Assert.
-    expect(screen.getByRole('link', { name: '4 My Courses' })).toHaveAttribute('href', '/courses')
   })
 })
 

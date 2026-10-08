@@ -9,7 +9,7 @@ The CoNote monorepo (decision D64). Students write private notes per class. An A
 | `apps/teacher`                         | Not built yet. Teacher screens go here.                                                                                |
 | `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `cn`            |
 | `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                            |
-| `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                       |
+| `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`           |
 | `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                             |
 
 Packages must not import app code (`@/…`); ESLint enforces it. Apps import packages by name (`@conote/ui/button`).
@@ -60,6 +60,7 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - Vercel builds the student app from the root `vercel.json` (`buildCommand` and `outputDirectory`). The admin app is its own Vercel project with Root Directory `apps/admin`, using `apps/admin/vercel.json`.
 - Admin demo sign-in: `admin@conote.example` / `password1` (also `teacher@` and `student@conote.example`, which the guard turns away). The admin e2e server uses port 4174, the student's 4173.
 - An admin password changed through the demo reset flow is kept in local storage (`conote-admin-demo:` keys) and survives sign-out, like server data. Clear the site's storage to get `password1` back.
+- The admin dashboard reads one seeded demo platform (D69). Its health card is all "Operational" unless local storage key `conote-admin-demo:health` says otherwise, for example `{"storage":"degraded"}`. Admin page tests pass their own `platform` records to `renderWithRouter`.
 - Test helpers may import demo services; tests themselves import them through `src/test/` (the import-boundary rule).
 - App icons and iPhone launch images: `npm run icons -w @conote/student` (needs `PW_CHROMIUM_PATH` here).
 

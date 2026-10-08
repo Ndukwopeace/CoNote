@@ -1,5 +1,6 @@
 /**
- * One dashboard number that links to its list (FR-DSH-2).
+ * One dashboard number that links to its list (student FR-DSH-2, admin dashboard). Shared by
+ * every portal's dashboard.
  */
 
 // Icon component type.

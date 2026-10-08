@@ -276,6 +276,33 @@ Keep it to one chart on the dashboard; the rest belong on Analytics.
 - storage errors
 - recent security events
 
+**As built (A3, D69):**
+
+- **What each card counts:**
+  - Students and Teachers: accounts with that role, whatever their status.
+  - Active courses: courses that are not archived.
+  - Classes this term: classes that are not archived and start between the term dates in `platform_settings`.
+  - Published summaries: summaries with status `published`.
+  - AI jobs: jobs `queued` or `running`.
+  - Each card links to its list, filtered (for example `/admin/users?role=student`). Those filters arrive with each list's milestone.
+- **Activity series:**
+  - Counted per local calendar day, oldest first, ending today.
+  - Notes created, resources opened and AI questions come from `activity_events`.
+  - Summaries generated are AI jobs that `succeeded`, by finish time.
+  - Summaries published use `published_at`.
+  - The chart has a crosshair and tooltip (pointer or arrow keys) and a "Show as table" view with the same values. A period with nothing shows "Nothing was recorded in this period."
+- **Alerts:**
+  - Failures count over the last 24 hours: failed AI jobs, failed notification deliveries, storage errors and security events.
+  - The other alerts count current records: active courses with no teacher, active classes in archived courses, and summaries in review longer than `platform_settings.review_alert_days` (default 3).
+  - Critical alerts (security and failures) come first, then warnings.
+  - Each links to the screen that fixes it, filtered: `audit-logs?category=security`, `ai-summaries?job=failed`, `settings?tab=notifications`, `resources?status=error`, `courses?teacher=none`, `classes?course=archived`, `ai-summaries?status=in_review`.
+  - With no alerts: "No alerts. Everything is running normally."
+- **Health:**
+  - Checked again every minute while the dashboard is open.
+  - A part the check doesn't report shows "Unknown".
+  - In mock mode every part is "Operational", unless local storage key `conote-admin-demo:health` holds JSON such as `{"storage":"degraded","notifications":"unknown"}`.
+- **Failures:** each part (counts, chart, alerts, health) loads, fails and retries on its own, with "Unable to load {thing}." and "Try again".
+
 ---
 
 ## 11. Users
@@ -576,7 +603,8 @@ Same pattern as the student portal:
 | `SummaryMonitorService` | `listSummaries(filter)`, `getSummaryPipeline`, `getSummaryCounts` |
 | `AiJobService` | `listJobs(filter)`, `retryJob` |
 | `HealthService` | `getHealth` |
-| `AnalyticsService` | `getUserStats`, `getAcademicStats`, `getAiStats`, `getUsageStats`, `getActivitySeries(range, series)` |
+| `AnalyticsService` | `getOverview` (the dashboard counts, A3), `getUserStats`, `getAcademicStats`, `getAiStats`, `getUsageStats`, `getActivitySeries(range, series)` |
+| `AlertService` | `listAlerts` (A3) |
 | `AuditService` | `listAuditLogs(filter)` |
 | `NotificationService` | `list`, `unreadCount`, `markRead`, `markAllRead` |
 | `SettingsService` | `getSettings`, `updateSettings` |

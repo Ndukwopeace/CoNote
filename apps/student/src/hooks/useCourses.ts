@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useServices } from '@/services/useServices'
 
 // Error conversion for query functions.
-import { appQuery } from './appQuery'
+import { appQuery } from '@conote/core/appQuery'
 // Cache keys.
 import { queryKeys } from './queryKeys'
 

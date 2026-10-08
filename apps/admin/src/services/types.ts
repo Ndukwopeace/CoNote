@@ -5,6 +5,15 @@
 
 // Session shapes.
 import type { PasswordResetRequest, Session, SignInInput } from '@/types/auth'
+// Dashboard shapes.
+import type {
+  ActivityPoint,
+  ActivityRange,
+  ActivitySeriesKey,
+  HealthReport,
+  PlatformAlert,
+  PlatformOverview,
+} from '@/types/dashboard'
 
 /** Signing in and out, and the current session. */
 export interface AuthService {
@@ -27,7 +36,30 @@ export interface AuthService {
   onAuthChange(listener: (session: Session | null) => void): () => void
 }
 
+/** Platform figures. A9 adds the Analytics page's statistics. */
+export interface AnalyticsService {
+  /** The six counts on the dashboard's stat cards. */
+  getOverview(): Promise<PlatformOverview>
+  /** One count per day for the last `range` days, oldest first, ending today. */
+  getActivitySeries(range: ActivityRange, series: ActivitySeriesKey): Promise<ActivityPoint[]>
+}
+
+/** Problems worth an administrator's attention, computed from the platform's records. */
+export interface AlertService {
+  /** One entry per kind of problem that currently has a non-zero count, most urgent first. */
+  listAlerts(): Promise<PlatformAlert[]>
+}
+
+/** The platform's health check (the `health` Edge Function in the backend stage). */
+export interface HealthService {
+  /** The latest state of each part of the platform. */
+  getHealth(): Promise<HealthReport>
+}
+
 /** Every service the admin app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
+  analytics: AnalyticsService
+  alerts: AlertService
+  health: HealthService
 }

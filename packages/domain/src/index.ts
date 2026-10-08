@@ -19,3 +19,12 @@ export type SummaryStatus = 'collecting' | 'processing' | 'in_review' | 'publish
 
 /** Notification categories, as stored in `notifications.type`. */
 export type NotificationType = 'summary' | 'system' | 'message' | 'note'
+
+/**
+ * Whether an account may sign in, as stored in `profiles.status` (admin REQUIREMENTS section 6.2).
+ * `pending` means invited but not yet signed in. Only `active` accounts can sign in.
+ */
+export type AccountStatus = 'active' | 'inactive' | 'suspended' | 'pending'
+
+/** Where an AI summary job is, as stored in `ai_jobs.status` (admin REQUIREMENTS section 6.2). */
+export type AiJobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
