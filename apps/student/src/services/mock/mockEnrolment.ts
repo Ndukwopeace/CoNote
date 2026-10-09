@@ -92,6 +92,11 @@ export interface MockEnrolment {
   decide: (requestId: string, decision: 'approved' | 'declined') => Promise<void>
 }
 
+/** Courses in use: ongoing or upcoming, and not archived. */
+function isOpen(course: CatalogCourse) {
+  return !course.archived && course.status !== 'completed'
+}
+
 /** Builds the demo enrolment service over `catalog`. */
 export function createMockEnrolment({
   catalog,
@@ -124,11 +129,6 @@ export function createMockEnrolment({
   function write(state: State) {
     if (store) store.setItem(MOCK_ENROLMENT_KEY, JSON.stringify(state))
     else memory = state
-  }
-
-  /** Courses in use: ongoing or upcoming, and not archived. */
-  function isOpen(course: CatalogCourse) {
-    return !course.archived && course.status !== 'completed'
   }
 
   /** The latest request for `courseId`, if any (the list is in the order they were made). */

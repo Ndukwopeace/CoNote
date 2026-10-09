@@ -118,7 +118,7 @@ export function CourseFilters({ filter, onChange, onClear }: Readonly<CourseFilt
           }}
           className="size-4 accent-primary"
         />
-        Requests waiting
+        <span>Requests waiting</span>
       </label>
       {/* Archived courses are hidden unless asked for. */}
       <label className="flex h-10 items-center gap-2 text-sm">
@@ -130,7 +130,7 @@ export function CourseFilters({ filter, onChange, onClear }: Readonly<CourseFilt
           }}
           className="size-4 accent-primary"
         />
-        Show archived courses
+        <span>Show archived courses</span>
       </label>
       {/* Clear, when anything is set. */}
       {hasCourseFilters(filter) && (

@@ -28,6 +28,56 @@ interface CourseRequestsProps {
   locked: boolean
 }
 
+/** The table's columns. */
+const COLUMNS: DataColumn<EnrollmentRequest, never>[] = [
+  {
+    heading: 'Name',
+    cell: (request) => <span className="font-medium">{request.student.fullName}</span>,
+  },
+  { heading: 'Email', cell: (request) => request.student.email },
+  { heading: 'Student number', cell: (request) => request.student.studentNumber ?? '—' },
+  { heading: 'Asked on', cell: (request) => formatDate(request.requestedAt) },
+]
+
+/** What the Approve and Decline buttons need. */
+interface RequestActionsProps {
+  request: EnrollmentRequest
+  // True while a decision is being sent, so a second click can't race it.
+  busy: boolean
+  onDecide: (request: EnrollmentRequest, decision: RequestDecision) => void
+}
+
+/** Approve and Decline for one request. */
+function RequestActions({ request, busy, onDecide }: Readonly<RequestActionsProps>) {
+  return (
+    <span className="flex gap-2">
+      <Button
+        type="button"
+        size="sm"
+        disabled={busy}
+        aria-label={`Approve ${request.student.fullName}`}
+        onClick={() => {
+          onDecide(request, 'approved')
+        }}
+      >
+        Approve
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        aria-label={`Decline ${request.student.fullName}`}
+        onClick={() => {
+          onDecide(request, 'declined')
+        }}
+      >
+        Decline
+      </Button>
+    </span>
+  )
+}
+
 /** The Requests tab. */
 export function CourseRequests({ courseId, code, locked }: Readonly<CourseRequestsProps>) {
   // The waiting requests, the decision and the toast.
@@ -54,17 +104,6 @@ export function CourseRequests({ courseId, code, locked }: Readonly<CourseReques
     )
   }
 
-  // The columns.
-  const columns: DataColumn<EnrollmentRequest, never>[] = [
-    {
-      heading: 'Name',
-      cell: (request) => <span className="font-medium">{request.student.fullName}</span>,
-    },
-    { heading: 'Email', cell: (request) => request.student.email },
-    { heading: 'Student number', cell: (request) => request.student.studentNumber ?? '—' },
-    { heading: 'Asked on', cell: (request) => formatDate(request.requestedAt) },
-  ]
-
   // Failed: the message and a retry.
   if (isError) return <ErrorState thing="requests" onRetry={() => void refetch()} />
   // First load.
@@ -86,36 +125,12 @@ export function CourseRequests({ courseId, code, locked }: Readonly<CourseReques
       label={`Requests to join ${code}`}
       rows={data}
       rowKey={(request) => request.id}
-      columns={columns}
+      columns={COLUMNS}
       actions={
         locked
           ? undefined
           : (request) => (
-              <span className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={decide.isPending}
-                  aria-label={`Approve ${request.student.fullName}`}
-                  onClick={() => {
-                    send(request, 'approved')
-                  }}
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={decide.isPending}
-                  aria-label={`Decline ${request.student.fullName}`}
-                  onClick={() => {
-                    send(request, 'declined')
-                  }}
-                >
-                  Decline
-                </Button>
-              </span>
+              <RequestActions request={request} busy={decide.isPending} onDecide={send} />
             )
       }
     />

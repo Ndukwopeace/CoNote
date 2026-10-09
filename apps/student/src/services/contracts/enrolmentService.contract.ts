@@ -44,8 +44,8 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
 
       const courses = await service.listJoinableCourses()
 
-      expect(courses.map((course) => course.id).sort()).toEqual(
-        [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort(),
+      expect(courses.map((course) => course.id).sort((a, b) => a.localeCompare(b))).toEqual(
+        [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort((a, b) => a.localeCompare(b)),
       )
       const standing = Object.fromEntries(courses.map((course) => [course.id, course.membership]))
       expect(standing).toEqual({
