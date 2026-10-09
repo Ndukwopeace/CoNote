@@ -66,7 +66,8 @@ describe('PortalLayout', () => {
       'Home',
       'Courses',
       'Notes',
-      'Ask AI',
+      // jsdom applies no CSS, so the desktop pill and the rail's word both appear.
+      'Ask AIPreviewPreview',
       expect.stringMatching(/^Notifications\d*$/),
       'Settings',
     ])
@@ -98,7 +99,27 @@ describe('PortalLayout', () => {
       .map((link) => link.textContent.trim())
 
     // Assert: exactly these four, in order.
-    expect(labels).toEqual(['Home', 'Courses', 'Notes', 'Ask AI'])
+    expect(labels).toEqual(['Home', 'Courses', 'Notes', 'Ask AIPreview'])
+  })
+
+  // Proves nobody meets the canned Ask AI replies unlabelled: both navigations mark it Preview,
+  // and no other destination carries the label (T0).
+  it('marks Ask AI as a preview in the sidebar and the phone bar only', async () => {
+    // Arrange: render the portal on the dashboard.
+    renderPortal()
+
+    // Act: read both navigations.
+    for (const name of ['Main navigation', 'Quick navigation']) {
+      const nav = await screen.findByRole('navigation', { name })
+      // Assert: the Ask AI link carries the label, in its accessible name.
+      expect(
+        within(nav).getByRole('link', { name: /^Ask AI\s*Preview(\s*Preview)?$/ }),
+      ).toBeInTheDocument()
+      // Assert: the label sits only inside that link.
+      for (const label of within(nav).getAllByText('Preview')) {
+        expect(label.closest('a')).toHaveAttribute('href', '/ask-ai')
+      }
+    }
   })
 
   // Proves the current tab is shown by more than colour (WCAG 1.4.1): a pill behind its icon

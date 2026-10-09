@@ -365,6 +365,7 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-AI-6 v1 behaviour (mock):** the reply is canned text keyed to the suggested prompts, with a generic fallback, after a delay of 600–1200 ms. The conversation lasts for the page session only.
 - **FR-AI-7** The service interface (`askAi(context, messages)`) must fit a later streaming backend (a Supabase Edge Function calling a language model) without UI changes.
 - **FR-AI-8** Out of scope for v1: saved conversation history, file uploads, voice.
+- **FR-AI-9** (D73, T0) While replies are canned (FR-AI-6), Ask AI is labelled "Preview": a badge beside the page heading, a one-line note under it ("Preview: replies are examples while the AI service is being built."), and the same badge on the Ask AI navigation item in the sidebar and the phone bar. On the 768–1023 px icon rail the badge is a small dot, and the word stays in the link's accessible name and tooltip. The label comes off when a real AI service replaces the canned replies.
 
 ### FR-NTF Notifications
 

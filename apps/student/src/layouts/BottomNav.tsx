@@ -8,6 +8,8 @@ import { NavLink } from 'react-router'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
 
+// The "Preview" label.
+import { PreviewBadge } from '@/components/common/PreviewBadge'
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
 
@@ -24,7 +26,7 @@ export function BottomNav() {
       {/* Four equal columns: about 98 px each on a 390 px phone, room for every label. */}
       <ul className="grid grid-cols-4">
         {/* Only items marked for the bottom bar. */}
-        {NAV_ITEMS.filter((item) => item.inBottomBar).map(({ label, to, icon: Icon }) => (
+        {NAV_ITEMS.filter((item) => item.inBottomBar).map(({ label, to, icon: Icon, preview }) => (
           // The route is unique, so it doubles as React's key.
           <li key={to}>
             {/* NavLink sets aria-current="page" on the current destination automatically. */}
@@ -50,9 +52,13 @@ export function BottomNav() {
                     {/* Icon, hidden from screen readers because the label says the same thing. */}
                     <Icon aria-hidden="true" className="size-6" />
                   </span>
-                  {/* The visible label, which is also the link's accessible name. Bolder on the
-                      current tab, the second non-colour cue. */}
-                  <span className={cn('font-medium', isActive && 'font-semibold')}>{label}</span>
+                  {/* The label, with the Preview pill beside it where the destination has one, so
+                      every tab keeps the same height. Both are in the link's accessible name.
+                      The label is bolder on the current tab, the second non-colour cue. */}
+                  <span className="flex items-center gap-1">
+                    <span className={cn('font-medium', isActive && 'font-semibold')}>{label}</span>
+                    {preview && <PreviewBadge className="px-1 text-[9px] leading-3.5" />}
+                  </span>
                 </>
               )}
             </NavLink>

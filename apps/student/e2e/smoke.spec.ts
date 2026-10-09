@@ -114,6 +114,38 @@ test('without "remember me" the session ends with the browser session', async ({
   await context.close()
 })
 
+// Proves nobody meets the canned Ask AI replies unlabelled (T0): the navigation item and the page
+// both say "Preview", at phone and desktop widths, with no accessibility problems.
+test('Ask AI is labelled as a preview in the navigation and on its page', async ({
+  page,
+  isMobile,
+}) => {
+  // Sign in.
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+
+  // The navigation item carries the label in its name.
+  const link = primaryNav(page, isMobile).getByRole('link', { name: /^Ask AI\s*Preview$/ })
+  await expect(link).toBeVisible()
+
+  // The page shows the badge beside its heading and the one-line note under it.
+  await link.click()
+  const heading = page.getByRole('heading', { level: 1, name: 'Ask CoNote AI' })
+  await expect(heading).toBeVisible()
+  await expect(page.getByRole('main').getByText('Preview', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('Preview: replies are examples while the AI service is being built.'),
+  ).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // No sideways scroll at this width: the badge fits.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+})
+
 // Proves unknown addresses get an accessible 404 page.
 test('an unknown address shows the not-found page', async ({ page }) => {
   await page.goto('/this-does-not-exist')
