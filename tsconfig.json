@@ -7,7 +7,9 @@
   "references": [
     { "path": "./apps/student" },
     { "path": "./apps/admin" },
+    { "path": "./apps/teacher" },
     { "path": "./packages/ui" },
+    { "path": "./packages/portal" },
     { "path": "./packages/domain" },
     { "path": "./packages/core" },
     { "path": "./packages/testing" },

@@ -60,4 +60,40 @@ describe('ConfirmDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
     expect(onConfirm).not.toHaveBeenCalled()
   })
+
+  // Proves the confirm button is red by default, and a caller can ask for the plain one (publishing
+  // is a yes, not a loss).
+  it('styles the confirm button by variant', () => {
+    // Act: the default dialog.
+    const { unmount } = render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Delete?"
+        description="Gone."
+        confirmLabel="Delete"
+        onConfirm={vi.fn()}
+      />,
+    )
+    // Assert: red.
+    expect(screen.getByRole('button', { name: 'Delete' }).className).toContain('bg-destructive')
+    unmount()
+
+    // Act: the plain one.
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Publish?"
+        description="Students will see it."
+        confirmLabel="Publish"
+        confirmVariant="default"
+        onConfirm={vi.fn()}
+      />,
+    )
+    // Assert: not red.
+    expect(screen.getByRole('button', { name: 'Publish' }).className).not.toContain(
+      'bg-destructive',
+    )
+  })
 })

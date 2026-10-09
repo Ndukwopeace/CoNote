@@ -18,7 +18,7 @@ import { StatCard } from '@conote/ui/common/StatCard'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The counts.
 import { useOverview } from '@/hooks/useDashboard'
 // Route constants and the query helper.

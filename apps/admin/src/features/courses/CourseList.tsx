@@ -12,7 +12,7 @@ import { EmptyState } from '@conote/ui/common/EmptyState'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel and the page buttons.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 import { Pagination } from '@/components/common/Pagination'
 // The table.
 import { CourseTable } from '@/components/courses/CourseTable'

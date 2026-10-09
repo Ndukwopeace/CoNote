@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- The teacher app's single HTML page. Vite injects the built scripts; React renders into #root. -->
+<!-- lang="en" tells screen readers and translators the page language. -->
+<html lang="en">
+  <head>
+    <!-- Text encoding, so every character displays correctly. -->
+    <meta charset="UTF-8" />
+    <!-- Browser tab icon: the CoNote mark, shared with the student app. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Use the device's real width on phones and tablets instead of a zoomed-out desktop view. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- SECURITY: keep the teacher portal out of search results. It is not a public page, and
+         listing it would advertise the sign-in screen to anyone looking for targets. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- Colours the mobile browser's address bar in the brand colour. -->
+    <meta name="theme-color" content="#4F46E5" />
+    <!-- Default tab title; each page replaces it with its own. -->
+    <title>CoNote Teacher</title>
+  </head>
+  <body>
+    <!-- Without JavaScript the portal can't run; say so. -->
+    <noscript>
+      <p style="padding: 24px; font-family: system-ui, sans-serif">
+        CoNote Teacher needs JavaScript. Turn it on in your browser settings, then reload.
+      </p>
+    </noscript>
+    <!-- React mounts the app here (src/main.tsx). -->
+    <div id="root"></div>
+    <!-- The app's entry point. type="module" loads it as an ES module; it runs after parsing. -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

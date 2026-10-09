@@ -33,7 +33,7 @@ import { emptyPlatformData, type PlatformData } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 // Session shape.
-import type { Session } from '@/types/auth'
+import type { Session } from '@conote/portal'
 
 /** What a test renders. */
 interface RenderOptions {

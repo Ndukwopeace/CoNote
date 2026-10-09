@@ -1,0 +1,31 @@
+{
+  "name": "@conote/teacher",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "size": "size-limit",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@conote/core": "0.1.0",
+    "@conote/domain": "0.1.0",
+    "@conote/portal": "0.1.0",
+    "@conote/ui": "0.1.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@hookform/resolvers": "^5.9.1",
+    "@tanstack/react-query": "^5.104.0",
+    "lucide-react": "^1.49.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.89.0",
+    "react-router": "^8.4.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@conote/testing": "0.1.0"
+  }
+}

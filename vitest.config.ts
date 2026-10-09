@@ -18,9 +18,11 @@ export default defineConfig({
       // Terminal summary, a browsable HTML report, and lcov for SonarCloud.
       reporter: ['text', 'html', 'lcov'],
       // ENGINEERING_STANDARDS.md section 2.6: the floor applies to each app's logic folders and
-      // to the shared logic in packages/core.
+      // to the shared logic in packages/core and the staff-portal logic in packages/portal (auth, lib).
       include: [
         'packages/core/src/**',
+        'packages/portal/src/auth/**',
+        'packages/portal/src/lib/**',
         'apps/*/src/services/**',
         'apps/*/src/hooks/**',
         'apps/*/src/lib/**',

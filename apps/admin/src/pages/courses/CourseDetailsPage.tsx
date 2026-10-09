@@ -15,7 +15,7 @@ import { Skeleton } from '@conote/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@conote/ui/tabs'
 
 // Load-failure panel and the status label.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 import { CourseStatusBadge } from '@/components/courses/CourseStatusBadge'
 // The tabs and the actions shared with the list.
 import { CourseClassesTab } from '@/features/courses/CourseClassesTab'

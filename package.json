@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "npm run dev -w @conote/student",
     "dev:admin": "npm run dev -w @conote/admin",
+    "dev:teacher": "npm run dev -w @conote/teacher",
     "build": "npm run build --workspaces --if-present",
     "preview": "npm run preview -w @conote/student",
     "lint": "eslint . --max-warnings=0",

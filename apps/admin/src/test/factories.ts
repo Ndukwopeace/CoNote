@@ -9,7 +9,7 @@ export { SESSION_KEY } from '@/services/mock/mockAuthService'
 // Where the demo health override lives, for dashboard tests that set a part's state.
 export { HEALTH_OVERRIDE_KEY } from '@/services/mock/mockHealthService'
 // Session shape.
-import type { Session } from '@/types/auth'
+import type { Session } from '@conote/portal'
 // The shared role names.
 import type { Role } from '@conote/domain'
 

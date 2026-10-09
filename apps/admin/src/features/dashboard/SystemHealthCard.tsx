@@ -11,7 +11,7 @@ import { Badge } from '@conote/ui/badge'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The health report.
 import { useHealth } from '@/hooks/useDashboard'
 // The parts and states.

@@ -16,7 +16,7 @@ import { useToast } from '@conote/ui/toast'
 
 // The shared table, load-failure panel and search box.
 import { DataTable, type DataColumn } from '@/components/common/DataTable'
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 import { SearchField } from '@/components/common/SearchField'
 // The student's account status.
 import { UserStatusBadge } from '@/components/users/UserStatusBadge'

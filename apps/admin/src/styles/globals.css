@@ -9,3 +9,6 @@
 @import 'tw-animate-css';
 /* The shared CoNote design system: tokens, Tailwind names and base styles (packages/ui). */
 @import '@conote/ui/styles/theme.css';
+/* The shared staff-portal code (packages/portal) uses utility classes of its own; Tailwind must
+   scan it too, or they are not generated. */
+@source '../../../../packages/portal/src';

@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 import { useToast } from '@conote/ui/toast'
 
 // The signed-in administrator.
-import { useAuth } from '@/features/auth/useAuth'
+import { useAuth } from '@conote/portal'
 // The changes.
 import { useSendPasswordReset, useSetUserStatus } from '@/hooks/useUsers'
 // Administrator-facing error wording.
