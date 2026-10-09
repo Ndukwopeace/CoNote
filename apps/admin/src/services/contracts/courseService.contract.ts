@@ -7,7 +7,13 @@
 import { describe, expect, it } from 'vitest'
 
 // The data the services read, and the record builders.
-import { courseRecord, emptyPlatformData, userRecord, type PlatformData } from '../platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+  type PlatformData,
+  classRecord,
+} from '../platformData'
 // The interface under test.
 import type { CourseService } from '../types'
 // Course shapes.
@@ -129,34 +135,34 @@ function platform(): PlatformData {
       { courseId: 'c3', studentId: 's01' },
     ],
     classes: [
-      {
+      classRecord({
         id: 'cl2',
         courseId: 'c1',
         title: 'Loops',
         startsAt: '2026-09-17T09:00:00.000Z',
         archivedAt: null,
-      },
-      {
+      }),
+      classRecord({
         id: 'cl1',
         courseId: 'c1',
         title: 'Variables',
         startsAt: '2026-09-10T09:00:00.000Z',
         archivedAt: null,
-      },
-      {
+      }),
+      classRecord({
         id: 'cl3',
         courseId: 'c1',
         title: 'Cancelled',
         startsAt: '2026-09-24T09:00:00.000Z',
         archivedAt: '2026-09-20T09:00:00.000Z',
-      },
-      {
+      }),
+      classRecord({
         id: 'cl4',
         courseId: 'c2',
         title: 'Essays',
         startsAt: '2026-09-11T09:00:00.000Z',
         archivedAt: null,
-      },
+      }),
     ],
     summaries: [
       {

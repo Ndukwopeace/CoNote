@@ -1,5 +1,5 @@
 /**
- * Saves the demo platform's changeable records (users, courses, resources, enrolments, audit log) in local storage,
+ * Saves the demo platform's changeable records (users, courses, resources, classes with their summaries and jobs, enrolments, audit log) in local storage,
  * so changes survive a reload as server data would. Sign-out leaves them, like a real server.
  */
 
@@ -55,11 +55,47 @@ const resourceSchema = z.object({
   createdAt: z.string(),
 })
 
+/** What a saved class must look like. */
+const classSchema = z.object({
+  id: z.string(),
+  courseId: z.string(),
+  number: z.number(),
+  title: z.string(),
+  description: z.string(),
+  startsAt: z.string(),
+  endsAt: z.string(),
+  noteCount: z.number(),
+  archivedAt: z.string().nullable(),
+})
+
+/** What a saved summary must look like. */
+const summarySchema = z.object({
+  id: z.string(),
+  classId: z.string(),
+  status: z.enum(['collecting', 'processing', 'in_review', 'published']),
+  inReviewSince: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+})
+
+/** What a saved AI job must look like. */
+const aiJobSchema = z.object({
+  id: z.string(),
+  classId: z.string(),
+  status: z.enum(['queued', 'running', 'succeeded', 'failed']),
+  createdAt: z.string(),
+  attempt: z.number(),
+  finishedAt: z.string().nullable(),
+})
+
 /** What the saved records must look like. Courses and resources are optional so that records
  *  saved before the Courses milestone still load. */
 const storedSchema = z.object({
   courses: z.array(courseSchema).optional(),
   resources: z.array(resourceSchema).optional(),
+  // Classes, with the summaries and jobs that describe them, are saved and restored together.
+  classes: z.array(classSchema).optional(),
+  summaries: z.array(summarySchema).optional(),
+  aiJobs: z.array(aiJobSchema).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -75,7 +111,7 @@ const storedSchema = z.object({
   ),
 })
 
-/** `seed`, with any saved users, courses, resources, enrolments and audit log in place of its own. */
+/** `seed`, with any saved users, courses, resources, classes (with their summaries and jobs), enrolments and audit log in place of its own. */
 export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
   // Nothing saved: the seed as it is.
   const raw = store.getItem(PLATFORM_KEY)
@@ -85,12 +121,17 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
     const parsed = storedSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) return seed
     // Courses and resources saved by an older version are absent: keep the seed's.
-    const { courses, resources, ...saved } = parsed.data
+    const { courses, resources, classes, summaries, aiJobs, ...saved } = parsed.data
+    // Classes, summaries and jobs describe one another, so they are taken from the save together.
+    const savedClasses = classes && summaries && aiJobs
     return {
       ...seed,
       ...saved,
       courses: courses ?? seed.courses,
       resources: resources ?? seed.resources,
+      classes: savedClasses ? classes : seed.classes,
+      summaries: savedClasses ? summaries : seed.summaries,
+      aiJobs: savedClasses ? aiJobs : seed.aiJobs,
     }
   } catch {
     // Not JSON.
@@ -98,9 +139,21 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
   }
 }
 
-/** Saves `data`'s users, courses, resources, enrolments and audit log. */
+/** Saves `data`'s users, courses, resources, classes (with their summaries and jobs), enrolments and audit log. */
 export function savePlatform(store: Storage, data: PlatformData) {
   // Only the records that change; everything else comes from the seed each time.
-  const { users, courses, resources, enrollments, auditLog } = data
-  store.setItem(PLATFORM_KEY, JSON.stringify({ users, courses, resources, enrollments, auditLog }))
+  const { users, courses, resources, classes, summaries, aiJobs, enrollments, auditLog } = data
+  store.setItem(
+    PLATFORM_KEY,
+    JSON.stringify({
+      users,
+      courses,
+      resources,
+      classes,
+      summaries,
+      aiJobs,
+      enrollments,
+      auditLog,
+    }),
+  )
 }

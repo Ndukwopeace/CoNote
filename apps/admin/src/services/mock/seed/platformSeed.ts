@@ -398,16 +398,24 @@ function buildClasses(courses: CourseRecord[], termStart: Date, clock: SeedClock
   // Each course in use on its own weekday and hour.
   courses.slice(0, COURSES.length).forEach((course, index) => {
     for (let week = 0; week < WEEKS; week += 1) {
+      // When this week's class starts.
+      const startsAt = new Date(
+        termStart.getFullYear(),
+        termStart.getMonth(),
+        termStart.getDate() + week * 7 + index,
+        9 + index,
+      )
       classes.push({
         id: `${course.id}-${week + 1}`,
         courseId: course.id,
+        number: week + 1,
         title: `${course.title}, week ${week + 1}`,
-        startsAt: new Date(
-          termStart.getFullYear(),
-          termStart.getMonth(),
-          termStart.getDate() + week * 7 + index,
-          9 + index,
-        ).toISOString(),
+        description: '',
+        startsAt: startsAt.toISOString(),
+        // Every class runs for an hour and a half.
+        endsAt: new Date(startsAt.getTime() + 90 * 60_000).toISOString(),
+        // Classes still to come have no notes; others have a steady, varied count.
+        noteCount: startsAt.getTime() > clock.nowMs ? 0 : 12 + ((index * 7 + week * 5) % 23),
         archivedAt: null,
       })
     }
@@ -417,8 +425,12 @@ function buildClasses(courses: CourseRecord[], termStart: Date, clock: SeedClock
     classes.push({
       id: `gst-111-${n}`,
       courseId: 'gst-111',
+      number: n,
       title: `Communication in English, week ${n}`,
+      description: '',
       startsAt: clock.ago((120 - n * 7) * DAY),
+      endsAt: new Date(Date.parse(clock.ago((120 - n * 7) * DAY)) + 90 * 60_000).toISOString(),
+      noteCount: 14 + n,
       archivedAt: n === 3 ? null : clock.ago(10 * DAY),
     })
   }
@@ -440,6 +452,9 @@ function buildSummariesAndJobs(classes: ClassRecord[], clock: SeedClock, random:
       id: `job-${cls.id}`,
       classId: cls.id,
       status: 'succeeded',
+      // Queued fifteen minutes before it finished.
+      createdAt: new Date(startMs + 3 * HOUR - 15 * 60_000).toISOString(),
+      attempt: 1,
       finishedAt: generatedAt,
     })
     // SWE 311's class from four to ten days ago is still waiting for its teacher (an alert);
@@ -457,18 +472,36 @@ function buildSummariesAndJobs(classes: ClassRecord[], clock: SeedClock, random:
   }
   // Two jobs in progress, and failures three hours and thirty hours ago (only one is recent).
   aiJobs.push(
-    { id: 'job-running', classId: 'cse-205-8', status: 'running', finishedAt: null },
-    { id: 'job-queued', classId: 'bus-207-8', status: 'queued', finishedAt: null },
+    {
+      id: 'job-running',
+      classId: 'cse-205-8',
+      status: 'running',
+      createdAt: clock.ago(20 * 60_000),
+      attempt: 1,
+      finishedAt: null,
+    },
+    {
+      id: 'job-queued',
+      classId: 'bus-207-8',
+      status: 'queued',
+      createdAt: clock.ago(5 * 60_000),
+      attempt: 1,
+      finishedAt: null,
+    },
     {
       id: 'job-failed-recent',
       classId: 'mth-202-7',
       status: 'failed',
+      createdAt: clock.ago(3 * HOUR + 10 * 60_000),
+      attempt: 2,
       finishedAt: clock.ago(3 * HOUR),
     },
     {
       id: 'job-failed-older',
       classId: 'phy-101-6',
       status: 'failed',
+      createdAt: clock.ago(30 * HOUR + 10 * 60_000),
+      attempt: 3,
       finishedAt: clock.ago(30 * HOUR),
     },
   )

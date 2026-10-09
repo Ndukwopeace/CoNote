@@ -7,7 +7,13 @@
 import { describe, expect, it } from 'vitest'
 
 // Record builders.
-import { courseRecord, emptyPlatformData, userRecord } from '../platformData'
+import {
+  aiJobRecord,
+  classRecord,
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+} from '../platformData'
 
 // The units under test.
 import { loadPlatform, PLATFORM_KEY, savePlatform } from './platformStore'
@@ -77,6 +83,44 @@ describe('platformStore', () => {
       JSON.stringify({ users: [], enrollments: [], auditLog: [] }),
     )
     expect(loadPlatform(window.localStorage, withCourse).courses).toHaveLength(1)
+  })
+
+  // Proves classes are saved with their summaries and AI jobs, so a restored class never
+  // disagrees with the records that describe its summary.
+  it('restores saved classes with their summaries and jobs', () => {
+    // Arrange: a new class and its records, saved.
+    const changed = emptyPlatformData({
+      classes: [classRecord({ id: 'k1', courseId: 'c1', title: 'Renamed' })],
+      summaries: [
+        {
+          id: 'sm1',
+          classId: 'k1',
+          status: 'in_review',
+          inReviewSince: '2026-09-10T12:00:00.000Z',
+          publishedAt: null,
+        },
+      ],
+      aiJobs: [aiJobRecord({ id: 'j1', classId: 'k1', attempt: 2 })],
+    })
+    savePlatform(window.localStorage, changed)
+    const seeded = emptyPlatformData({
+      classes: [classRecord({ id: 'k1', courseId: 'c1', title: 'Seed' })],
+    })
+
+    // Act.
+    const loaded = loadPlatform(window.localStorage, seeded)
+
+    // Assert.
+    expect(loaded.classes.map((item) => item.title)).toEqual(['Renamed'])
+    expect(loaded.summaries).toHaveLength(1)
+    expect(loaded.aiJobs[0]?.attempt).toBe(2)
+
+    // An older save has none of them: the seed's stay.
+    window.localStorage.setItem(
+      PLATFORM_KEY,
+      JSON.stringify({ users: [], enrollments: [], auditLog: [] }),
+    )
+    expect(loadPlatform(window.localStorage, seeded).classes).toHaveLength(1)
   })
 
   // Proves anything malformed is ignored, so a hand-edited store can't break the console.

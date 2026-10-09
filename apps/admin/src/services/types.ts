@@ -8,6 +8,14 @@ import type { AccountStatus } from '@conote/domain'
 
 // Session shapes.
 import type { PasswordResetRequest, Session, SignInInput } from '@/types/auth'
+// Class shapes.
+import type {
+  ClassDetails,
+  ClassFilter,
+  ClassFilterOptions,
+  ClassInput,
+  ClassPage,
+} from '@/types/classes'
 // Course shapes.
 import type {
   CourseDetails,
@@ -135,6 +143,25 @@ export interface CourseService {
   removeStudent(courseId: string, studentId: string): Promise<void>
 }
 
+/**
+ * The class sessions of every course (admin REQUIREMENTS section 13). Every change writes an
+ * audit entry. An archived class keeps its notes and summary but refuses changes.
+ */
+export interface ClassService {
+  /** One page of classes, searched, filtered and sorted. Archived ones only when asked for. */
+  listClasses(filter: ClassFilter): Promise<ClassPage>
+  /** The courses the filter and the form offer. */
+  listClassFilterOptions(): Promise<ClassFilterOptions>
+  /** One class's details; rejects with not_found for an unknown ID. */
+  getClass(classId: string): Promise<ClassDetails>
+  /** Adds a class to a course in use, numbering it after the course's last one. */
+  createClass(input: ClassInput): Promise<ClassDetails>
+  /** Changes a class's title, time or description. A class can't move to another course. */
+  updateClass(classId: string, input: ClassInput): Promise<ClassDetails>
+  /** Hides a class from students and teachers; its notes and summary are kept. */
+  archiveClass(classId: string): Promise<ClassDetails>
+}
+
 /** Every service the admin app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
@@ -143,4 +170,5 @@ export interface Services {
   health: HealthService
   users: UserService
   courses: CourseService
+  classes: ClassService
 }

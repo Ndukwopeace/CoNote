@@ -10,7 +10,14 @@ import { describe, expect, it } from 'vitest'
 import type { AccountStatus, Role } from '@conote/domain'
 
 // The data the services read, and an empty starting set.
-import { courseRecord, emptyPlatformData, userRecord, type PlatformData } from '../platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+  type PlatformData,
+  classRecord,
+  aiJobRecord,
+} from '../platformData'
 // The interface under test.
 import type { AnalyticsService } from '../types'
 
@@ -78,30 +85,36 @@ export function describeAnalyticsServiceContract(name: string, create: CreateAna
         ],
         classes: [
           // Inside the term, on its first and last days.
-          {
+          classRecord({
             id: 'k1',
             courseId: 'c1',
             title: '1',
             startsAt: new Date(2026, 8, 1, 9).toISOString(),
             archivedAt: null,
-          },
-          {
+          }),
+          classRecord({
             id: 'k2',
             courseId: 'c1',
             title: '2',
             startsAt: new Date(2026, 11, 18, 15).toISOString(),
             archivedAt: null,
-          },
+          }),
           // Before the term.
-          {
+          classRecord({
             id: 'k3',
             courseId: 'c1',
             title: '3',
             startsAt: new Date(2026, 7, 31, 9).toISOString(),
             archivedAt: null,
-          },
+          }),
           // Inside the term but archived.
-          { id: 'k4', courseId: 'c1', title: '4', startsAt: daysAgo(3), archivedAt: daysAgo(1) },
+          classRecord({
+            id: 'k4',
+            courseId: 'c1',
+            title: '4',
+            startsAt: daysAgo(3),
+            archivedAt: daysAgo(1),
+          }),
         ],
       })
 
@@ -133,10 +146,10 @@ export function describeAnalyticsServiceContract(name: string, create: CreateAna
           },
         ],
         aiJobs: [
-          { id: 'j1', classId: 'k1', status: 'queued', finishedAt: null },
-          { id: 'j2', classId: 'k2', status: 'running', finishedAt: null },
-          { id: 'j3', classId: 'k3', status: 'succeeded', finishedAt: daysAgo(1) },
-          { id: 'j4', classId: 'k4', status: 'failed', finishedAt: daysAgo(1) },
+          aiJobRecord({ id: 'j1', classId: 'k1', status: 'queued', finishedAt: null }),
+          aiJobRecord({ id: 'j2', classId: 'k2', status: 'running', finishedAt: null }),
+          aiJobRecord({ id: 'j3', classId: 'k3', status: 'succeeded', finishedAt: daysAgo(1) }),
+          aiJobRecord({ id: 'j4', classId: 'k4', status: 'failed', finishedAt: daysAgo(1) }),
         ],
       })
 
@@ -171,8 +184,8 @@ export function describeAnalyticsServiceContract(name: string, create: CreateAna
           { kind: 'sign_in', at: daysAgo(0) },
         ],
         aiJobs: [
-          { id: 'j1', classId: 'k1', status: 'succeeded', finishedAt: daysAgo(0) },
-          { id: 'j2', classId: 'k2', status: 'failed', finishedAt: daysAgo(0) },
+          aiJobRecord({ id: 'j1', classId: 'k1', status: 'succeeded', finishedAt: daysAgo(0) }),
+          aiJobRecord({ id: 'j2', classId: 'k2', status: 'failed', finishedAt: daysAgo(0) }),
         ],
         summaries: [
           {

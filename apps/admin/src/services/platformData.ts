@@ -91,8 +91,14 @@ export interface ResourceRecord {
 export interface ClassRecord {
   id: string
   courseId: string
+  // Assigned automatically within the course, from 1, and never reused.
+  number: number
   title: string
+  description: string
   startsAt: string
+  endsAt: string
+  // How many notes students have contributed. Only the count is known here, never the content.
+  noteCount: number
   archivedAt: string | null
 }
 
@@ -112,6 +118,10 @@ export interface AiJobRecord {
   id: string
   classId: string
   status: AiJobStatus
+  // When the job was queued.
+  createdAt: string
+  // Which try this is, from 1; a retry makes a new attempt.
+  attempt: number
   // Set once the job finishes, whether it succeeded or failed.
   finishedAt: string | null
 }
@@ -223,6 +233,35 @@ export function courseRecord(
     teacherId: null,
     createdAt: '2026-08-15T09:00:00.000Z',
     archivedAt: null,
+    ...overrides,
+  }
+}
+
+/** A class with sensible defaults, for tests to override only what they check. */
+export function classRecord(
+  overrides: Partial<ClassRecord> & Pick<ClassRecord, 'id' | 'courseId'>,
+): ClassRecord {
+  return {
+    number: 1,
+    title: overrides.id,
+    description: '',
+    startsAt: '2026-09-10T09:00:00.000Z',
+    endsAt: '2026-09-10T10:30:00.000Z',
+    noteCount: 0,
+    archivedAt: null,
+    ...overrides,
+  }
+}
+
+/** An AI job with sensible defaults, for tests to override only what they check. */
+export function aiJobRecord(
+  overrides: Partial<AiJobRecord> & Pick<AiJobRecord, 'id' | 'classId'>,
+): AiJobRecord {
+  return {
+    status: 'succeeded',
+    createdAt: '2026-09-10T12:00:00.000Z',
+    attempt: 1,
+    finishedAt: null,
     ...overrides,
   }
 }
