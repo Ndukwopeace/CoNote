@@ -58,6 +58,12 @@ Sent with every response (`"source": "/(.*)"`).
 
 ---
 
+## `apps/teacher/vercel.json`
+
+The teacher app's own Vercel project (Root Directory `apps/teacher`, D74) reads this file. It is `apps/admin/vercel.json` with one difference: `"buildCommand": "cd ../.. && npm run build -w @conote/teacher"` builds the teacher app. Everything else, including the `installCommand`, `outputDirectory`, the CSP and the other security headers, and `X-Robots-Tag: noindex, nofollow`, is explained in the admin section below and applies for the same reasons. `npm run preview` in `apps/teacher` serves the headers, so the teacher browser tests run under the production policy.
+
+---
+
 ## `apps/admin/vercel.json`
 
 The admin app's own Vercel project (Root Directory `apps/admin`, D66) reads this file. It matches the root `vercel.json` with these differences:
@@ -93,6 +99,7 @@ The repository is one npm workspace: a root `package.json`, one per app under `a
 |---|---|---|
 | `dev`, `preview` | `npm run <script> -w @conote/student` | Runs that script in the student app |
 | `dev:admin` | `npm run dev -w @conote/admin` | The admin console's dev server (port 5174) |
+| `dev:teacher` | `npm run dev -w @conote/teacher` | The teacher portal's dev server (port 5175) |
 | `build`, `size`, `e2e` | `npm run <script> --workspaces --if-present` | Runs the script in every workspace that has it: both apps today. CI calls these, so every app is built, size-checked and browser-tested (D66). |
 | `lint` | `eslint . --max-warnings=0` | Lint every app and package with the root `eslint.config.js`; any warning fails |
 | `format` | `prettier --write .` | Reformat every file |
@@ -134,6 +141,10 @@ Its `dependencies` are the browser libraries listed below, plus `@conote/ui`, `@
 ### `apps/admin/package.json`
 
 The same fields and scripts as the student app, minus `icons`: `@conote/admin`, version, `dev` (port 5174, set in `vite.config.ts`), `build`, `preview`, `size`, `e2e` (port 4174, so it can run next to the student's 4173). Its dependencies are the subset the console uses: React, React Router, TanStack Query, react-hook-form with `@hookform/resolvers`, zod, lucide-react, the font, and the four workspace packages. No PWA or editor libraries.
+
+### `apps/teacher/package.json`
+
+The same as the admin app's, with the name `@conote/teacher`, `dev` on port 5175 and `e2e` on port 4175, so all three apps can run side by side. The same dependencies, because the teacher portal uses the same libraries (no new dependency, D74).
 
 ### `packages/*/package.json` (`ui`, `domain`, `core`, `testing`)
 
@@ -189,7 +200,7 @@ Listed in `apps/student/package.json`, except the last four rows, which `package
 
 ---
 
-## `apps/student/.size-limit.json` and `apps/admin/.size-limit.json`
+## `apps/student/.size-limit.json`, `apps/admin/.size-limit.json` and `apps/teacher/.size-limit.json`
 
 | Field | Value | Why |
 |---|---|---|

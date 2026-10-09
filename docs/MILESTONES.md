@@ -298,7 +298,7 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 
 **Covers:** the missing teacher requirements, and `apps/teacher`.
 
-- Write `docs/teacher/REQUIREMENTS.md`, one page, in the same shape as the admin spec:
+- Write [`docs/teacher/REQUIREMENTS.md`](./teacher/REQUIREMENTS.md), in the same shape as the admin spec:
   - routes and screens: My courses, Course, Review queue, Review summary
   - rules: a teacher sees only the courses they teach; what the teacher sees of the students' notes while reviewing (the draft only, or the contributing notes) is decided here and recorded as a decision
   - states and messages
@@ -307,7 +307,7 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 - Demo sign-in as `teacher@conote.example`.
 - Own Vercel project with Root Directory `apps/teacher` and its own `vercel.json`; `build`, `size` and `e2e` already run in every app, so CI covers it.
 
-**Done when:** a teacher signs in and sees My courses (their courses from the shared demo platform), other roles are turned away, signed-out visitors go to sign-in, and the full gate passes.
+**Done when:** a teacher signs in and sees My courses (their courses from the teacher demo's own seed, whose MTH 202 matches the admin demo's, D74), other roles are turned away, signed-out visitors go to sign-in, and the full gate passes.
 
 ### T2 — Teacher review flow on demo data
 
