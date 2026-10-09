@@ -70,6 +70,42 @@ export interface Course {
   scheduleText?: string
 }
 
+/** Where a student stands with a course they could join (FR-ENR-3). */
+export type JoinMembership = 'none' | 'pending' | 'enrolled' | 'declined'
+
+/** A course in use, as the "Join your courses" dialog lists it (FR-ENR-1). */
+export interface JoinableCourse {
+  // Course ID.
+  id: string
+  // Short code, e.g. "MTH 202".
+  code: string
+  // Full title.
+  title: string
+  // Who teaches it.
+  teacherName: string
+  // Term status; only ongoing and upcoming courses are listed.
+  status: CourseStatus
+  // The student's standing with it: nothing yet, asked and waiting, already in, or declined.
+  membership: JoinMembership
+  // The pending request's ID, for cancelling it; null unless `membership` is "pending".
+  requestId: string | null
+}
+
+/** A request to join a course that is still open to the student's attention (FR-ENR-4). */
+export interface JoinRequest {
+  // Request ID.
+  id: string
+  // The course asked for.
+  courseId: string
+  // Its code and title, so the list needs no second read.
+  courseCode: string
+  courseTitle: string
+  // Waiting for an admin, or declined by one. Approved and cancelled requests are not shown.
+  status: 'pending' | 'declined'
+  // ISO 8601 time it was sent.
+  createdAt: string
+}
+
 /** One dated lesson inside a course. */
 export interface ClassSession {
   // Class ID.

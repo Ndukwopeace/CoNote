@@ -10,6 +10,8 @@ import { runAuthServiceContract } from '../contracts/authService.contract'
 
 // The implementation under test.
 import { createMockAuthService } from './mockAuthService'
+// The demo's enrolment state, which sign-up resets.
+import { MOCK_ENROLMENT_KEY } from './mockEnrolment'
 
 /** The code inside a demo reset link. */
 function codeFrom({ demoResetPath }: { demoResetPath?: string }) {
@@ -216,6 +218,20 @@ describe('mock AuthService', () => {
   it.each([['abcdefgh'], ['12345678']])('rejects the weak new password %j', async (password) => {
     await expect(createService().updatePassword('current1', password)).rejects.toMatchObject({
       kind: 'validation',
+    })
+  })
+
+  // Proves signing up starts a new student in no courses (D76), while signing in leaves the
+  // demo student's courses alone.
+  it('starts a new student in no courses at sign-up only', async () => {
+    await createService().signIn({ email: 'v@example.com', password: 'x', remember: false })
+    expect(window.localStorage.getItem(MOCK_ENROLMENT_KEY)).toBeNull()
+
+    await createService().signUp({ fullName: 'Ada Obi', email: 'a@b.co', password: 'password1' })
+
+    expect(JSON.parse(window.localStorage.getItem(MOCK_ENROLMENT_KEY) ?? 'null')).toEqual({
+      enrolledCourseIds: [],
+      requests: [],
     })
   })
 

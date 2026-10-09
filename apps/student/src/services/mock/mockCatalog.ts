@@ -37,6 +37,10 @@ interface MockCatalogOptions {
   // Where demo changes (notes, viewed summaries, read notifications) are kept between reloads;
   // tests usually leave it out.
   store?: Storage
+  // The IDs of the courses the student is in right now. Everything the services return is
+  // narrowed to them (D76). Read on every call, because a request can be approved or a new
+  // student can sign up meanwhile. Absent: every course in the seed.
+  enrolledCourseIds?: () => ReadonlySet<string>
 }
 
 /** The read-only services built over one seed. */
@@ -60,7 +64,30 @@ function newestFirst<T>(items: readonly T[], time: (item: T) => string): T[] {
 }
 
 /** Builds the demo catalog services over `seed`. */
-export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions): MockCatalog {
+export function createMockCatalog({
+  seed,
+  latencyMs,
+  store,
+  enrolledCourseIds = () => new Set(seed.courses.map((course) => course.id)),
+}: MockCatalogOptions): MockCatalog {
+  /**
+   * The seed narrowed to the courses the student is in.
+   * SECURITY: a course the student hasn't joined contributes nothing, so a request that is still
+   * pending (or declined) shows no classes, notes or summaries of that course.
+   */
+  function view(): Seed {
+    const enrolled = enrolledCourseIds()
+    return {
+      courses: seed.courses.filter((course) => enrolled.has(course.id)),
+      classes: seed.classes.filter((cls) => enrolled.has(cls.courseId)),
+      notes: seed.notes.filter((note) => enrolled.has(note.courseId)),
+      summaries: seed.summaries.filter((summary) => enrolled.has(summary.courseId)),
+      // The demo's notifications are about its enrolled courses; a student in none has none.
+      notifications: enrolled.size > 0 ? seed.notifications : [],
+      catalog: seed.catalog,
+    }
+  }
+
   /**
    * Waits the demo delay, then returns a deep copy of `value`.
    * Copies stop a page that edits a returned object from changing the demo data for everyone.
@@ -75,7 +102,7 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
   /** The course with this ID, or a not_found error. */
   function findCourse(courseId: string) {
     // Look it up among the enrolled courses.
-    const course = seed.courses.find((c) => c.id === courseId)
+    const course = view().courses.find((c) => c.id === courseId)
     // Missing: the page shows its "not found" panel.
     if (!course) throw new AppError('not_found', 'Course not found')
     // Found.
@@ -100,23 +127,60 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
    * summaries, so an edit to the seed can never leak a draft to students (section 4).
    */
   function publishedSummaries() {
+    const current = view()
     const published = new Set(
-      seed.classes.filter((c) => c.summaryStatus === 'published').map((c) => c.id),
+      current.classes.filter((c) => c.summaryStatus === 'published').map((c) => c.id),
     )
-    return seed.summaries
+    return current.summaries
       .filter((s) => published.has(s.classId))
       .map((s) => ({ ...s, viewedByMe: viewed.has(s.id) }))
   }
 
   /** The notifications with the read flag applied. */
   function notificationsNow() {
-    return seed.notifications.map((n) => ({ ...n, read: read.has(n.id) }))
+    return view().notifications.map((n) => ({ ...n, read: read.has(n.id) }))
+  }
+
+  // The notes service over every seeded note, before it is narrowed to the enrolled courses.
+  const allNotes = createMockNoteService({
+    seedNotes: seed.notes,
+    classes: seed.classes,
+    studentId: DEMO_STUDENT_ID,
+    latencyMs,
+    ...(store ? { store: store } : {}),
+  })
+
+  /**
+   * The notes service narrowed to the courses the student is in.
+   * SECURITY: a note of a course the student isn't in is neither listed nor readable, and a new
+   * note can't be added to such a course's class, whatever the address or request says.
+   */
+  const scopedNotes: NoteService = {
+    ...allNotes,
+    listMyNotes: async (filter) => {
+      const enrolled = enrolledCourseIds()
+      return (await allNotes.listMyNotes(filter)).filter((note) => enrolled.has(note.courseId))
+    },
+    getNote: async (noteId) => {
+      const note = await allNotes.getNote(noteId)
+      if (!enrolledCourseIds().has(note.courseId)) throw new AppError('not_found', 'Note not found')
+      return note
+    },
+    createNote: async (input) => {
+      // A class the student isn't in is not found. An unknown class is left to the notes service,
+      // which rejects it with its own validation message.
+      const session = seed.classes.find((cls) => cls.id === input.classId)
+      if (session && !enrolledCourseIds().has(session.courseId)) {
+        throw new AppError('not_found', 'Class not found')
+      }
+      return allNotes.createNote(input)
+    },
   }
 
   return {
     courses: {
       // Seed order is the display order.
-      listMyCourses: () => respond(seed.courses),
+      listMyCourses: () => respond(view().courses),
       // One course; the lookup runs after the delay so errors arrive like a server's would.
       getCourse: async (courseId) => {
         // Behave like a network call.
@@ -133,35 +197,32 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
         // An unknown course is not_found rather than an empty list, so bad links are obvious.
         findCourse(courseId)
         // That course's classes, in number order.
-        const sessions = seed.classes
-          .filter((c) => c.courseId === courseId)
+        const sessions = view()
+          .classes.filter((c) => c.courseId === courseId)
           .sort((a, b) => a.number - b.number)
         // Copies.
         return structuredClone(sessions)
       },
       // Every class of every enrolled course, soonest first.
       listMyClasses: () =>
-        respond([...seed.classes].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))),
+        respond(
+          [...view().classes].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
+        ),
       // One class.
       getClass: async (classId) => {
         // Behave like a network call.
         await simulateLatency(latencyMs)
         // Look it up.
-        const session = seed.classes.find((c) => c.id === classId)
+        const session = view().classes.find((c) => c.id === classId)
         // Missing: not_found.
         if (!session) throw new AppError('not_found', 'Class not found')
         // Copy.
         return structuredClone(session)
       },
     },
-    // The demo student's notes, kept between reloads when a store is given.
-    notes: createMockNoteService({
-      seedNotes: seed.notes,
-      classes: seed.classes,
-      studentId: DEMO_STUDENT_ID,
-      latencyMs,
-      ...(store ? { store: store } : {}),
-    }),
+    // The demo student's notes, kept between reloads when a store is given, and narrowed to the
+    // courses the student is in.
+    notes: scopedNotes,
     summaries: {
       // Published summaries, narrowed to one course when asked, newest first.
       listPublished: (filter = {}) =>
@@ -204,7 +265,7 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
         // Behave like a network call.
         await simulateLatency(latencyMs)
         // Unknown: not_found.
-        if (!seed.notifications.some((n) => n.id === notificationId)) {
+        if (!view().notifications.some((n) => n.id === notificationId)) {
           throw new AppError('not_found', 'Notification not found')
         }
         read.add(notificationId)
@@ -213,7 +274,7 @@ export function createMockCatalog({ seed, latencyMs, store }: MockCatalogOptions
       markAllRead: async () => {
         // Behave like a network call.
         await simulateLatency(latencyMs)
-        read.add(...seed.notifications.map((n) => n.id))
+        read.add(...view().notifications.map((n) => n.id))
       },
     },
   }

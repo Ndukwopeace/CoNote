@@ -39,8 +39,13 @@ test('a new visitor signs up from the landing page and reaches the dashboard', a
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Sign up' }).click()
 
-  // Arrives on the dashboard, greeted by the new name.
+  // Arrives on the dashboard. A new student is in no courses, so the join dialog opens first
+  // (D76); skipping it leaves the dashboard, greeted by the new name.
   await expect(page).toHaveURL(/\/dashboard$/)
+  await page
+    .getByRole('dialog', { name: 'Join your courses' })
+    .getByRole('button', { name: 'Not now' })
+    .click()
   await expect(
     page.getByRole('heading', { level: 1, name: /Good (morning|afternoon|evening), Ada/ }),
   ).toBeVisible()

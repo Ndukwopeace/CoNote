@@ -19,6 +19,12 @@ import { Link } from 'react-router'
 import { ClassListItem } from '@/components/common/ClassListItem'
 // Enrolment empty state.
 import { EmptyState } from '@conote/ui/common/EmptyState'
+// Asking to join courses (FR-ENR).
+import { JoinCoursesDialog } from '@/features/enrolment/JoinCoursesDialog'
+import { useJoinPrompt } from '@/features/enrolment/useJoinPrompt'
+import { useMyJoinRequests } from '@/hooks/useEnrolment'
+// Standard button.
+import { Button } from '@conote/ui/button'
 // Failed-load panel.
 import { LoadError } from '@/components/common/LoadError'
 // The notification type icon.
@@ -121,13 +127,7 @@ function DashboardContent({ now }: Readonly<{ now: Date }>) {
   }
 
   // Not enrolled in anything: nothing else on this page would make sense (FR-DSH-6).
-  if (courses.data.length === 0) {
-    return (
-      <EmptyState icon={GraduationCap} title="No courses yet">
-        You&apos;re not enrolled in any courses yet. Your teacher or administrator will add you.
-      </EmptyState>
-    )
-  }
+  if (courses.data.length === 0) return <NoCourses />
 
   // Course code and title by ID, for the class rows.
   const courseById = new Map(courses.data.map((course) => [course.id, course]))
@@ -282,5 +282,49 @@ function ActivityItem({ item, now }: Readonly<{ item: AppNotification; now: Date
         <div className="flex items-center gap-3 p-2">{content}</div>
       )}
     </li>
+  )
+}
+
+/**
+ * Home for a student who is in no courses (FR-DSH-6, FR-ENR-1, FR-ENR-2): the empty state with a
+ * way to find courses, and the "Join your courses" dialog, which opens by itself once when the
+ * student has no requests either.
+ */
+function NoCourses() {
+  // The requests already made.
+  const requests = useMyJoinRequests()
+  // The dialog opens by itself once the page knows there are no requests.
+  const prompt = useJoinPrompt(requests.data?.length === 0)
+  // How many requests are waiting, for the line under the message.
+  const waiting = requests.data?.filter((request) => request.status === 'pending').length ?? 0
+
+  return (
+    <>
+      <EmptyState
+        icon={GraduationCap}
+        title="No courses yet"
+        action={
+          <Button type="button" onClick={prompt.open}>
+            Find courses
+          </Button>
+        }
+      >
+        You&apos;re not enrolled in any courses yet. Find a course to request to join, or wait for
+        your teacher or administrator to add you.
+        {/* Requests already made, with the way to see them. */}
+        {waiting > 0 && (
+          <>
+            {' '}
+            {waiting === 1 ? '1 request is' : `${String(waiting)} requests are`} waiting for
+            approval; see {waiting === 1 ? 'it' : 'them'} in{' '}
+            <Link to={ROUTES.courses} className="font-medium text-primary hover:underline">
+              My Courses
+            </Link>
+            .
+          </>
+        )}
+      </EmptyState>
+      <JoinCoursesDialog open={prompt.isOpen} onOpenChange={prompt.onOpenChange} />
+    </>
   )
 }

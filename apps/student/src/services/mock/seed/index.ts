@@ -8,6 +8,8 @@ import type { AppNotification, ClassSession, Course, Note, Summary, Teacher } fr
 
 // The demo student every note belongs to (the same ID the demo sign-in uses).
 import { DEMO_STUDENT_ID } from './constants'
+// The shape of a course on the platform.
+import type { CatalogCourse } from '../mockEnrolment'
 
 /** The four preset note tags (FR-NTE-3), re-exported for the seed tests. */
 export { PRESET_TAGS } from '@/lib/notes'
@@ -24,6 +26,9 @@ export interface Seed {
   summaries: Summary[]
   // The demo student's notifications.
   notifications: AppNotification[]
+  // Every course on the platform, which the join dialog lists (FR-ENR, D76): the enrolled ones
+  // and others, including one completed and one archived that are never open for requests.
+  catalog: CatalogCourse[]
 }
 
 /** Milliseconds in a minute and a day. */
@@ -586,16 +591,79 @@ function buildNotifications(now: Date): AppNotification[] {
   ]
 }
 
+/** Courses on the platform the demo student isn't in; MTH 202 and PHY 101 match the admin demo's. */
+const OTHER_COURSES: readonly CatalogCourse[] = [
+  {
+    id: 'mth-202',
+    code: 'MTH 202',
+    title: 'Linear Algebra',
+    teacherName: 'Sarah Mbarga',
+    status: 'ongoing',
+    archived: false,
+  },
+  {
+    id: 'phy-101',
+    code: 'PHY 101',
+    title: 'General Physics',
+    teacherName: 'Dr. Okeke',
+    status: 'ongoing',
+    archived: false,
+  },
+  {
+    id: 'csc-301',
+    code: 'CSC 301',
+    title: 'Operating Systems',
+    teacherName: 'Dr. Nnamdi',
+    status: 'upcoming',
+    archived: false,
+  },
+  // Finished: students can no longer join it.
+  {
+    id: 'mth-101',
+    code: 'MTH 101',
+    title: 'Calculus I',
+    teacherName: 'Sarah Mbarga',
+    status: 'completed',
+    archived: false,
+  },
+  // Last term's course, taken out of use.
+  {
+    id: 'gst-111',
+    code: 'GST 111',
+    title: 'Communication in English',
+    teacherName: 'Mrs. Adeyemi',
+    status: 'ongoing',
+    archived: true,
+  },
+]
+
+/** Every course on the platform: the demo student's four, then the others. */
+function buildCatalog(enrolled: readonly Course[]): CatalogCourse[] {
+  return [
+    ...enrolled.map((course): CatalogCourse => ({
+      id: course.id,
+      code: course.code,
+      title: course.title,
+      teacherName: course.teacher.fullName,
+      status: course.status,
+      archived: false,
+    })),
+    ...OTHER_COURSES,
+  ]
+}
+
 /** The whole demo data set, relative to `now`. */
 export function createSeed(now: Date): Seed {
   // Classes first, because the courses count them.
   const plans = buildClasses(now)
+  const courses = buildCourses(plans)
   return {
-    courses: buildCourses(plans),
+    courses,
     classes: plans,
     notes: buildNotes(now),
     summaries: buildSummaries(now),
     notifications: buildNotifications(now),
+    catalog: buildCatalog(courses),
   }
 }
 

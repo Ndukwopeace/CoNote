@@ -23,6 +23,10 @@ import { Button } from '@conote/ui/button'
 import { Input } from '@conote/ui/input'
 // Enrolled courses.
 import { useMyCourses } from '@/hooks/useCourses'
+// Asking to join more courses (FR-ENR).
+import { JoinCoursesDialog } from '@/features/enrolment/JoinCoursesDialog'
+import { RequestedCourses } from '@/features/enrolment/RequestedCourses'
+import { useJoinPrompt } from '@/features/enrolment/useJoinPrompt'
 // Filter rules.
 import {
   COURSE_STATUS_FILTERS,
@@ -47,6 +51,8 @@ const FILTER_LABELS: Record<CourseStatusFilter, string> = {
 export function CoursesPage() {
   // The enrolled courses.
   const courses = useMyCourses()
+  // The "Find courses" dialog; it opens only on request here (the dashboard offers it by itself).
+  const join = useJoinPrompt(false)
   // The address's query string.
   const [params, setParams] = useSearchParams()
   // Search text; shown back in the box, so it is only ever text in an input, never markup.
@@ -73,8 +79,13 @@ export function CoursesPage() {
     <div className="w-full max-w-5xl space-y-6">
       {/* Tab title. */}
       <PageTitle title="My Courses" />
-      {/* Page heading. */}
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">My Courses</h1>
+      {/* Page heading, with the way to ask to join more courses (FR-ENR-2). */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">My Courses</h1>
+        <Button type="button" variant="outline" onClick={join.open}>
+          Find courses
+        </Button>
+      </div>
 
       {/* Search and filter; stacked on phones, one row from tablets up. */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
@@ -127,6 +138,11 @@ export function CoursesPage() {
           setParams({}, { replace: true })
         }}
       />
+
+      {/* Requests waiting for approval, and declined ones (FR-ENR-4). */}
+      <RequestedCourses />
+      {/* The join dialog. */}
+      <JoinCoursesDialog open={join.isOpen} onOpenChange={join.onOpenChange} />
     </div>
   )
 }
@@ -152,7 +168,8 @@ function CourseList({
   if (courses.data.length === 0) {
     return (
       <EmptyState icon={GraduationCap} title="No courses yet">
-        You&apos;re not enrolled in any courses yet. Your teacher or administrator will add you.
+        You&apos;re not enrolled in any courses yet. Find a course to request to join, or wait for
+        your teacher or administrator to add you.
       </EmptyState>
     )
   }
