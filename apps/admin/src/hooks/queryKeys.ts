@@ -4,6 +4,7 @@
  */
 
 // Types used in keys.
+import type { ClassFilter } from '@/types/classes'
 import type { CourseFilter } from '@/types/courses'
 import type { ActivityRange, ActivitySeriesKey } from '@/types/dashboard'
 import type { UserFilter } from '@/types/users'
@@ -22,6 +23,16 @@ export const queryKeys = {
     alerts: () => [...queryKeys.dashboard.all, 'alerts'] as const,
     // The health report.
     health: () => [...queryKeys.dashboard.all, 'health'] as const,
+  },
+  classes: {
+    // Every class query; cleared after any change to a class.
+    all: ['classes'] as const,
+    // One filtered page; the filter object is part of the key, so each view caches apart.
+    list: (filter: ClassFilter) => [...queryKeys.classes.all, 'list', filter] as const,
+    // One class.
+    detail: (classId: string) => [...queryKeys.classes.all, 'detail', classId] as const,
+    // The filter and form choices.
+    filterOptions: () => [...queryKeys.classes.all, 'filter-options'] as const,
   },
   courses: {
     // Every course query; cleared after any change to a course or its students.

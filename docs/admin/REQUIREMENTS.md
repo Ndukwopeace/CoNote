@@ -454,6 +454,15 @@ The class number is assigned automatically within the course. The end time must 
 - the AI job history
 - the summary status timeline
 
+**As built (A6, D72):**
+- **List:** course, number, title, date and time, teacher, summary status and notes, 20 to a page, newest first (ties by course code, then number). Search matches title and course code. Filters: course (archived courses included, so their classes can be found), summary status (a stage, or "No summary yet"), and a date range (both days included). The "Show archived classes" toggle, filters, sort and page live in the address. Archived classes are listed only when the toggle is on, and offer View only.
+- **Create / edit:** the form's date and times are the administrator's local time, stored as instants. The end must be after the start, on the same day. New classes go to courses in use only. A class is numbered after the course's highest number, archived classes included, so a number is never reused.
+- **Edit:** title, date, times and description. A class cannot move to another course: its number belongs to the course.
+- **Archive:** asks first, hides the class from students and teachers, keeps its notes and summary. There is no restore (not in the spec); an archived class refuses changes with "This class is archived. It can’t be changed."
+- **Details:** course (a link), class number, teacher, date and time, enrolled students (the course's enrolments), notes contributed (a count), the AI job history (every attempt, oldest first) and the summary timeline (collecting, processing, in review, published, each with its time where one is recorded, or "Not reached yet"). A class with no summary has reached no stage.
+- **Audit:** `class.created`, `class.updated` and `class.archived`, with the class as the entity.
+- **Demo persistence:** classes are saved together with their summaries and AI jobs (the three describe one another), under `conote-admin-demo:platform`.
+
 ---
 
 ## 14. Resources
@@ -638,7 +647,7 @@ Same pattern as the student portal:
 | `AuthService` | `signIn`, `signOut`, `requestPasswordReset`, `checkResetLink`, `resetPassword`, `getSession`, `onAuthChange` |
 | `UserService` | `listUsers(filter)`, `listFilterOptions` (A4), `getUser`, `inviteUser`, `updateUser`, `setUserStatus`, `sendPasswordReset` |
 | `CourseService` | `listCourses(filter)`, `listCourseFilterOptions` (A5), `getCourse`, `createCourse`, `updateCourse`, `archiveCourse`, `restoreCourse`, `assignTeacher`, `removeTeacher`, `listEnrollments(courseId, q?)`, `matchStudents` (A5), `enrollStudents`, `removeStudent` |
-| `ClassService` | `listClasses(filter)`, `getClass`, `createClass`, `updateClass`, `archiveClass` |
+| `ClassService` | `listClasses(filter)`, `listClassFilterOptions` (A6), `getClass`, `createClass`, `updateClass`, `archiveClass` |
 | `ResourceService` | `listResources(filter)`, `getResource`, `createResource`, `uploadFile`, `updateResource`, `setResourceStatus`, `deleteResource` |
 | `SummaryMonitorService` | `listSummaries(filter)`, `getSummaryPipeline`, `getSummaryCounts` |
 | `AiJobService` | `listJobs(filter)`, `retryJob` |

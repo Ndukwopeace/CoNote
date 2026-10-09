@@ -21,6 +21,7 @@ import {
   emptyPlatformData,
   userRecord,
   type PlatformData,
+  classRecord,
 } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
@@ -81,13 +82,13 @@ function platform(extraCourses = 0): PlatformData {
       { courseId: 'c1', studentId: 's2' },
     ],
     classes: [
-      {
+      classRecord({
         id: 'cl1',
         courseId: 'c1',
         title: 'Intro',
         startsAt: '2026-09-10T09:00:00.000Z',
         archivedAt: null,
-      },
+      }),
     ],
   })
 }

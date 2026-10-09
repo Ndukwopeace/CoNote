@@ -19,6 +19,7 @@ import {
   emptyPlatformData,
   userRecord,
   type PlatformData,
+  classRecord,
 } from '@/services/platformData'
 // Session builder.
 import { makeSession } from '@/test/factories'
@@ -75,20 +76,20 @@ function platform(): PlatformData {
       { courseId: 'c3', studentId: 's1' },
     ],
     classes: [
-      {
+      classRecord({
         id: 'cl1',
         courseId: 'c1',
         title: 'Variables',
         startsAt: '2026-09-10T09:00:00.000Z',
         archivedAt: null,
-      },
-      {
+      }),
+      classRecord({
         id: 'cl2',
         courseId: 'c1',
         title: 'Loops',
         startsAt: '2026-09-17T09:00:00.000Z',
         archivedAt: null,
-      },
+      }),
     ],
     summaries: [
       {

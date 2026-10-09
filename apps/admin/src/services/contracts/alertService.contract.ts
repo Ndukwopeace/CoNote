@@ -7,7 +7,13 @@
 import { describe, expect, it } from 'vitest'
 
 // The data the services read, and an empty starting set.
-import { courseRecord, emptyPlatformData, type PlatformData } from '../platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  type PlatformData,
+  classRecord,
+  aiJobRecord,
+} from '../platformData'
 // The interface under test.
 import type { AlertService } from '../types'
 
@@ -40,9 +46,9 @@ export function describeAlertServiceContract(name: string, create: CreateAlertSe
       // Arrange: for each log, one entry 23 hours ago and one 25 hours ago.
       const data = emptyPlatformData({
         aiJobs: [
-          { id: 'j1', classId: 'k1', status: 'failed', finishedAt: hoursAgo(23) },
-          { id: 'j2', classId: 'k2', status: 'failed', finishedAt: hoursAgo(25) },
-          { id: 'j3', classId: 'k3', status: 'succeeded', finishedAt: hoursAgo(1) },
+          aiJobRecord({ id: 'j1', classId: 'k1', status: 'failed', finishedAt: hoursAgo(23) }),
+          aiJobRecord({ id: 'j2', classId: 'k2', status: 'failed', finishedAt: hoursAgo(25) }),
+          aiJobRecord({ id: 'j3', classId: 'k3', status: 'succeeded', finishedAt: hoursAgo(1) }),
         ],
         deliveryFailures: [
           { id: 'd1', at: hoursAgo(23) },
@@ -89,9 +95,27 @@ export function describeAlertServiceContract(name: string, create: CreateAlertSe
       const data = emptyPlatformData({
         courses: [course('c1', 't1'), course('c2', 't1', hoursAgo(48))],
         classes: [
-          { id: 'k1', courseId: 'c1', title: '1', startsAt: hoursAgo(5), archivedAt: null },
-          { id: 'k2', courseId: 'c2', title: '2', startsAt: hoursAgo(5), archivedAt: null },
-          { id: 'k3', courseId: 'c2', title: '3', startsAt: hoursAgo(5), archivedAt: hoursAgo(1) },
+          classRecord({
+            id: 'k1',
+            courseId: 'c1',
+            title: '1',
+            startsAt: hoursAgo(5),
+            archivedAt: null,
+          }),
+          classRecord({
+            id: 'k2',
+            courseId: 'c2',
+            title: '2',
+            startsAt: hoursAgo(5),
+            archivedAt: null,
+          }),
+          classRecord({
+            id: 'k3',
+            courseId: 'c2',
+            title: '3',
+            startsAt: hoursAgo(5),
+            archivedAt: hoursAgo(1),
+          }),
         ],
       })
 

@@ -24,6 +24,7 @@ import {
   readStoredSession,
   SESSION_KEY,
 } from '@/services/mock/mockAuthService'
+import { createMockClassService } from '@/services/mock/mockClassService'
 import { createMockCourseService } from '@/services/mock/mockCourseService'
 import { createMockHealthService } from '@/services/mock/mockHealthService'
 import { createMockUserService } from '@/services/mock/mockUserService'
@@ -60,6 +61,12 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
     analytics: createMockAnalyticsService({ data: platform, now, latencyMs: 0 }),
     alerts: createMockAlertService({ data: platform, now, latencyMs: 0 }),
     health: createMockHealthService({ demoStore: window.localStorage, now, latencyMs: 0 }),
+    classes: createMockClassService({
+      data: platform,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: 0,
+    }),
     courses: createMockCourseService({
       data: platform,
       now,
