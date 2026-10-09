@@ -1,5 +1,5 @@
 /**
- * Saves the demo platform's changeable records (users, enrolments, audit log) in local storage,
+ * Saves the demo platform's changeable records (users, courses, resources, enrolments, audit log) in local storage,
  * so changes survive a reload as server data would. Sign-out leaves them, like a real server.
  */
 
@@ -31,8 +31,35 @@ const userSchema = z.object({
   lastActiveAt: z.string().nullable(),
 })
 
-/** What the saved records must look like. */
+/** What a saved course must look like. */
+const courseSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  title: z.string(),
+  description: z.string(),
+  department: z.string().nullable(),
+  status: z.enum(['upcoming', 'ongoing', 'completed']),
+  teacherId: z.string().nullable(),
+  createdAt: z.string(),
+  archivedAt: z.string().nullable(),
+})
+
+/** What a saved resource must look like. */
+const resourceSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: z.enum(['pdf', 'document', 'slides', 'video', 'link']),
+  courseId: z.string(),
+  classId: z.string().nullable(),
+  status: z.enum(['draft', 'published', 'archived']),
+  createdAt: z.string(),
+})
+
+/** What the saved records must look like. Courses and resources are optional so that records
+ *  saved before the Courses milestone still load. */
 const storedSchema = z.object({
+  courses: z.array(courseSchema).optional(),
+  resources: z.array(resourceSchema).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -48,7 +75,7 @@ const storedSchema = z.object({
   ),
 })
 
-/** `seed`, with any saved users, enrolments and audit log in place of its own. */
+/** `seed`, with any saved users, courses, resources, enrolments and audit log in place of its own. */
 export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
   // Nothing saved: the seed as it is.
   const raw = store.getItem(PLATFORM_KEY)
@@ -56,16 +83,24 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
   // SECURITY: storage can be edited by hand, so its contents are checked before use.
   try {
     const parsed = storedSchema.safeParse(JSON.parse(raw))
-    return parsed.success ? { ...seed, ...parsed.data } : seed
+    if (!parsed.success) return seed
+    // Courses and resources saved by an older version are absent: keep the seed's.
+    const { courses, resources, ...saved } = parsed.data
+    return {
+      ...seed,
+      ...saved,
+      courses: courses ?? seed.courses,
+      resources: resources ?? seed.resources,
+    }
   } catch {
     // Not JSON.
     return seed
   }
 }
 
-/** Saves `data`'s users, enrolments and audit log. */
+/** Saves `data`'s users, courses, resources, enrolments and audit log. */
 export function savePlatform(store: Storage, data: PlatformData) {
   // Only the records that change; everything else comes from the seed each time.
-  const { users, enrollments, auditLog } = data
-  store.setItem(PLATFORM_KEY, JSON.stringify({ users, enrollments, auditLog }))
+  const { users, courses, resources, enrollments, auditLog } = data
+  store.setItem(PLATFORM_KEY, JSON.stringify({ users, courses, resources, enrollments, auditLog }))
 }

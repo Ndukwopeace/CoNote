@@ -5,7 +5,7 @@
  */
 
 // The shared vocabulary.
-import type { AccountStatus, AiJobStatus, Role, SummaryStatus } from '@conote/domain'
+import type { AccountStatus, AiJobStatus, CourseStatus, Role, SummaryStatus } from '@conote/domain'
 
 /** An account (`profiles`). */
 export interface UserRecord {
@@ -55,12 +55,36 @@ export interface AuditEntry {
 /** A course (`courses`). */
 export interface CourseRecord {
   id: string
+  // Unique, e.g. "SWE 311": letters, a space, three digits.
   code: string
   title: string
+  description: string
+  department: string | null
+  // Where it is in its term.
+  status: CourseStatus
   // The one teacher, or null while none is assigned.
   teacherId: string | null
+  createdAt: string
   // When it was archived, or null while it is in use.
   archivedAt: string | null
+}
+
+/** The kinds of resource (`resources.type`). */
+export type ResourceType = 'pdf' | 'document' | 'slides' | 'video' | 'link'
+
+/** Where a resource is (`resources.status`). */
+export type ResourceStatus = 'draft' | 'published' | 'archived'
+
+/** A file or link attached to a course or class (`resources`, admin REQUIREMENTS section 6.2). */
+export interface ResourceRecord {
+  id: string
+  title: string
+  type: ResourceType
+  courseId: string
+  // The class it belongs to, or null for the whole course.
+  classId: string | null
+  status: ResourceStatus
+  createdAt: string
 }
 
 /** A class (`class_sessions`). */
@@ -136,6 +160,7 @@ export interface PlatformData {
   enrollments: EnrollmentRecord[]
   auditLog: AuditEntry[]
   courses: CourseRecord[]
+  resources: ResourceRecord[]
   classes: ClassRecord[]
   summaries: SummaryRecord[]
   aiJobs: AiJobRecord[]
@@ -153,6 +178,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     enrollments: [],
     auditLog: [],
     courses: [],
+    resources: [],
     classes: [],
     summaries: [],
     aiJobs: [],
@@ -180,6 +206,23 @@ export function userRecord(
     phone: null,
     createdAt: '2026-09-01T09:00:00.000Z',
     lastActiveAt: null,
+    ...overrides,
+  }
+}
+
+/** A course with sensible defaults, for tests to override only what they check. */
+export function courseRecord(
+  overrides: Partial<CourseRecord> & Pick<CourseRecord, 'id'>,
+): CourseRecord {
+  return {
+    code: overrides.id.toUpperCase(),
+    title: overrides.id,
+    description: '',
+    department: null,
+    status: 'ongoing',
+    teacherId: null,
+    createdAt: '2026-08-15T09:00:00.000Z',
+    archivedAt: null,
     ...overrides,
   }
 }

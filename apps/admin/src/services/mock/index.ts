@@ -11,6 +11,7 @@ import { createPlatformSeed } from './seed/platformSeed'
 import { createMockAlertService } from './mockAlertService'
 import { createMockAnalyticsService } from './mockAnalyticsService'
 import { createMockAuthService, readStoredSession } from './mockAuthService'
+import { createMockCourseService } from './mockCourseService'
 import { createMockHealthService } from './mockHealthService'
 import { createMockUserService } from './mockUserService'
 // Saving and restoring the platform's changes.
@@ -47,6 +48,16 @@ export function createMockServices(): Services {
       demoStore: window.localStorage,
       now,
       latencyMs: DEMO_LATENCY_MS,
+    }),
+    // Courses and enrolment, changed as the signed-in administrator and saved after every change.
+    courses: createMockCourseService({
+      data,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: DEMO_LATENCY_MS,
+      onChange: () => {
+        savePlatform(window.localStorage, data)
+      },
     }),
     // Accounts, changed as the signed-in administrator and saved after every change.
     users: createMockUserService({

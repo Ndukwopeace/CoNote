@@ -20,7 +20,12 @@ import { HEALTH_OVERRIDE_KEY, makeSession } from '@/test/factories'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 // The records the demo services read.
-import { emptyPlatformData, userRecord, type PlatformData } from '@/services/platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+  type PlatformData,
+} from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 
@@ -41,8 +46,8 @@ function smallPlatform(): PlatformData {
       userRecord({ id: 't1', role: 'teacher' }),
     ],
     courses: [
-      { id: 'c1', code: 'SWE 311', title: 'SE', teacherId: 't1', archivedAt: null },
-      { id: 'c2', code: 'CSC 301', title: 'OS', teacherId: null, archivedAt: null },
+      courseRecord({ id: 'c1', code: 'SWE 311', title: 'SE', teacherId: 't1', archivedAt: null }),
+      courseRecord({ id: 'c2', code: 'CSC 301', title: 'OS', teacherId: null, archivedAt: null }),
     ],
     aiJobs: [{ id: 'j1', classId: 'k1', status: 'failed', finishedAt: hoursAgo(2) }],
     activity: [

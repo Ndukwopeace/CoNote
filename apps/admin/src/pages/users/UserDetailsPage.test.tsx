@@ -14,7 +14,12 @@ import { expectNoAxeViolations } from '@conote/testing/axe'
 // The routes, so the page renders inside the real layout.
 import { routes } from '@/app/routes'
 // The records the demo services read.
-import { emptyPlatformData, userRecord, type PlatformData } from '@/services/platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+  type PlatformData,
+} from '@/services/platformData'
 // Session builder.
 import { makeSession } from '@/test/factories'
 // Render helper.
@@ -37,7 +42,13 @@ function platform(): PlatformData {
       }),
     ],
     courses: [
-      { id: 'c1', code: 'CSC 101', title: 'Programming', teacherId: null, archivedAt: null },
+      courseRecord({
+        id: 'c1',
+        code: 'CSC 101',
+        title: 'Programming',
+        teacherId: null,
+        archivedAt: null,
+      }),
     ],
     enrollments: [{ courseId: 'c1', studentId: 's1' }],
     auditLog: [

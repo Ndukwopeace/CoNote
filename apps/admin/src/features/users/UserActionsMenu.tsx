@@ -50,6 +50,10 @@ export function UserActionsMenu({ user }: Readonly<{ user: UserListItem }>) {
             <Link to={routeTo.user(user.id)}>View</Link>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={actions.edit}>Edit</DropdownMenuItem>
+          {/* Teachers can be given a course. */}
+          {actions.canAssignCourse && (
+            <DropdownMenuItem onSelect={actions.assignCourse}>Assign to course</DropdownMenuItem>
+          )}
           {/* Status changes, when any are allowed. */}
           {actions.statusActions.length > 0 && <DropdownMenuSeparator />}
           {actions.statusActions.map((action) => (

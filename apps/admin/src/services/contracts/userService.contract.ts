@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role } from '@conote/domain'
 
 // The data the services read, and the record builders.
-import { emptyPlatformData, userRecord, type PlatformData } from '../platformData'
+import { courseRecord, emptyPlatformData, userRecord, type PlatformData } from '../platformData'
 // The interface under test.
 import type { UserService } from '../types'
 
@@ -60,9 +60,27 @@ function platform(): PlatformData {
       ...students,
     ],
     courses: [
-      { id: 'c1', code: 'CSC 101', title: 'Programming', teacherId: 't1', archivedAt: null },
-      { id: 'c2', code: 'ENG 101', title: 'Writing', teacherId: 't2', archivedAt: null },
-      { id: 'c3', code: 'OLD 100', title: 'Old', teacherId: 't1', archivedAt: daysAgo(30) },
+      courseRecord({
+        id: 'c1',
+        code: 'CSC 101',
+        title: 'Programming',
+        teacherId: 't1',
+        archivedAt: null,
+      }),
+      courseRecord({
+        id: 'c2',
+        code: 'ENG 101',
+        title: 'Writing',
+        teacherId: 't2',
+        archivedAt: null,
+      }),
+      courseRecord({
+        id: 'c3',
+        code: 'OLD 100',
+        title: 'Old',
+        teacherId: 't1',
+        archivedAt: daysAgo(30),
+      }),
     ],
     enrollments: [
       { courseId: 'c1', studentId: 's01' },

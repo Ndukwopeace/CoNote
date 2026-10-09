@@ -373,7 +373,7 @@ This prompt assumes (a).
 - **Invite form:** role, name, email, and a department for students and teachers. An email already in use is refused.
 - **Edit form:** the profile fields only. The email can't be changed here.
 - **Later milestones:**
-  - "Assign to course" for teachers comes with Courses (A5).
+  - "Assign to course" for teachers arrived with Courses (A5, D71).
   - Column visibility in tables comes with Finishing (A11).
 
 ---
@@ -407,6 +407,18 @@ The teacher picker lists only `active` users with role `teacher`.
 - **Resources:** resources attached to this course.
 
 Removing a teacher leaves the course unassigned, and that raises the "course without a teacher" alert.
+
+**As built (A5, D71):**
+- **List:** code, title, teacher, students, classes and status, 20 to a page, sorted by code. Search matches code and title. Filters: status, department, teacher (including "No teacher", which the dashboard alert links to with `?teacher=none`), and a "Show archived courses" toggle. All live in the address. Archived courses appear only when the toggle is on, where the row menu offers Restore and nothing else.
+- **Counts:** the classes column counts classes still in use; students are the enrolments.
+- **Codes:** stored as upper case with one space, e.g. `SWE 311` (two to five letters, three digits, an optional letter). `swe311` and `SWE 311` are the same code, unique across archived courses too. A taken code gives "A course with this code already exists."
+- **Teacher:** only an active teacher can be assigned, otherwise "Choose an active teacher." A course whose teacher was later deactivated keeps them while other details are edited. Assigning to a taught course replaces the teacher. Removing asks first.
+- **Archived courses** refuse every change (edit, teacher, enrolment) with "This course is archived. Restore it to make changes." Their classes, notes and students are kept.
+- **Bulk enrolment:** paste text or choose a `.csv` or `.txt` file (under 200 KB; at most 500 values are read). Values are emails or student numbers, in any letter case. The preview sorts them into will be enrolled, already enrolled, and not matched with a reason (no account found, not a student, not active); nothing changes until "Enrol N students", which adds only the first group. The service checks again and skips anyone who is not an active student or is already in.
+- **Removing a student** asks first. It removes the enrolment only.
+- **Users page:** teachers have an "Assign to course" row action and details button, which picks a course in use.
+- **Audit:** `course.created`, `course.updated`, `course.archived`, `course.restored`, `course.teacher_assigned`, `course.teacher_removed`, `enrollment.added` (one per student) and `enrollment.removed`, all with the course as the entity.
+- **Demo persistence:** courses, resources, enrolments and the audit log are saved with the users under `conote-admin-demo:platform`.
 
 ---
 
@@ -625,7 +637,7 @@ Same pattern as the student portal:
 |---|---|
 | `AuthService` | `signIn`, `signOut`, `requestPasswordReset`, `checkResetLink`, `resetPassword`, `getSession`, `onAuthChange` |
 | `UserService` | `listUsers(filter)`, `listFilterOptions` (A4), `getUser`, `inviteUser`, `updateUser`, `setUserStatus`, `sendPasswordReset` |
-| `CourseService` | `listCourses(filter)`, `getCourse`, `createCourse`, `updateCourse`, `archiveCourse`, `restoreCourse`, `assignTeacher`, `removeTeacher`, `listEnrollments`, `enrollStudents`, `removeStudent` |
+| `CourseService` | `listCourses(filter)`, `listCourseFilterOptions` (A5), `getCourse`, `createCourse`, `updateCourse`, `archiveCourse`, `restoreCourse`, `assignTeacher`, `removeTeacher`, `listEnrollments(courseId, q?)`, `matchStudents` (A5), `enrollStudents`, `removeStudent` |
 | `ClassService` | `listClasses(filter)`, `getClass`, `createClass`, `updateClass`, `archiveClass` |
 | `ResourceService` | `listResources(filter)`, `getResource`, `createResource`, `uploadFile`, `updateResource`, `setResourceStatus`, `deleteResource` |
 | `SummaryMonitorService` | `listSummaries(filter)`, `getSummaryPipeline`, `getSummaryCounts` |

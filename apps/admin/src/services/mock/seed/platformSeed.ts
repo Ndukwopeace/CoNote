@@ -19,6 +19,7 @@ import type {
   CourseRecord,
   EnrollmentRecord,
   PlatformData,
+  ResourceRecord,
   SummaryRecord,
   UserRecord,
 } from '@/services/platformData'
@@ -301,25 +302,94 @@ interface SeedClock {
   ago: (ms: number) => string
 }
 
-/** The courses in use, plus an archived course from last term. */
-function buildCourses(clock: SeedClock): CourseRecord[] {
-  // The courses in use; the ID is the code in lower case, joined with a hyphen.
-  const courses: CourseRecord[] = COURSES.map(([code, title, teacherId]) => ({
+/** Each course's department and one-line description, by code. */
+const COURSE_DETAILS: Record<string, readonly [string, string]> = {
+  'SWE 311': ['Software Engineering', 'Requirements, design, testing and the software life cycle.'],
+  'ENG 201': ['English', 'Writing clear academic essays, with sources cited properly.'],
+  'CSE 205': ['Computer Science', 'Balanced trees, hashing and graph algorithms.'],
+  'BUS 207': ['Business Administration', 'From an idea to a business model, and testing it.'],
+  'MTH 202': ['Mathematics', 'Vectors, matrices and linear transformations.'],
+  'PHY 101': ['Physics', 'Motion, forces, energy and waves.'],
+  'CSC 301': ['Computer Science', 'Processes, memory, file systems and concurrency.'],
+  'GST 111': ['English', 'Spoken and written English for university study.'],
+}
+
+/** A course record for `code`, with its department and description. */
+function courseFor(
+  code: string,
+  title: string,
+  teacherId: string | null,
+  extra: Pick<CourseRecord, 'status' | 'createdAt' | 'archivedAt'>,
+): CourseRecord {
+  // The department and description, if known.
+  const [department, description] = COURSE_DETAILS[code] ?? [null, '']
+  return {
+    // The ID is the code in lower case, joined with a hyphen.
     id: code.toLowerCase().replace(' ', '-'),
     code,
     title,
+    description,
+    department,
     teacherId,
-    archivedAt: null,
-  }))
+    ...extra,
+  }
+}
+
+/** The courses in use, plus an archived course from last term. */
+function buildCourses(clock: SeedClock): CourseRecord[] {
+  // The courses in use, created before the term; the untaught one starts later.
+  const courses = COURSES.map(([code, title, teacherId]) =>
+    courseFor(code, title, teacherId, {
+      status: teacherId ? 'ongoing' : 'upcoming',
+      createdAt: clock.ago(70 * DAY),
+      archivedAt: null,
+    }),
+  )
   // An archived course from last term, with one class someone forgot to archive.
-  courses.push({
-    id: 'gst-111',
-    code: 'GST 111',
-    title: 'Communication in English',
-    teacherId: 'teacher-adeyemi',
-    archivedAt: clock.ago(10 * DAY),
-  })
+  courses.push(
+    courseFor('GST 111', 'Communication in English', 'teacher-adeyemi', {
+      status: 'completed',
+      createdAt: clock.ago(200 * DAY),
+      archivedAt: clock.ago(10 * DAY),
+    }),
+  )
   return courses
+}
+
+/** Each course's outline and first slides, published; SWE 311 also has a draft. */
+function buildResources(courses: CourseRecord[], clock: SeedClock): ResourceRecord[] {
+  // Two per course.
+  const resources: ResourceRecord[] = courses.flatMap((course) => [
+    {
+      id: `res-${course.id}-outline`,
+      title: `${course.code} course outline`,
+      type: 'pdf',
+      courseId: course.id,
+      classId: null,
+      status: course.archivedAt ? 'archived' : 'published',
+      createdAt: clock.ago(60 * DAY),
+    },
+    {
+      id: `res-${course.id}-week-1`,
+      title: `${course.title}: week 1 slides`,
+      type: 'slides',
+      courseId: course.id,
+      classId: `${course.id}-1`,
+      status: course.archivedAt ? 'archived' : 'published',
+      createdAt: clock.ago(49 * DAY),
+    },
+  ])
+  // A draft the teacher hasn't published yet.
+  resources.push({
+    id: 'res-swe-311-reading',
+    title: 'Further reading on requirements',
+    type: 'link',
+    courseId: 'swe-311',
+    classId: null,
+    status: 'draft',
+    createdAt: clock.ago(2 * DAY),
+  })
+  return resources
 }
 
 /** Weekly classes for each course in use, and the archived course's three. */
@@ -462,6 +532,7 @@ export function createPlatformSeed(now: Date): PlatformData {
     enrollments: buildEnrollments(users, courses),
     auditLog: buildAuditLog(users, clock),
     courses,
+    resources: buildResources(courses, clock),
     classes,
     summaries,
     aiJobs,
