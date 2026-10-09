@@ -9,8 +9,8 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 | A3 | Dashboard: statistics, activity chart, system health, alerts | Done |
 | A4 | Users: tabs, search, filters, details, invite, status changes | Done |
 | A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | Done |
-| A6 | Classes: create, edit, archive, details | Next |
-| A7 | Resources: upload, publish, archive, assign | |
+| A6 | Classes: create, edit, archive, details | Done |
+| A7 | Resources: upload, publish, archive, assign | Next |
 | A8 | AI & Summaries: counters, tables, failed jobs, retry, pipeline details | |
 | A9 | Analytics and audit logs | |
 | A10 | Settings and admin notifications | |
@@ -159,5 +159,31 @@ In Vercel, add a second project from the same GitHub repository with **Root Dire
   - the list opens filtered to courses without a teacher, and a new course survives a reload
   - a teacher is assigned and removed, and students are enrolled from a preview
   - an archived course leaves the list, refuses changes, and returns when restored
+  - axe finds no problems
+  - there are no CSP violations
+
+---
+
+## A6 — Classes
+
+**Delivered**
+
+- The Classes page (REQUIREMENTS section 13):
+  - table with course, number, title, date and time, teacher, summary status and notes, 20 to a page, newest first
+  - search, course, summary status and date range filters, sorting and an archived toggle, all kept in the address
+  - create dialog, and row actions: view, edit, archive (asking first)
+  - empty, no-match, archived-empty and error states
+- Class details: course, number, teacher, date and time, enrolled students, notes contributed (a count), the AI job history and the summary timeline; edit and archive.
+- `ClassService` with a contract suite. Classes are numbered per course and never renumbered. Every change writes an audit entry. Archived classes refuse changes.
+- Records: `ClassRecord` gains number, end time, description and a notes count; `AiJobRecord` gains its queued time and attempt number. Classes are saved with their summaries and jobs in the demo.
+- `Textarea`, `DataTable` and `SearchField` reused from A5.
+
+**Done when**
+
+- The service rules are proven by contract tests, the form, filter and time rules by unit tests, and both pages by page tests (states, dialogs, address).
+- In the browser, on desktop and phone:
+  - filters survive a reload
+  - a new class is validated, numbered, listed and kept after a reload
+  - a class shows its timeline and job history, and archiving keeps them
   - axe finds no problems
   - there are no CSP violations
