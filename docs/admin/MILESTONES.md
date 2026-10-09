@@ -8,8 +8,8 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 | A2 | Sign-in polish: forgot and reset password | Done |
 | A3 | Dashboard: statistics, activity chart, system health, alerts | Done |
 | A4 | Users: tabs, search, filters, details, invite, status changes | Done |
-| A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | Next |
-| A6 | Classes: create, edit, archive, details | |
+| A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | Done |
+| A6 | Classes: create, edit, archive, details | Next |
 | A7 | Resources: upload, publish, archive, assign | |
 | A8 | AI & Summaries: counters, tables, failed jobs, retry, pipeline details | |
 | A9 | Analytics and audit logs | |
@@ -127,5 +127,37 @@ In Vercel, add a second project from the same GitHub repository with **Root Dire
   - an invitation is listed as Invited after a reload
   - a suspended account can't sign in
   - phones show cards with no sideways scrolling
+  - axe finds no problems
+  - there are no CSP violations
+
+---
+
+## A5 — Courses
+
+**Delivered**
+
+- The Courses page (REQUIREMENTS section 12):
+  - table with code, title, teacher, students, classes and status, 20 to a page
+  - search, status, department and teacher filters (including `?teacher=none`) and an archived toggle, all kept in the address
+  - create dialog, and row actions: view, edit, archive, restore
+  - empty, no-match, archived-empty and error states
+- Course details with four tabs:
+  - Overview: description, status, teacher and the counts
+  - Students: search, enrol, remove (asking first)
+  - Classes: sessions with their summary stage
+  - Resources: files and links attached to the course
+- Teacher: assign, change and remove (asking first), from the course and, for teachers, from the Users page.
+- Bulk enrolment: paste text or choose a `.csv`, preview (will be enrolled, already enrolled, not matched with reasons), then enrol only the valid rows.
+- `CourseService` with a contract suite. Every change writes an audit entry. Archived courses refuse changes.
+- Shared table (`DataTable`) and search box (`SearchField`) used by Users and Courses; `Textarea` added to `@conote/ui`.
+- The demo saves courses and resources with the users, enrolments and audit log.
+
+**Done when**
+
+- The service rules are proven by contract tests, the form, filter and identifier rules by unit tests, and both pages by page tests (states, dialogs, address, preview).
+- In the browser, on desktop and phone:
+  - the list opens filtered to courses without a teacher, and a new course survives a reload
+  - a teacher is assigned and removed, and students are enrolled from a preview
+  - an archived course leaves the list, refuses changes, and returns when restored
   - axe finds no problems
   - there are no CSP violations
