@@ -278,6 +278,7 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 | T0  | Ask AI marked as a preview (student portal)                                          | XS   |
 | T1  | Teacher spec and shell                                                               | S    |
 | T2  | Teacher review flow on demo data                                                     | M    |
+| J1  | Course join requests (student request, admin approval) on demo data                  | M    |
 | B1  | Backend foundation                                                                   | L    |
 | B2  | Real data for admin and student                                                      | L    |
 | B3  | Summary pipeline, and the teacher portal on real data                                | L    |
@@ -321,13 +322,24 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 
 **Done when:** in the teacher demo, a draft can be edited and published, and the summary moves to `published`. The student portal's demo is a separate app with its own storage, so the hand-off between the two apps is shown by contract tests now and by the real loop in B3.
 
+### J1 — Course join requests
+
+**Covers:** FR-ENR in the student requirements and the Requests tab in admin REQUIREMENTS section 12 (decision D76). New students sign up openly, so they need a way to reach a course.
+
+- **Student portal:** the "Join your courses" dialog after sign-up, "Find courses" on the dashboard empty state and My Courses, and the Requested courses section. The services in FR-ENR-6, with a contract test.
+- **Admin console:** a Requests tab on the course page (pending requests with name, email, student number and date), with Approve and Decline. Approving enrols the student, as bulk enrolment does, and writes `enrollment_request.approved` and `enrollment.added` to the audit log; declining writes `enrollment_request.declined`. An archived course refuses both. A dashboard alert, "Students waiting to join a course", links to the course.
+- **Both apps:** loading, empty, error and not-found states; component tests and Playwright for each flow.
+- **Docs:** a new `enrollment_requests` table in admin REQUIREMENTS 6.2 and the student data model.
+
+**Done when:** in the student demo a new student can search, request, cancel and re-request a course; in the admin demo a request can be approved or declined and the roster follows. The demos are separate origins, so the hand-off between them is shown by the contract tests now and by the real loop in B2.
+
 ### B1 — Backend foundation
 
 **Covers:** the shared Supabase project (admin REQUIREMENTS sections 6 and 20; student REQUIREMENTS section 12).
 
 - Supabase projects for development and production; migrations in the repository.
 - The tables from student REQUIREMENTS section 12.2 and admin section 6.2, with Row Level Security from admin section 6.3.
-- Email and password sign-up and sign-in as the student portal already offers them (D73: sign-up is left as built). **Open question 4 (who may sign up) must be answered before this milestone starts**, because the auth rules depend on it.
+- Email and password sign-up and sign-in as the student portal already offers them (D73: sign-up is left as built; D76: it stays open to anyone, with email confirmation switched on). Public sign-up is enabled in Supabase, and a new account is a `student`; teachers and admins are invited. The `enrollment_requests` table and its Row Level Security (a student reads and cancels only their own; admins read and decide) come with the tables above.
 - Audit triggers, a seed script that mirrors the demo data, and secrets in Supabase and GitHub Actions secrets (never in the repository).
 
 **Done when:** the automated security checks in admin REQUIREMENTS section 25 pass against the database: a student or teacher gets 403 from admin functions, a teacher can't update another teacher's course, a student can't update a summary, and an admin can't read `notes.content_html`.

@@ -292,7 +292,7 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-DSH-3** Upcoming Classes: the next 3 sessions, each with a course icon, course code and title, class title, date and time, and a Live or Upcoming badge. Clicking a session opens the Class page. "View all" opens `/classes`.
 - **FR-DSH-4** Recent Activity: the last 5 events (summary published, note added, announcement) with relative times.
 - **FR-DSH-5** An "Ask CoNote AI" card linking to `/ask-ai`.
-- **FR-DSH-6** When the student has no courses, the page shows an empty state: "You're not enrolled in any courses yet. Your teacher or administrator will add you." **[Default]** Students cannot join courses themselves.
+- **FR-DSH-6** When the student has no courses, the page shows an empty state: "You're not enrolled in any courses yet. Find a course to request to join, or wait for your teacher or administrator to add you." Students can ask to join courses (FR-ENR, D76); the dashboard empty state offers a "Find courses" button that opens the join dialog.
 
 ### FR-CRS Courses
 
@@ -340,6 +340,17 @@ Classes are reached through a course, so they get no top-level item.
 - **FR-NTE-8** Delete asks for confirmation and is final.
 - **FR-NTE-9** **[Default]** Notes can be edited or deleted at any time. Changes made after the AI has processed a class do not alter an already-published summary. The page says so when a student edits a note on a class with a published summary.
 - **FR-NTE-10 Read view** (`/notes/:noteId`): sanitised HTML, tags, class link and timestamps.
+
+### FR-ENR Joining courses (D76)
+
+- **FR-ENR-1 The dialog.** A student with no enrolments and no requests sees a "Join your courses" dialog on arriving at the dashboard after signing up. It has a search field (code or title) and a list of courses in use: ongoing or upcoming, not archived. Each row shows the code, title and teacher, and a "Request to join" button. The dialog can be skipped ("Not now"); skipping is remembered for the browser session, so it doesn't reopen on every page.
+- **FR-ENR-2 Reopening.** "Find courses" opens the same dialog from the dashboard empty state and from My Courses.
+- **FR-ENR-3 Row states.** A course shows Request to join, Requested (with Cancel request), Joined (already enrolled, no button) or Declined (with Request again). A request grants no access: the course appears in My Courses only once an admin approves it.
+- **FR-ENR-4 Requested courses.** My Courses lists pending and declined requests apart from enrolled courses, so a student is never left guessing ("Waiting for approval", "Declined").
+- **FR-ENR-5 Rules.** Only an active student can request. One open request per student per course. Archived and completed courses refuse requests, and so does a course the student is already in. A student sees and changes only their own requests.
+- **FR-ENR-6 Service.** `listJoinableCourses(q)`, `listMyJoinRequests()`, `requestToJoin(courseId)` and `cancelJoinRequest(requestId)`, behind `useServices()` with a contract test that the demo and the Supabase service both pass.
+- **FR-ENR-7 States.** Loading, empty ("No courses match your search."), error with Retry, and a refused request ("This course isn't open for requests.") as inline messages.
+- **FR-ENR-8 Approval is not in this portal.** The admin console decides requests (admin REQUIREMENTS section 12). On approval the student is enrolled and, in the backend stage, gets an in-app notification.
 
 ### FR-SUM Summary view
 
@@ -509,7 +520,7 @@ SearchService       search(query)
 
 ### 12.2 Supabase notes (for the later integration)
 
-- Tables: `profiles`, `courses`, `enrollments`, `class_sessions`, `notes`, `summaries`, `notifications`.
+- Tables: `profiles`, `courses`, `enrollments`, `class_sessions`, `notes`, `summaries`, `notifications`, and `enrollment_requests` (D76).
 - **RLS on `notes`:** a row is readable and writable only when `student_id = auth.uid()`. The AI pipeline reads notes with the service role on the server, never through the student's client.
 - **RLS on `summaries`:** a student can select a row only when `status = 'published'` and they are enrolled in the course. Draft text must never reach a student's client, not even hidden in the UI.
 - **RLS on `courses` and `class_sessions`:** readable only by enrolled students.
@@ -578,7 +589,7 @@ Taken from the wireframes:
 | D6 | Sidebar items | Brief and wireframes differ | Dashboard, Courses, Notes, Ask AI, Notifications, Settings |
 | D7 | Profile vs Settings | Brief: separate. Wireframe: merged | Merged; `/profile` redirects |
 | D8 | Sign-up fields | Wireframe adds confirm password and terms | Include both |
-| D9 | Course enrollment | Not specified | Done by teacher or admin; no join UI |
+| D9 | Course enrollment | Not specified | Done by teacher or admin; no join UI. **Amended by D76:** students can request to join; an admin approves. |
 | D10 | Editing notes after processing | Not specified | Allowed; published summaries are unaffected |
 | D11 | Messages tab | Not specified | One-way announcements only |
 | D12 | Draft summary visibility | Not specified | Status visible, content hidden |
@@ -645,6 +656,7 @@ Taken from the wireframes:
 | D73 | MVP focus | Planning review after admin milestone A6 | **Goal:** run the core loop for real (admin sets up, students write notes, the AI drafts, a teacher approves, students read) and park everything else. **Remaining milestones:** T0 Ask AI preview label, T1 teacher spec and shell, T2 teacher review flow on demo data, B1 backend foundation, B2 real data for admin and student, B3 summary pipeline and the teacher portal on real data, B4 minimum ops, B5 launch. **Parked (Post-MVP):** admin A7 Resources, A8 beyond failed jobs and Retry, A9 Analytics and audit viewer, A10 Settings and the admin notifications page; Google sign-in; PWA level 3; full-text note search; real Ask AI answers; teacher extras. **Choices:** sign-up is left as built; the teacher portal is built on demo data first, like the other two; Ask AI keeps its canned replies, labelled "Preview". **Limit of demo data:** the three apps are separate origins with separate demo storage, so a summary a teacher publishes in the teacher demo can't appear in the student demo. The hand-off is proved by the review service contract (T2) and by the real loop (B3). **Open question 4** (who may sign up) must be answered before B1. |
 | D74 | Teacher portal spec and shell | Teacher milestone T1 | **App:** `apps/teacher` (`@conote/teacher`), built from the admin app's pattern: routes under `/teacher`, a `RequireTeacher` guard that shows students and admins "This portal is for teachers", the same sign-in and password recovery as the admin app, its own Vercel project (Root Directory `apps/teacher`) and ports 5175 and 4175. No new dependency. **Notes while reviewing [Default]:** a teacher sees the draft, plus how many notes it rests on and from how many students, and never the notes themselves, so note privacy holds for teachers as it does for admins. Reading contributing notes would be a new decision and an RLS change. **Passwords:** 12 characters with a letter and a number, the admin rule, so all staff accounts follow one rule. **Demo data:** the teacher app has its own seed, as the admin and student apps do, so apps never import each other. Its MTH 202 matches the admin demo's. The milestone's "shared demo platform" is read as "the same demo teacher and course"; moving all seeds into one package would be a separate change. **Navigation:** only pages that exist are linked; T1 has My courses, and T2 adds the review queue. **Spec:** [`teacher/REQUIREMENTS.md`](./teacher/REQUIREMENTS.md). |
 | D75 | Teacher review flow | Teacher milestone T2 | **Pages:** the course page (classes newest first, with stages), the review queue (longest wait first) and the review screen, all in `apps/teacher`. **Draft:** the four parts of the student's summary view, all plain text, all editable. A blank required field blocks saving; lists may be empty; a topic's description is optional. **Version rule:** each summary has a `version` that goes up with every save. `saveDraft` and `approveAndPublish` take the version the teacher loaded and refuse a stale one with `conflict`, so a second tab can't overwrite a newer draft; the screen then offers Reload. **Publish:** `approveAndPublish(summaryId, draft, version)` saves and publishes in one step, so a draft can't be published unsaved. It is the only publish path, it asks first, and it works only on a summary in `in_review` for the teacher's own live course. A published summary is read-only. **Not found:** another teacher's, an archived and an unknown course or summary all answer "not found", so the answer reveals nothing. **Contract:** `reviewService.contract.ts` states the rules the demo and the Supabase service must both pass; the student's summary service reads the same `SummaryStatus` values from `@conote/domain`. **Shared UI:** `ConfirmDialog` gains `confirmVariant`, red by default, plain for publishing. **Demo:** edits and publishes are kept in local storage so they survive a reload; the student demo is a separate origin and does not see them (D73). |
+| D76 | Open sign-up and course join requests | Open question 4, answered by the owner | **Sign-up stays open to anyone** with an email and password, as built. Email confirmation is switched on in the backend stage (a default; B1). **Joining courses:** a new account has no courses, so after sign-up a dialog lets the student ask to join courses (FR-ENR). This amends D9: enrolment is still done by an admin, either directly or by approving a student's request. **Approver:** the admin, on a Requests tab of the course page; the teacher portal stays review-only. **Course list:** every course in use (ongoing or upcoming, not archived), searchable by code or title, showing the teacher's name. **Rules [Defaults]:** one open request per student per course; a request grants nothing until approved; the student can cancel a pending request; a declined request can be sent again; the dialog can be skipped and reopened from the dashboard and My Courses. **Data:** a new `enrollment_requests` table (admin REQUIREMENTS 6.2). **Milestone:** J1, built on demo data before B1 (`MILESTONES.md`). **Limit of demo data:** the student and admin demos are separate origins, so a request made in the student demo can't reach the admin demo; the hand-off is proved by the service contract (J1) and the real loop (B2). **Open question 4 is closed.** |
 
 ---
 
@@ -652,7 +664,7 @@ Taken from the wireframes:
 
 The full task lists and completion checks are in [`MILESTONES.md`](./MILESTONES.md).
 
-**Since D73, the remaining work is the MVP plan (T0 to T2, B1 to B5; the teacher spec is [`teacher/REQUIREMENTS.md`](./teacher/REQUIREMENTS.md), D74)**, listed with the parked items in [`MILESTONES.md`](./MILESTONES.md#mvp-milestones-d73). Student M6 is folded into B5.
+**Since D73, the remaining work is the MVP plan (T0 to T2, J1, B1 to B5; the teacher spec is [`teacher/REQUIREMENTS.md`](./teacher/REQUIREMENTS.md), D74)**, listed with the parked items in [`MILESTONES.md`](./MILESTONES.md#mvp-milestones-d73). Student M6 is folded into B5.
 
 | # | Milestone | Done when |
 |---|---|---|
@@ -671,6 +683,6 @@ The full task lists and completion checks are in [`MILESTONES.md`](./MILESTONES.
 1. Should Ask CoNote AI use general knowledge as well as class material? This changes the backend design (D2).
 2. Is there a deadline after which a class's notes stop feeding the AI? It may deserve a "Notes close in 2 days" hint on the Class page.
 3. Should students see *how many* classmates contributed notes before a summary is published?
-4. Which institutions or email domains may sign up? Is sign-up open to anyone?
+4. ~~Which institutions or email domains may sign up? Is sign-up open to anyone?~~ Open to anyone (D76).
 5. ~~Is there a real dashboard preview image for the landing page?~~ Built from components for now (D28).
 6. Will she provide a logo file, or should a text-and-icon logo be made from Lucide?

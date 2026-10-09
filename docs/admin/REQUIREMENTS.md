@@ -144,6 +144,7 @@ The UI says **"Class"**. The table is `class_sessions`. A course has **one teach
 - `courses.archived_at`, `class_sessions.archived_at`: nullable timestamps. Archived items disappear from student and teacher lists but are never deleted.
 - `profiles.student_number`, `profiles.staff_number`: the human-readable student and teacher IDs, separate from the internal `id`.
 - `resources`: `id`, `title`, `description`, `type` (`pdf` / `document` / `slides` / `video` / `link`), `storage_path` or `url`, `course_id`, `class_id` (nullable), `uploaded_by`, `created_at`, `status` (`draft` / `published` / `archived`).
+- `enrollment_requests` (D76): `id`, `course_id`, `student_id`, `status` (`pending` / `approved` / `declined` / `cancelled`), `created_at`, `decided_at`, `decided_by`. At most one `pending` row per student and course. A student creates, reads and cancels only their own; admins read and decide; teachers have no access. Approving inserts the `enrollments` row in the same transaction.
 - `ai_jobs`: `id`, `class_id`, `course_id`, `kind` (`summary` / `regenerate`), `status` (`queued` / `running` / `succeeded` / `failed`), `started_at`, `finished_at`, `error_code`, `error_message` (safe text only), `attempt`.
 - `audit_logs`: `id`, `created_at`, `actor_id`, `actor_role`, `action`, `entity_type`, `entity_id`, `course_id`, `class_id`, `metadata` (JSON). Append-only. Written by database triggers and Edge Functions, never by the browser.
 - `activity_events`: `id`, `user_id`, `kind` (`sign_in` / `note_created` / `summary_viewed` / `resource_opened` / `ai_question`), `created_at`, plus the related IDs. Analytics read from here. Store no note content.
@@ -403,6 +404,7 @@ The teacher picker lists only `active` users with role `teacher`.
 **Course details tabs:**
 - **Overview:** description, teacher, number of students, classes and published summaries, resources, status.
 - **Students:** enrolled list with search. Enrol and remove students, with confirmation. Bulk enrolment by CSV of emails or student numbers: preview first, report rows that don't match, apply only the valid ones.
+- **Requests (J1, D76):** students' requests to join, newest last. Each shows name, email, student number and date, with Approve and Decline. Approving enrols the student (the same rules as bulk enrolment: an active student, not already in) and closes the request; declining closes it without enrolling. A course in archive refuses both. The tab shows a count while any are pending.
 - **Classes:** sessions with summary status.
 - **Resources:** resources attached to this course.
 
@@ -724,7 +726,7 @@ Where the backend doesn't exist yet, the mock implements the behaviour faithfull
 
 ## 24. Milestones
 
-A1 to A6 are built on demo data. Since D73 the rest of the console (A7 Resources, most of A8, A9 Analytics and audit logs, A10 Settings and notifications) is post-MVP, and the shared backend stage is B1 to B5 in [`../MILESTONES.md`](../MILESTONES.md#mvp-milestones-d73). Sections 14 to 19 above keep the full scope for when those milestones return. The task lists and "done when" checks for A1 to A6 are in [`MILESTONES.md`](./MILESTONES.md).
+A1 to A6 are built on demo data. Course join requests (J1, D76) add the Requests tab and one dashboard alert. Since D73 the rest of the console (A7 Resources, most of A8, A9 Analytics and audit logs, A10 Settings and notifications) is post-MVP, and the shared backend stage is B1 to B5 in [`../MILESTONES.md`](../MILESTONES.md#mvp-milestones-d73). Sections 14 to 19 above keep the full scope for when those milestones return. The task lists and "done when" checks for A1 to A6 are in [`MILESTONES.md`](./MILESTONES.md).
 
 ---
 
