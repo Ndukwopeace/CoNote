@@ -8,6 +8,16 @@ import type { AccountStatus } from '@conote/domain'
 
 // Session shapes.
 import type { PasswordResetRequest, Session, SignInInput } from '@/types/auth'
+// Course shapes.
+import type {
+  CourseDetails,
+  CourseFilter,
+  CourseFilterOptions,
+  CourseInput,
+  CoursePage,
+  EnrolledStudent,
+  EnrollmentMatch,
+} from '@/types/courses'
 // Dashboard shapes.
 import type {
   ActivityPoint,
@@ -92,6 +102,39 @@ export interface UserService {
   sendPasswordReset(userId: string): Promise<void>
 }
 
+/**
+ * The courses and who is in them (admin REQUIREMENTS section 12). Every change writes an audit
+ * entry. An archived course refuses changes until it is restored.
+ */
+export interface CourseService {
+  /** One page of courses, searched, filtered and sorted. Archived ones only when asked for. */
+  listCourses(filter: CourseFilter): Promise<CoursePage>
+  /** The departments and active teachers the filters and the form offer. */
+  listCourseFilterOptions(): Promise<CourseFilterOptions>
+  /** One course's details; rejects with not_found for an unknown ID. */
+  getCourse(courseId: string): Promise<CourseDetails>
+  /** Creates a course; rejects with conflict when the code is taken, in any letter case. */
+  createCourse(input: CourseInput): Promise<CourseDetails>
+  /** Changes a course's details, including its teacher. */
+  updateCourse(courseId: string, input: CourseInput): Promise<CourseDetails>
+  /** Takes a course out of use; its classes, notes and enrolments are kept. */
+  archiveCourse(courseId: string): Promise<CourseDetails>
+  /** Puts an archived course back in use. */
+  restoreCourse(courseId: string): Promise<CourseDetails>
+  /** Gives the course a teacher (or changes it); the teacher must be active. */
+  assignTeacher(courseId: string, teacherId: string): Promise<CourseDetails>
+  /** Leaves the course without a teacher. */
+  removeTeacher(courseId: string): Promise<CourseDetails>
+  /** The course's students, A to Z, narrowed by a search of name, email and student number. */
+  listEnrollments(courseId: string, q?: string): Promise<EnrolledStudent[]>
+  /** Previews a bulk enrolment: sorts emails and student numbers into matched, enrolled and unmatched. */
+  matchStudents(courseId: string, identifiers: string[]): Promise<EnrollmentMatch>
+  /** Enrols the given students, skipping any who aren't active students or are already in. */
+  enrollStudents(courseId: string, studentIds: string[]): Promise<{ added: number }>
+  /** Removes one student from the course. */
+  removeStudent(courseId: string, studentId: string): Promise<void>
+}
+
 /** Every service the admin app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
@@ -99,4 +142,5 @@ export interface Services {
   alerts: AlertService
   health: HealthService
   users: UserService
+  courses: CourseService
 }
