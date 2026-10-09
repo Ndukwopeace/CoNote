@@ -33,7 +33,7 @@ interface DataTableProps<Row, Field extends string> {
   sort?: SortValue<Field>
   onSortChange?: (sort: SortValue<Field>) => void
   // The actions for one row, shown in a last "Actions" column.
-  actions?: (row: Row) => ReactNode
+  actions?: ((row: Row) => ReactNode) | undefined
 }
 
 /** The next sort when a column's heading is pressed: the other direction, or its first sort. */
