@@ -2,6 +2,8 @@
 
 These milestones break the work in [`REQUIREMENTS.md`](./REQUIREMENTS.md) into seven stages (M1 to M6, plus M2.5). Every milestone follows [`ENGINEERING_STANDARDS.md`](./ENGINEERING_STANDARDS.md), and nothing counts as done until its Definition of Done is met. Each stage ends with something that can be opened in a browser and checked. They are a planning aid added during review; they were not part of the original brief.
 
+> **Current plan (D73):** the work now concentrates on the MVP. The student portal (M1 to M5) and admin milestones A1 to A6 are done. Everything still to build is in [MVP milestones](#mvp-milestones-d73) at the end of this file; everything else is parked under [Post-MVP](#post-mvp).
+
 ## How this build handles the backend
 
 The brief asks for a "Supabase-ready architecture" and says the portal will *eventually* share a backend with the teacher and admin portals. So every milestone runs in the browser on demo data.
@@ -225,7 +227,7 @@ Added after M1 at the team's request. It comes straight after M2 so the icons us
 
 ## Admin portal
 
-The admin console's milestones (A1 to A11) and the shared backend stage are tracked in [`admin/MILESTONES.md`](./admin/MILESTONES.md).
+The admin console's milestones are tracked in [`admin/MILESTONES.md`](./admin/MILESTONES.md). A1 to A6 are done. A7 to A11 are post-MVP (D73); the admin work the MVP still needs is inside B2 and B4 below.
 
 ---
 
@@ -263,15 +265,129 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 
 ---
 
-## Optional — Real backend (not scheduled)
+## MVP milestones (D73)
 
-Not requested in the brief. It could be inserted after M2 if real accounts are wanted early.
+**The MVP is the core loop running for real:** an admin sets up people, courses and classes → students write private notes → the AI drafts a summary → a teacher reviews and approves it → students read it. Anything outside that loop waits (see [Post-MVP](#post-mvp)).
 
-- Supabase project, and the tables from section 12.2 with Row Level Security
-- Real email/password and Google sign-in
-- Supabase implementations of the Course, Class, Note, Profile and Notification services
-- Full-text search of note bodies using Postgres full-text search (REQUIREMENTS section 8)
-- PWA level 3 (D22): notes written offline are queued and synced with conflict handling; push notifications for published summaries and class reminders
-- Later still: a server function that calls a language model for Ask AI, and the summary-generation pipeline (which belongs with the teacher portal)
+**Order:** the teacher portal is built on demo data first (T1, T2), the way the student and admin portals were, so the review flow and its service contract are proven before any SQL is written. The backend stage (B1 to B5) then connects all three portals.
 
-Adding this early makes every later milestone somewhat slower, because each screen then needs real data and real rules behind it.
+**Already done:** student portal M1 to M5, the monorepo restructure (D64), admin A1 to A6. Student M6 (finishing) and admin A11 are folded into B5.
+
+| #   | Milestone                                                                            | Size |
+| --- | ------------------------------------------------------------------------------------ | ---- |
+| T0  | Ask AI marked as a preview (student portal)                                          | XS   |
+| T1  | Teacher spec and shell                                                               | S    |
+| T2  | Teacher review flow on demo data                                                     | M    |
+| B1  | Backend foundation                                                                   | L    |
+| B2  | Real data for admin and student                                                      | L    |
+| B3  | Summary pipeline, and the teacher portal on real data                                | L    |
+| B4  | Minimum ops: failed jobs and retry, in-app notifications                             | S    |
+| B5  | Launch: accessibility and responsive pass, runbook, production deploy, pilot class   | M    |
+
+### T0 — Ask AI marked as a preview
+
+**Covers:** the "nothing fake" rule (admin REQUIREMENTS section 23). Ask AI answers with canned text; it stays in the MVP, labelled honestly.
+
+- A "Preview" badge beside the Ask AI heading, and a one-line note under it: replies are examples while the AI service is being built.
+- The same badge on the Ask AI navigation item, so nobody meets the canned replies unlabelled.
+- No other change to how Ask AI works.
+
+**Done when:** the badge and note show at 360 px and 1440 px, a component test and a Playwright check cover them, and the student docs mention the label.
+
+### T1 — Teacher spec and shell
+
+**Covers:** the missing teacher requirements, and `apps/teacher`.
+
+- Write `docs/teacher/REQUIREMENTS.md`, one page, in the same shape as the admin spec:
+  - routes and screens: My courses, Course, Review queue, Review summary
+  - rules: a teacher sees only the courses they teach; what the teacher sees of the students' notes while reviewing (the draft only, or the contributing notes) is decided here and recorded as a decision
+  - states and messages
+  - the service list: for example `listReviewQueue`, `getDraft`, `saveDraft`, `approveAndPublish`
+- `apps/teacher` (`@conote/teacher`) from the admin app's pattern: Vite, the shared packages, routes under `/teacher`, a `RequireTeacher` guard that turns away other roles, and the console frame.
+- Demo sign-in as `teacher@conote.example`.
+- Own Vercel project with Root Directory `apps/teacher` and its own `vercel.json`; `build`, `size` and `e2e` already run in every app, so CI covers it.
+
+**Done when:** a teacher signs in and sees My courses (their courses from the shared demo platform), other roles are turned away, signed-out visitors go to sign-in, and the full gate passes.
+
+### T2 — Teacher review flow on demo data
+
+**Covers:** the teacher half of the loop, using the teacher spec.
+
+- My courses and course details (classes with their summary stages).
+- The review queue: summaries waiting in `in_review` for the teacher's courses, longest wait first.
+- The review screen: read the draft, edit it, save the draft, and "Approve & Publish", which asks first. Only a teacher can publish; there is no publish action anywhere else.
+- The review service contract, written so the student's summary service and the backend read the same statuses.
+- Loading, empty, error and not-found states on every screen; Playwright covers the review flow.
+
+**Done when:** in the teacher demo, a draft can be edited and published, and the summary moves to `published`. The student portal's demo is a separate app with its own storage, so the hand-off between the two apps is shown by contract tests now and by the real loop in B3.
+
+### B1 — Backend foundation
+
+**Covers:** the shared Supabase project (admin REQUIREMENTS sections 6 and 20; student REQUIREMENTS section 12).
+
+- Supabase projects for development and production; migrations in the repository.
+- The tables from student REQUIREMENTS section 12.2 and admin section 6.2, with Row Level Security from admin section 6.3.
+- Email and password sign-up and sign-in as the student portal already offers them (D73: sign-up is left as built). **Open question 4 (who may sign up) must be answered before this milestone starts**, because the auth rules depend on it.
+- Audit triggers, a seed script that mirrors the demo data, and secrets in Supabase and GitHub Actions secrets (never in the repository).
+
+**Done when:** the automated security checks in admin REQUIREMENTS section 25 pass against the database: a student or teacher gets 403 from admin functions, a teacher can't update another teacher's course, a student can't update a summary, and an admin can't read `notes.content_html`.
+
+### B2 — Real data for admin and student
+
+- Supabase implementations of the services behind the existing interfaces, with the contract suites run against both the demo and Supabase:
+  - admin: Auth, User, Course, Class
+  - student: Auth, Course, Class, Note, Profile, Notification, Summary
+- Edge Functions `invite-user`, `set-user-status` and `send-password-reset`, each verifying the caller is an active admin, validating input, and writing the audit entry.
+- Each app switches with `VITE_DATA_SOURCE=supabase`; pages do not change.
+
+**Done when:** admin acceptance steps 1 to 6 (admin REQUIREMENTS section 25) pass against Supabase; a student's notes persist and stay private; the contract suites pass for both implementations.
+
+### B3 — Summary pipeline, and the teacher portal on real data
+
+- When a class ends, a job is queued; a server-side worker or Edge Function calls the language model (the key stays in Supabase secrets) and writes a draft summary in `in_review`.
+- Failures are recorded as failed jobs, with a limit on retries.
+- The teacher portal switches to Supabase for the review flow and publishing.
+- No note content is exposed to the admin portal.
+
+**Done when:** the acceptance scenario for "after stage B" (admin REQUIREMENTS section 25, steps 1 to 5) runs end to end with real accounts: notes → AI job → draft in review → teacher approves → student reads the summary.
+
+### B4 — Minimum ops
+
+This is the part of A8 the loop cannot do without.
+
+- Admin: a failed-jobs list and Retry (the `retry-ai-job` Edge Function; available only on failed jobs, limited by the maximum-retries value, audited).
+- The dashboard's alerts read the real data.
+- In-app notifications: the teacher is told when a draft is waiting for review, and the student when their summary is published.
+
+**Done when:** an admin retries a failed job and it runs again; a teacher and a student each get their notification.
+
+### B5 — Launch
+
+**Covers:** student M6 and admin A11, reduced to what a pilot needs.
+
+- Accessibility and responsive pass at 360, 768, 1024 and 1440 px on all three portals.
+- Security headers verified on the production URLs; Lighthouse check on the landing page.
+- Error reporting wired to `reportError`; Supabase backups on.
+- `README.md` and a short runbook: deploying, rotating secrets, restoring a backup, retrying a failed job.
+- A pilot with one real class through one full cycle.
+
+**Done when:** the pilot class completes a cycle without developer help, and a new developer can run every app from the README alone.
+
+---
+
+## Post-MVP
+
+Parked by D73. None of it is needed for the core loop. Each item returns when the MVP is live and a real need shows up.
+
+| Item                                                                                          | Why it waits                                                              |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **A7 Resources** (upload, publish, archive, assign) and a student Resources view              | Students have no Resources screen; it is also the largest storage work    |
+| **A8, the rest:** counters, summary table, AI jobs table, pipeline view                       | Monitoring only; B4 keeps failed jobs and Retry                           |
+| **A9 Analytics and the audit log viewer**                                                     | Audit entries are already written; only the viewer waits                  |
+| **A10 Settings and the admin notifications page and bell**                                    | Dashboard alerts cover the urgent cases; sign-up stays as built           |
+| **A11 extras:** per-app READMEs, table column visibility                                      | B5 carries the accessibility and responsive pass                          |
+| Google sign-in                                                                                | Email and password is enough for a pilot                                  |
+| PWA level 3 (D22): offline note sync with conflict handling, push notifications               | Needs the backend and real usage data first                               |
+| Full-text search of note bodies (student REQUIREMENTS section 8)                              | Search by title and tag works                                             |
+| Real Ask AI answers (the "Preview" label comes off when it ships)                             | Separate from the summary pipeline; needs its own design (open question 1) |
+| Teacher extras: analytics, resources, class scheduling by teachers                            | The review flow is the whole teacher MVP                                  |
