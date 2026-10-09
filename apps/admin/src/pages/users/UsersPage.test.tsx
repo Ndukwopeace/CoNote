@@ -16,7 +16,12 @@ import { expectNoAxeViolations } from '@conote/testing/axe'
 // The routes, so the page renders inside the real layout.
 import { routes } from '@/app/routes'
 // The records the demo services read.
-import { emptyPlatformData, userRecord, type PlatformData } from '@/services/platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  userRecord,
+  type PlatformData,
+} from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
 // Session builder.
@@ -260,6 +265,39 @@ describe('UsersPage', () => {
     // Assert.
     expect(await screen.findByText('Student 01 is now suspended.')).toBeInTheDocument()
     expect(within((await tableRows())[1]!).getByText('Suspended')).toBeInTheDocument()
+  })
+
+  // Proves a teacher can be given a course from their row, and the course shows the teacher.
+  it('assigns a teacher to a course from the row menu', async () => {
+    // Arrange: a platform with one course nobody teaches.
+    const data = platform()
+    data.courses.push(courseRecord({ id: 'c1', code: 'CSC 101', title: 'Programming' }))
+    const { user, services } = renderUsers('/admin/users', data)
+    await tableRows()
+    await user.click(screen.getByRole('tab', { name: 'Teachers' }))
+    const rows = await tableRows()
+
+    // Act: open Dr. Smith's actions, choose the course.
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Dr. Smith' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Assign to course' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Assign Dr. Smith to a course' })
+    await user.click(within(dialog).getByRole('button', { name: 'Assign to course' }))
+    expect(await within(dialog).findByText('Choose a course.')).toBeInTheDocument()
+    await user.selectOptions(within(dialog).getByLabelText('Course'), 'CSC 101 Programming')
+    await user.click(within(dialog).getByRole('button', { name: 'Assign to course' }))
+
+    // Assert.
+    expect(await screen.findByText('Dr. Smith now teaches CSC 101.')).toBeInTheDocument()
+    expect((await services.courses.getCourse('c1')).teacher).toMatchObject({ id: 't1' })
+  })
+
+  // Proves students don't get the action.
+  it('offers "Assign to course" for teachers only', async () => {
+    const { user } = renderUsers()
+    const rows = await tableRows()
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Student 01' }))
+    await screen.findByRole('menuitem', { name: 'Edit' })
+    expect(screen.queryByRole('menuitem', { name: 'Assign to course' })).toBeNull()
   })
 
   // Proves a failed load shows the message and a retry, never the raw error.

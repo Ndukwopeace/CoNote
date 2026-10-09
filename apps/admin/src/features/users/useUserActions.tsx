@@ -28,7 +28,8 @@ import {
 // Row shape.
 import type { UserListItem } from '@/types/users'
 
-// The edit form.
+// The edit and assign forms.
+import { AssignCourseDialog } from './AssignCourseDialog'
 import { EditUserDialog } from './EditUserDialog'
 
 /** What each blocking change says before it happens. */
@@ -55,6 +56,7 @@ export function useUserActions(user: UserListItem) {
   // The change waiting for confirmation, and whether the edit form is open.
   const [pending, setPending] = useState<StatusAction | null>(null)
   const [editing, setEditing] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   // SECURITY: no status changes on one's own account (the service refuses them too).
   const isSelf = session?.user.id === user.id
@@ -96,6 +98,12 @@ export function useUserActions(user: UserListItem) {
         },
       })
     },
+    // Only active teachers can be given a course.
+    canAssignCourse: user.role === 'teacher' && user.status === 'active',
+    // Opens the form that gives a teacher a course.
+    assignCourse: () => {
+      setAssigning(true)
+    },
     // Opens the edit form.
     edit: () => {
       setEditing(true)
@@ -119,6 +127,7 @@ export function useUserActions(user: UserListItem) {
           />
         )}
         {editing && <EditUserDialog userId={user.id} open onOpenChange={setEditing} />}
+        {assigning && <AssignCourseDialog teacher={user} open onOpenChange={setAssigning} />}
       </>
     ),
   }

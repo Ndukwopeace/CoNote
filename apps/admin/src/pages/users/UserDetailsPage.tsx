@@ -126,6 +126,11 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
           <Button type="button" variant="outline" onClick={actions.edit}>
             Edit
           </Button>
+          {actions.canAssignCourse && (
+            <Button type="button" variant="outline" onClick={actions.assignCourse}>
+              Assign to course
+            </Button>
+          )}
           {actions.canSendReset && (
             <Button type="button" variant="outline" onClick={actions.sendReset}>
               Send password reset link
