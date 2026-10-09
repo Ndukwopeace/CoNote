@@ -18,8 +18,7 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Panels for the failure states.
-import { ErrorState } from '@/components/common/ErrorState'
-import { NotFoundPanel } from '@/components/common/NotFoundPanel'
+import { ErrorState, NotFoundPage } from '@conote/portal'
 // The stage label.
 import { StageBadge } from '@/components/reviews/StageBadge'
 // The form and the read-only view.
@@ -44,10 +43,11 @@ export function ReviewPage() {
   // A summary that doesn't exist, or isn't this teacher's: the same answer for both.
   if (error instanceof AppError && error.kind === 'not_found') {
     return (
-      <NotFoundPanel
+      <NotFoundPage
         title="Summary not found"
-        backTo={TEACHER_ROUTES.reviews}
-        backLabel="Back to the review queue"
+        message="We couldn't find that."
+        homePath={TEACHER_ROUTES.reviews}
+        homeLabel="Back to the review queue"
       />
     )
   }

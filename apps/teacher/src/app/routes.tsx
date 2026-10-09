@@ -7,15 +7,21 @@
 // Route types and redirects.
 import { Navigate, type RouteObject } from 'react-router'
 
-// Error screen for crashed pages.
-import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary'
-// Guards.
-import { RedirectIfSignedIn } from '@/features/auth/RedirectIfSignedIn'
-import { RequireTeacher } from '@/features/auth/RequireTeacher'
-// The portal frame.
-import { TeacherLayout } from '@/layouts/TeacherLayout'
+// The shared guards, frame and error screen (packages/portal).
+import { PortalFrame, RedirectIfSignedIn, RequireRole, RouteErrorBoundary } from '@conote/portal'
+
+// The portal's sections.
+import { NAV_ITEMS } from '@/layouts/navItems'
 // Route constants.
-import { TEACHER_ROUTES } from '@/lib/routes'
+import { TEACHER_ROUTES, routeTo } from '@/lib/routes'
+
+/** What the wrong-role screen says to a signed-in student or admin. */
+const NOT_TEACHER = { heading: 'This portal is for teachers', pageTitle: 'Teachers only' }
+
+/** The error screen for a crashed page: it offers My courses as the way forward. */
+const crashed = (
+  <RouteErrorBoundary homePath={TEACHER_ROUTES.courses} homeLabel="Go to My courses" />
+)
 
 /** The pages inside the portal frame. */
 const portalPages: RouteObject[] = [
@@ -55,8 +61,14 @@ export const routes: RouteObject[] = [
   { path: '/teacher', element: <Navigate to={TEACHER_ROUTES.courses} replace /> },
   // Sign-in and password recovery, for signed-out visitors only.
   {
-    element: <RedirectIfSignedIn />,
-    errorElement: <RouteErrorBoundary />,
+    element: (
+      <RedirectIfSignedIn
+        allowedRole="teacher"
+        notice={NOT_TEACHER}
+        home={TEACHER_ROUTES.courses}
+      />
+    ),
+    errorElement: crashed,
     children: [
       {
         path: TEACHER_ROUTES.login,
@@ -78,12 +90,12 @@ export const routes: RouteObject[] = [
   },
   // The portal, for teachers only.
   {
-    element: <RequireTeacher />,
+    element: <RequireRole allowedRole="teacher" notice={NOT_TEACHER} loginTo={routeTo.login} />,
     children: [
       {
-        element: <TeacherLayout />,
+        element: <PortalFrame name="Teacher" homePath={TEACHER_ROUTES.courses} items={NAV_ITEMS} />,
         // A crashed page shows the error screen inside the frame.
-        children: [{ errorElement: <RouteErrorBoundary />, children: portalPages }],
+        children: [{ errorElement: crashed, children: portalPages }],
       },
     ],
   },

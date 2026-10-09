@@ -12,7 +12,7 @@ import { Link } from 'react-router'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The alerts.
 import { useAlerts } from '@/hooks/useDashboard'
 // Each alert's wording, severity and link.

@@ -13,7 +13,7 @@ import { EmptyState } from '@conote/ui/common/EmptyState'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The queue.
 import { useReviewQueue } from '@/hooks/useReview'
 // Wording.

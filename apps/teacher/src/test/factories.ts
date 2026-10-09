@@ -7,7 +7,7 @@ export { DEMO_PASSWORD } from '@/services/mock/mockAuthService'
 // Where the demo session is stored, for tests that sign in without the router helper.
 export { SESSION_KEY } from '@/services/mock/mockAuthService'
 // Session shape.
-import type { Session } from '@/types/auth'
+import type { Session } from '@conote/portal'
 // The shared role names.
 import type { Role } from '@conote/domain'
 

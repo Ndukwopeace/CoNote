@@ -14,7 +14,7 @@ import { Skeleton } from '@conote/ui/skeleton'
 // The table.
 import { ClassTable } from '@/components/classes/ClassTable'
 // Load-failure panel and the page buttons.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 import { Pagination } from '@/components/common/Pagination'
 // The list.
 import { useClasses } from '@/hooks/useClasses'

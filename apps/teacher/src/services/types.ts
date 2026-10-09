@@ -4,7 +4,7 @@
  */
 
 // Session shapes.
-import type { PasswordResetRequest, Session, SignInInput } from '@/types/auth'
+import type { PasswordResetRequest, Session, SignInInput } from '@conote/portal'
 // Review shapes.
 import type { ReviewDetails, ReviewQueueItem, SummaryDraft } from '@/types/review'
 // Course shapes.

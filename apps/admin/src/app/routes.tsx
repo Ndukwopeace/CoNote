@@ -6,15 +6,24 @@
 // Route types and redirects.
 import { Navigate, type RouteObject } from 'react-router'
 
-// Error screen for crashed pages.
-import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary'
-// Guards.
-import { RedirectIfSignedIn } from '@/features/auth/RedirectIfSignedIn'
-import { RequireAdmin } from '@/features/auth/RequireAdmin'
-// The console frame.
-import { AdminLayout } from '@/layouts/AdminLayout'
+// The shared guards, frame and error screen (packages/portal).
+import { PortalFrame, RedirectIfSignedIn, RequireRole, RouteErrorBoundary } from '@conote/portal'
+
+// The console's sections.
+import { NAV_ITEMS } from '@/layouts/navItems'
 // Route constants.
-import { ADMIN_ROUTES } from '@/lib/routes'
+import { ADMIN_ROUTES, routeTo } from '@/lib/routes'
+
+/** What the wrong-role screen says to a signed-in student or teacher. */
+const NOT_ADMIN = {
+  heading: 'This console is for administrators',
+  pageTitle: 'Administrators only',
+}
+
+/** The error screen for a crashed page: it offers the dashboard as the way forward. */
+const crashed = (
+  <RouteErrorBoundary homePath={ADMIN_ROUTES.dashboard} homeLabel="Go to the dashboard" />
+)
 
 /** The pages inside the console frame. */
 const consolePages: RouteObject[] = [
@@ -110,8 +119,10 @@ export const routes: RouteObject[] = [
   { path: '/admin', element: <Navigate to={ADMIN_ROUTES.dashboard} replace /> },
   // Sign-in and password recovery, for signed-out visitors only.
   {
-    element: <RedirectIfSignedIn />,
-    errorElement: <RouteErrorBoundary />,
+    element: (
+      <RedirectIfSignedIn allowedRole="admin" notice={NOT_ADMIN} home={ADMIN_ROUTES.dashboard} />
+    ),
+    errorElement: crashed,
     children: [
       {
         path: ADMIN_ROUTES.login,
@@ -133,12 +144,19 @@ export const routes: RouteObject[] = [
   },
   // The console, for admins only.
   {
-    element: <RequireAdmin />,
+    element: <RequireRole allowedRole="admin" notice={NOT_ADMIN} loginTo={routeTo.login} />,
     children: [
       {
-        element: <AdminLayout />,
+        element: (
+          <PortalFrame
+            name="Admin"
+            homePath={ADMIN_ROUTES.dashboard}
+            items={NAV_ITEMS}
+            settingsPath={ADMIN_ROUTES.settings}
+          />
+        ),
         // A crashed page shows the error screen inside the frame.
-        children: [{ errorElement: <RouteErrorBoundary />, children: consolePages }],
+        children: [{ errorElement: crashed, children: consolePages }],
       },
     ],
   },

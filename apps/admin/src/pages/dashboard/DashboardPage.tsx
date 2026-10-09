@@ -12,7 +12,7 @@ import { AlertList } from '@/features/dashboard/AlertList'
 import { StatGrid } from '@/features/dashboard/StatGrid'
 import { SystemHealthCard } from '@/features/dashboard/SystemHealthCard'
 // The signed-in administrator.
-import { useAuth } from '@/features/auth/useAuth'
+import { useAuth } from '@conote/portal'
 // The greeting.
 import { firstName, greeting } from '@/lib/greeting'
 

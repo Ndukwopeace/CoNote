@@ -16,7 +16,7 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Load-failure panel and the status label.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 import { UserStatusBadge } from '@/components/users/UserStatusBadge'
 // The actions shared with the list.
 import { useUserActions } from '@/features/users/useUserActions'

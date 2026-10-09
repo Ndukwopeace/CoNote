@@ -15,8 +15,7 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 import { Skeleton } from '@conote/ui/skeleton'
 
 // Panels for the failure states.
-import { ErrorState } from '@/components/common/ErrorState'
-import { NotFoundPanel } from '@/components/common/NotFoundPanel'
+import { ErrorState, NotFoundPage } from '@conote/portal'
 // The status label.
 import { CourseStatusBadge } from '@/components/courses/CourseStatusBadge'
 // The classes.
@@ -36,10 +35,11 @@ export function CourseDetailsPage() {
   // A course that doesn't exist, or isn't this teacher's: the same answer for both.
   if (error instanceof AppError && error.kind === 'not_found') {
     return (
-      <NotFoundPanel
+      <NotFoundPage
         title="Course not found"
-        backTo={TEACHER_ROUTES.courses}
-        backLabel="Back to My courses"
+        message="We couldn't find that."
+        homePath={TEACHER_ROUTES.courses}
+        homeLabel="Back to My courses"
       />
     )
   }

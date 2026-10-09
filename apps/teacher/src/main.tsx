@@ -22,7 +22,7 @@ import { AppProviders } from '@/app/AppProviders'
 // Services for the configured data source.
 import { createServices } from '@/app/createServices'
 // The query cache.
-import { createQueryClient } from '@/app/queryClient'
+import { createQueryClient } from '@conote/portal'
 // The route table.
 import { routes } from '@/app/routes'
 // Checked configuration.

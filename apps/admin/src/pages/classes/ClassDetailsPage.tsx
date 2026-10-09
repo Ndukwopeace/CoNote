@@ -20,7 +20,7 @@ import { Skeleton } from '@conote/ui/skeleton'
 // The summary label.
 import { SummaryStatusBadge } from '@/components/classes/SummaryStatusBadge'
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The actions shared with the list.
 import { useClassActions } from '@/features/classes/useClassActions'
 // The details.

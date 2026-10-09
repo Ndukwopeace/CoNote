@@ -12,7 +12,7 @@ import { Skeleton } from '@conote/ui/skeleton'
 import { cn } from '@conote/ui/utils'
 
 // Load-failure panel.
-import { ErrorState } from '@/components/common/ErrorState'
+import { ErrorState } from '@conote/portal'
 // The series data.
 import { useActivitySeries } from '@/hooks/useDashboard'
 // Date labels for the table.

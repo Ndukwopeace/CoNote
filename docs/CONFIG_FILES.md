@@ -146,15 +146,19 @@ The same fields and scripts as the student app, minus `icons`: `@conote/admin`, 
 
 The same as the admin app's, with the name `@conote/teacher`, `dev` on port 5175 and `e2e` on port 4175, so all three apps can run side by side. The same dependencies, because the teacher portal uses the same libraries (no new dependency, D74).
 
-### `packages/*/package.json` (`ui`, `domain`, `core`, `testing`)
+### `packages/*/package.json` (`ui`, `domain`, `core`, `testing`, `portal`)
 
 | Field | What it does | Why |
 |---|---|---|
-| `"name"` | `@conote/ui`, `@conote/domain`, `@conote/core`, `@conote/testing` | The name apps import from, for example `@conote/ui/button` |
+| `"name"` | `@conote/ui`, `@conote/domain`, `@conote/core`, `@conote/testing`, `@conote/portal` | The name apps import from, for example `@conote/ui/button` |
 | `"private": true` | Never published | **SECURITY:** as above |
 | `"exports"` | Maps import paths to source files: `@conote/ui/<name>` → `src/components/<name>.tsx`, `@conote/ui/common/<name>` → `src/common/<name>.tsx`, `@conote/ui/forms/<name>` → `src/forms/<name>.tsx`, `@conote/ui/toast` → `src/toast/index.ts`, `@conote/ui/utils` → `src/utils.ts`, `@conote/ui/styles/theme.css` and `…/tokens.css` → the stylesheets; `@conote/domain` → `src/index.ts`; `@conote/core/<name>` and `@conote/testing/<name>` → `src/<name>.ts` | Apps compile the package source directly (no build step for packages), and only the listed paths can be imported, so a package's internals stay private |
 | `"dependencies"` (`ui`) | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | What the primitives use |
 | `"peerDependencies"` (`ui`) | `react`, `react-dom`, `react-router`, `react-hook-form` | Supplied by the app, so there is only ever one copy of each. `react-router` is needed by `SidebarLink` (D67); `react-hook-form` by the shared password-recovery forms (D68). |
+| `"sideEffects": false` (`portal`) | Tells the bundler no module of the package does anything just by being imported | Without it the bundler keeps every module the barrel (`src/index.ts`) re-exports, used or not, and the admin app's first download grew by 29 kB gzipped. With it, only what an app uses is shipped. |
+| `"exports"` (`portal`) | `@conote/portal` → `src/index.ts`; `@conote/portal/pages/login`, `…/forgot-password` and `…/reset-password` → the three pages, each its own entry so an app can lazy-load them; `@conote/portal/testing` → the shared `AuthService` contract suite | One barrel for the shared state, guards and frame, and separate entries for what is loaded on demand (D77) |
+| `"dependencies"` (`portal`) | `@conote/core`, `@conote/domain`, `@conote/ui`, `@hookform/resolvers`, `@tanstack/react-query`, `lucide-react`, `zod` | What the shared sign-in, guards and frame use. No new third-party library: the same versions the apps already ship. |
+| `"peerDependencies"` (`portal`) | `react`, `react-dom`, `react-hook-form`, `react-router` | Supplied by the app, so there is only ever one copy of each |
 | `"dependencies"` (`core`) | `zod` | `parseEnv` checks the environment variables with it |
 | `"devDependencies"` (`ui`) | `@conote/testing`, `@hookform/resolvers`, `zod` | The common test setup for its component tests; sample rules for the password-recovery form tests (the apps bring their own rules) |
 | (`testing`) | no dependencies of its own | It uses the test tooling in the root `devDependencies` (Vitest, Testing Library, axe, Playwright). Test-only: no app imports it from shipped code. |
@@ -248,3 +252,16 @@ shadcn/ui's settings, used if the `shadcn` command is run to add components.
 ## `.nvmrc`
 
 Contains `22`: the Node major version. `nvm use` locally and `actions/setup-node` in CI both read it, so every machine runs the same Node.
+
+---
+
+## `packages/portal/tsconfig.json` and `vitest.config.ts`
+
+The same settings as `packages/ui` (strict, no emit, jsdom tests with the common setup from `@conote/testing`), with one difference: `"types"` also lists `vite/client`, because the package imports `reportError` from `@conote/core`, which reads `import.meta.env`. The root `tsconfig.json` lists the package, and the root `vitest.config.ts` runs it as the `portal` project (D77).
+
+---
+
+## `sonar-project.properties`: duplication and coverage
+
+- `sonar.cpd.exclusions` leaves out each app's configuration files, `main.tsx`, `AppProviders.tsx`, `createServices.ts` and `queryClient.ts`. They are per-app composition: the same few lines wire a different set of services, routes and ports. Everything else the staff portals share lives in `packages/portal`, so a copy of it in an app would be flagged (D77).
+- `sonar.coverage.exclusions` leaves out `packages/portal`'s pages, frame, components and test files, as for the apps: they are covered by page tests, axe and Playwright. Its `auth` and `lib` folders are in the coverage floor (`vitest.config.ts`).

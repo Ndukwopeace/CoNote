@@ -2,15 +2,16 @@
 
 The CoNote monorepo (decision D64). Students write private notes per class. An AI pipeline and teacher review produce summaries, and students see only teacher-approved ones. Each role gets its own app; all apps share one backend and the packages below.
 
-| Folder                                 | What it is                                                                                                                    |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `apps/student`                         | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.**             |
-| `apps/admin`                           | The admin console (React + TypeScript + Vite web app, routes under `/admin`). Admin screens only. Spec: `docs/admin/`.        |
-| `apps/teacher`                         | The teacher portal (React + TypeScript + Vite web app, routes under `/teacher`). Teacher screens only. Spec: `docs/teacher/`. |
-| `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`          |
-| `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                                   |
-| `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                  |
-| `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                                    |
+| Folder                                 | What it is                                                                                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/student`                         | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.**                                   |
+| `apps/admin`                           | The admin console (React + TypeScript + Vite web app, routes under `/admin`). Admin screens only. Spec: `docs/admin/`.                              |
+| `apps/teacher`                         | The teacher portal (React + TypeScript + Vite web app, routes under `/teacher`). Teacher screens only. Spec: `docs/teacher/`.                       |
+| `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`                                |
+| `packages/portal` (`@conote/portal`)   | What the staff portals (admin, teacher) share: sign-in state, role guards, the demo auth service, the three sign-in pages, the frame, error screens |
+| `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                                                         |
+| `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                                        |
+| `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                                                          |
 
 Packages must not import app code (`@/…`); ESLint enforces it. Apps import packages by name (`@conote/ui/button`).
 
@@ -51,7 +52,8 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 ## Gotchas
 
 - Routes live in each app's `src/app/routes.tsx` and `src/lib/routes.ts`. Pages are lazy-loaded, so tests use `findBy…`.
-- Sign-out never navigates from the caller. The route guard (`RequireStudent`, `RequireAdmin`) does it, which avoids two competing redirects.
+- Sign-out never navigates from the caller. The route guard (`RequireStudent`, or `RequireRole` from `@conote/portal` in the admin and teacher apps) does it, which avoids two competing redirects.
+- Sign-in, password recovery, guards, the frame and the error screens of the admin and teacher apps live in `packages/portal` (D77). An app supplies only its words, addresses and accounts (`pages/auth/*`, `app/routes.tsx`, `services/mock/mockAuthService.ts`). Fix a bug there once, in the package. Both apps' `styles/globals.css` have an `@source` line for it, so its classes are generated.
 - Radix `Slot` (`asChild`) turns a function `className` into a string. Don't pass `NavLink`'s function className through it; use `SidebarLink`.
 - Password fields have a "Show password" toggle. In Playwright, `getByLabel('Password')` also matches it, so pass `{ exact: true }`.
 - The service worker registers only in production builds (the plugin's hook is a no-op in `npm run dev` and in Vitest). Test offline behaviour with Playwright (`apps/student/e2e/pwa.spec.ts`).

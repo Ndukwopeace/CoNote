@@ -26,13 +26,13 @@ import { FormMessage } from '@conote/ui/forms/FormMessage'
 import { useToast } from '@conote/ui/toast'
 
 // Sign-in state: signing out is never blocked.
-import { useAuth } from '@/features/auth/useAuth'
+import { useAuth } from '@conote/portal'
 // Saving and publishing.
 import { usePublishDraft, useSaveDraft } from '@/hooks/useReview'
 // The draft's rules.
 import { DRAFT_LIMITS, draftSchema } from '@/lib/draftSchema'
 // Standard wording for failures.
-import { errorMessage } from '@/lib/errorMessages'
+import { errorMessage } from '@conote/portal'
 // The shapes edited.
 import type { ReviewDetails, SummaryDraft } from '@/types/review'
 
