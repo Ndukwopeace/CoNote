@@ -312,7 +312,10 @@ export function createMockCourseService({
       const course = findInUse(courseId)
       const values = parseOrThrow(courseSchema, input)
       requireFreeCode(values.code, course.id)
-      if (values.teacherId !== null) requireTeacher(values.teacherId)
+      // A teacher who has since been deactivated may stay; only a different one must be active.
+      if (values.teacherId !== null && values.teacherId !== course.teacherId) {
+        requireTeacher(values.teacherId)
+      }
       // Apply the changes, noting a teacher change on its own.
       const previousTeacher = course.teacherId
       Object.assign(course, values)

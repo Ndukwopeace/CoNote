@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 
 // Record builders.
-import { emptyPlatformData, userRecord } from '../platformData'
+import { courseRecord, emptyPlatformData, userRecord } from '../platformData'
 
 // The units under test.
 import { loadPlatform, PLATFORM_KEY, savePlatform } from './platformStore'
@@ -47,6 +47,36 @@ describe('platformStore', () => {
     expect(loaded.users.map((user) => user.id)).toEqual(['s1', 's2'])
     expect(loaded.enrollments).toHaveLength(1)
     expect(loaded.auditLog).toHaveLength(1)
+  })
+
+  // Proves saved courses and resources come back, and a store saved before courses existed
+  // still loads, keeping the seed's courses.
+  it('restores saved courses and resources, and tolerates older saves', () => {
+    // Arrange: a changed course and a resource, saved.
+    const changed = emptyPlatformData({ courses: [courseRecord({ id: 'c1', title: 'Renamed' })] })
+    changed.resources.push({
+      id: 'r1',
+      title: 'Outline',
+      type: 'pdf',
+      courseId: 'c1',
+      classId: null,
+      status: 'published',
+      createdAt: '2026-09-01T09:00:00.000Z',
+    })
+    savePlatform(window.localStorage, changed)
+    const withCourse = emptyPlatformData({ courses: [courseRecord({ id: 'c1', title: 'Seed' })] })
+
+    // Act and assert: the saved course wins over the seed's.
+    const loaded = loadPlatform(window.localStorage, withCourse)
+    expect(loaded.courses.map((course) => course.title)).toEqual(['Renamed'])
+    expect(loaded.resources).toHaveLength(1)
+
+    // An older save has no courses: the seed's stay.
+    window.localStorage.setItem(
+      PLATFORM_KEY,
+      JSON.stringify({ users: [], enrollments: [], auditLog: [] }),
+    )
+    expect(loadPlatform(window.localStorage, withCourse).courses).toHaveLength(1)
   })
 
   // Proves anything malformed is ignored, so a hand-edited store can't break the console.

@@ -83,7 +83,15 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
   // SECURITY: storage can be edited by hand, so its contents are checked before use.
   try {
     const parsed = storedSchema.safeParse(JSON.parse(raw))
-    return parsed.success ? { ...seed, ...parsed.data } : seed
+    if (!parsed.success) return seed
+    // Courses and resources saved by an older version are absent: keep the seed's.
+    const { courses, resources, ...saved } = parsed.data
+    return {
+      ...seed,
+      ...saved,
+      courses: courses ?? seed.courses,
+      resources: resources ?? seed.resources,
+    }
   } catch {
     // Not JSON.
     return seed

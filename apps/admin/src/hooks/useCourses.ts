@@ -39,13 +39,14 @@ export function useCourseFilterOptions() {
   })
 }
 
-/** One course's details. */
+/** One course's details. An empty ID loads nothing (for a form that is creating a course). */
 export function useCourse(courseId: string) {
   // The course service.
   const { courses } = useServices()
   return useQuery({
     queryKey: queryKeys.courses.detail(courseId),
     queryFn: () => appQuery(() => courses.getCourse(courseId)),
+    enabled: courseId !== '',
   })
 }
 

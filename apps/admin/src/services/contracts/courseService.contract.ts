@@ -413,6 +413,19 @@ export function describeCourseServiceContract(name: string, create: CreateCourse
       })
     })
 
+    // Proves a deactivated teacher can stay on a course while other details are edited.
+    it('lets an edit keep a teacher who is no longer active', async () => {
+      const data = platform()
+      const svc = create(data, NOW, 'a1')
+      const teacher = data.users.find((user) => user.id === 't1')
+      if (teacher) teacher.status = 'inactive'
+      const course = await svc.updateCourse(
+        'c1',
+        input({ code: 'CSC 101', title: 'Renamed', teacherId: 't1' }),
+      )
+      expect(course).toMatchObject({ title: 'Renamed', teacher: { id: 't1' } })
+    })
+
     // Proves another course's code can't be taken by an edit.
     it('rejects an edit that takes another course’s code', async () => {
       await expect(service().updateCourse('c1', input({ code: 'ENG 101' }))).rejects.toMatchObject({
