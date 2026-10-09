@@ -14,6 +14,8 @@ import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 import { LoadError } from '@/components/common/LoadError'
 // Tab title.
 import { PageTitle } from '@conote/ui/common/PageTitle'
+// The "Preview" label.
+import { PreviewBadge } from '@/components/common/PreviewBadge'
 // Loading placeholder.
 import { ListSkeleton } from '@/components/common/Skeletons'
 // The chat.
@@ -37,7 +39,15 @@ export function AskAiPage() {
       {/* Tab title. */}
       <PageTitle title="Ask CoNote AI" />
       {/* Page heading. */}
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ask CoNote AI</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ask CoNote AI</h1>
+        {/* The replies are canned examples for now, so the page says so. */}
+        <PreviewBadge />
+      </div>
+      {/* One line of honesty: what "Preview" means here. */}
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Preview: replies are examples while the AI service is being built.
+      </p>
       {/* The picker and chat once the lists load. */}
       <AskAiBody courses={courses} classes={classes} />
     </div>

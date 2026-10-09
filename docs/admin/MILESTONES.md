@@ -10,12 +10,14 @@ The admin portal (`apps/admin`) is built in milestones, one pull request each, o
 | A4 | Users: tabs, search, filters, details, invite, status changes | Done |
 | A5 | Courses: create, edit, archive, teacher assignment, enrolment (including bulk CSV) | Done |
 | A6 | Classes: create, edit, archive, details | Done |
-| A7 | Resources: upload, publish, archive, assign | Next |
-| A8 | AI & Summaries: counters, tables, failed jobs, retry, pipeline details | |
-| A9 | Analytics and audit logs | |
-| A10 | Settings and admin notifications | |
-| A11 | Finishing: accessibility and layout checks at 360 / 768 / 1024 / 1440, README | |
-| B | Shared backend stage (all portals): schema, RLS, Edge Functions, audit triggers, storage, AI pipeline, notifications; each portal then switches to Supabase | |
+| A7 | Resources: upload, publish, archive, assign | Post-MVP |
+| A8 | AI & Summaries: counters, tables, failed jobs, retry, pipeline details | Post-MVP, except failed jobs and Retry, which are B4 |
+| A9 | Analytics and audit logs | Post-MVP |
+| A10 | Settings and admin notifications | Post-MVP |
+| A11 | Finishing: accessibility and layout checks at 360 / 768 / 1024 / 1440, README | Folded into B5 |
+| B | Shared backend stage (all portals): schema, RLS, Edge Functions, audit triggers, storage, AI pipeline, notifications; each portal then switches to Supabase | Now B1 to B5, in [`../MILESTONES.md`](../MILESTONES.md#mvp-milestones-d73) |
+
+**MVP focus (D73):** A1 to A6 are done. The rest of the admin console is parked so the core loop (set up, write notes, draft, approve, read) can run for real. The plan and the parked list are in [`../MILESTONES.md`](../MILESTONES.md#mvp-milestones-d73). A7 to A11 have no task lists yet; their scope is in [`REQUIREMENTS.md`](./REQUIREMENTS.md) sections 14 to 19, ready for when they return.
 
 ---
 

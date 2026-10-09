@@ -18,6 +18,8 @@ import { ROUTES } from '@/lib/routes'
 // "12" → "9+", 0 → no badge.
 import { formatUnreadCount } from '@/lib/unreadBadge'
 
+// The "Preview" label.
+import { PreviewBadge } from '@/components/common/PreviewBadge'
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
 // A link that works inside TooltipTrigger (see SidebarLink for why).
@@ -54,7 +56,7 @@ export function Sidebar({
       <nav aria-label="Main navigation" className="flex-1 px-2 py-4 lg:px-3">
         <ul className="space-y-1">
           {/* One entry per destination. */}
-          {NAV_ITEMS.map(({ label, to, icon: Icon }) => (
+          {NAV_ITEMS.map(({ label, to, icon: Icon, preview }) => (
             <li key={to}>
               {/* Tooltip wrapper: shows the label on hover or focus while the rail hides it. */}
               <Tooltip>
@@ -76,6 +78,19 @@ export function Sidebar({
                     {/* Visually hidden on the rail, shown on desktop; always read by screen
                         readers, so the link never loses its name. */}
                     <span className="sr-only lg:not-sr-only">{label}</span>
+                    {/* Preview destinations. Desktop: a pill after the label. Rail: no room for
+                        the word, so a small amber dot, with the word kept for screen readers so
+                        the link's name is the same at both widths. */}
+                    {preview && (
+                      <>
+                        <PreviewBadge className="hidden lg:ml-auto lg:inline-flex" />
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-2 right-2 size-2 rounded-full bg-warning lg:hidden"
+                        />
+                        <span className="sr-only lg:hidden">Preview</span>
+                      </>
+                    )}
                     {/* The unread badge: a pill after the label on desktop, on the icon on the rail. */}
                     {to === ROUTES.notifications && badge && (
                       <span
@@ -89,7 +104,7 @@ export function Sidebar({
                 </TooltipTrigger>
                 {/* Tooltip text to the right; not needed on desktop, where labels show. */}
                 <TooltipContent side="right" className="lg:hidden">
-                  {label}
+                  {preview ? `${label} (Preview)` : label}
                 </TooltipContent>
               </Tooltip>
             </li>

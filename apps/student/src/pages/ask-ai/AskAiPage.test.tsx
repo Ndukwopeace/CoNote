@@ -29,6 +29,19 @@ function picker() {
 }
 
 describe('AskAiPage', () => {
+  // Proves the page says its replies are examples (T0, the "nothing fake" rule).
+  it('labels the page as a preview', async () => {
+    // Act.
+    renderAi()
+
+    // Assert: the heading, the badge beside it and the note under it.
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Ask CoNote AI' })
+    expect(heading.parentElement).toHaveTextContent('Preview')
+    expect(
+      screen.getByText('Preview: replies are examples while the AI service is being built.'),
+    ).toBeInTheDocument()
+  })
+
   // Proves the default context and its prompts.
   it('starts on all courses', async () => {
     // Act.

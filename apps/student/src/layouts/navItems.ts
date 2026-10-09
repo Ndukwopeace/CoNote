@@ -30,6 +30,8 @@ export interface NavItem {
    * (decision D35); Notifications is the top-bar bell and Settings is in the avatar menu.
    */
   inBottomBar: boolean
+  /** Marks the destination as a preview: it shows example content while the real service is built. */
+  preview?: boolean
 }
 
 /** Primary navigation (REQUIREMENTS.md section 8, decision D6). */
@@ -40,8 +42,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Courses', to: ROUTES.courses, icon: BookOpen, inBottomBar: true },
   // All notes.
   { label: 'Notes', to: ROUTES.notes, icon: NotebookPen, inBottomBar: true },
-  // Ask CoNote AI.
-  { label: 'Ask AI', to: ROUTES.askAi, icon: Sparkles, inBottomBar: true },
+  // Ask CoNote AI. Its replies are canned examples for now, so it carries the Preview label.
+  { label: 'Ask AI', to: ROUTES.askAi, icon: Sparkles, inBottomBar: true, preview: true },
   // Notifications: sidebar only; on phones the top-bar bell (with its unread badge) leads here.
   { label: 'Notifications', to: ROUTES.notifications, icon: Bell, inBottomBar: false },
   // Settings: sidebar only; on phones it is in the avatar menu.

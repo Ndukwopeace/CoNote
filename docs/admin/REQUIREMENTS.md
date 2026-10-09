@@ -724,7 +724,7 @@ Where the backend doesn't exist yet, the mock implements the behaviour faithfull
 
 ## 24. Milestones
 
-A1 to A11 build the console on demo data; the shared backend stage (B) connects it to Supabase. The task lists and "done when" checks are in [`MILESTONES.md`](./MILESTONES.md).
+A1 to A6 are built on demo data. Since D73 the rest of the console (A7 Resources, most of A8, A9 Analytics and audit logs, A10 Settings and notifications) is post-MVP, and the shared backend stage is B1 to B5 in [`../MILESTONES.md`](../MILESTONES.md#mvp-milestones-d73). Sections 14 to 19 above keep the full scope for when those milestones return. The task lists and "done when" checks for A1 to A6 are in [`MILESTONES.md`](./MILESTONES.md).
 
 ---
 
