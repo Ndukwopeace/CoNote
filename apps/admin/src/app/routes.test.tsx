@@ -44,10 +44,10 @@ describe('admin routes', () => {
 
   // Proves each detail address has its page.
   it.each([
-    // The test platform has no users or courses, so those details pages say so.
+    // The test platform has no users, courses or classes, so those details pages say so.
     ['/admin/users/u1', 'User not found'],
     ['/admin/courses/c1', 'Course not found'],
-    ['/admin/classes/k1', 'Class details'],
+    ['/admin/classes/k1', 'Class not found'],
     ['/admin/resources/r1', 'Resource details'],
     ['/admin/ai-summaries/s1', 'Summary pipeline'],
   ])('opens %s', async (path, heading) => {
