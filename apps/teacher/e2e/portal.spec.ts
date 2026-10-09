@@ -34,7 +34,7 @@ test('My courses shows only the demo teacher’s courses, with what waits for re
   await signInAs(page)
   await expect(page.getByRole('heading', { level: 1, name: 'My courses' })).toBeVisible()
   // Her two live courses, ongoing first.
-  const cards = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 2 }) })
+  const cards = page.getByRole('main').getByRole('listitem')
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toContainText('MTH 202')
   await expect(cards.nth(0)).toContainText('Ongoing')
@@ -48,7 +48,10 @@ test('My courses shows only the demo teacher’s courses, with what waits for re
   await expectNoAxeViolations(page)
 })
 
-test('the navigation reaches My courses on every screen size', async ({ page, isMobile }) => {
+test('the navigation reaches My courses and the review queue on every screen size', async ({
+  page,
+  isMobile,
+}) => {
   // Sign in.
   await page.goto('/teacher/login')
   await signInAs(page)
@@ -58,7 +61,7 @@ test('the navigation reaches My courses on every screen size', async ({ page, is
   const nav = page.getByRole('navigation', {
     name: isMobile ? 'Phone navigation' : 'Teacher navigation',
   })
-  await expect(nav.getByRole('link')).toHaveCount(1)
+  await expect(nav.getByRole('link')).toHaveCount(2)
   await nav.getByRole('link', { name: 'My courses' }).click()
   // The page is still there, and the panel has closed on phones.
   await expect(page.getByRole('heading', { level: 1, name: 'My courses' })).toBeVisible()

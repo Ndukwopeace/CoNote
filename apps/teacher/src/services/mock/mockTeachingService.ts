@@ -9,7 +9,7 @@ import { AppError } from '@conote/core/errors'
 import type { CourseStatus } from '@conote/domain'
 
 // The shape returned.
-import type { TeacherCourse } from '@/types/teaching'
+import type { CourseClass, CourseDetails, TeacherCourse } from '@/types/teaching'
 
 // The records it reads.
 import type { PlatformData } from '../platformData'
@@ -29,6 +29,9 @@ interface MockTeachingOptions {
 
 /** Where each status sorts: ongoing courses are the ones being taught now. */
 const STATUS_ORDER: Record<CourseStatus, number> = { ongoing: 0, upcoming: 1, completed: 2 }
+
+/** What every "no such course" answers, whatever the reason, so the answer reveals nothing. */
+const COURSE_NOT_FOUND = "We couldn't find that course."
 
 /** Builds the demo TeachingService over `data`. */
 export function createMockTeachingService({
@@ -70,6 +73,46 @@ export function createMockTeachingService({
         .sort(
           (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.code.localeCompare(b.code),
         )
+    },
+
+    async getMyCourse(courseId) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Who is asking.
+      const teacherId = actorId()
+      // SECURITY: no session, no course.
+      if (teacherId === null) throw new AppError('unauthorized', 'Sign in to see this course.')
+      // SECURITY: another teacher's, an archived and an unknown course all answer the same, so a
+      // teacher can't find out which course IDs exist.
+      const course = data.courses.find((candidate) => candidate.id === courseId)
+      if (course?.teacherId !== teacherId || course.archivedAt !== null) {
+        throw new AppError('not_found', COURSE_NOT_FOUND)
+      }
+      // The classes in use, newest first (the highest number is the latest).
+      const classes = data.classes
+        .filter((cls) => cls.courseId === course.id && cls.archivedAt === null)
+        .sort((a, b) => b.number - a.number)
+        .map((cls): CourseClass => {
+          // The class's summary, if the pipeline has made one yet.
+          const summary = data.summaries.find((candidate) => candidate.classId === cls.id)
+          return {
+            id: cls.id,
+            number: cls.number,
+            title: cls.title,
+            startsAt: cls.startsAt,
+            noteCount: cls.noteCount,
+            summaryId: summary?.id ?? null,
+            stage: summary?.status ?? 'collecting',
+            publishedAt: summary?.publishedAt ?? null,
+          }
+        })
+      return {
+        id: course.id,
+        code: course.code,
+        title: course.title,
+        status: course.status,
+        classes,
+      } satisfies CourseDetails
     },
   }
 }

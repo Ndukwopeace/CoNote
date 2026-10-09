@@ -5,6 +5,10 @@
  * course and the other teacher's course exist only to show the "only your courses" rule.
  */
 
+// The empty draft.
+import { emptyDraft } from '@/lib/draftSchema'
+// The draft's shape.
+import type { SummaryDraft } from '@/types/review'
 // The record shapes.
 import type {
   ClassRecord,
@@ -109,6 +113,54 @@ const CLASS_PLAN = [
   ['mth-101', 1, -120, 'published'],
 ] as const
 
+/** The topic of each course's classes, by class number, so the demo drafts read like real ones. */
+const TOPICS: Record<string, string[]> = {
+  'mth-202': [
+    'Vector spaces',
+    'Linear independence',
+    'Basis and dimension',
+    'Linear maps',
+    'Matrix rank',
+    'Determinants',
+    'Eigenvalues',
+  ],
+  'mth-301': ['First-order equations', 'Separable equations'],
+  'swe-311': ['Requirements elicitation', 'Use cases'],
+  'mth-101': ['Limits'],
+}
+
+/** The AI's draft for a class on `topic`. IDs are prefixed with the class, so they stay unique. */
+function draftFor(classId: string, topic: string): SummaryDraft {
+  // Lower case, for use inside a sentence.
+  const lower = topic.toLowerCase()
+  return {
+    overview: `This class introduced ${lower}. The lecturer gave the definitions, then worked through examples before students tried a short set of problems.`,
+    keyConcepts: [
+      {
+        id: `${classId}-c1`,
+        title: topic,
+        explanation: `${topic} was defined and shown on two worked examples.`,
+      },
+      {
+        id: `${classId}-c2`,
+        title: 'Checking an answer',
+        explanation: `Each answer on ${lower} can be checked by substituting it back into the definition.`,
+      },
+    ],
+    confusionAreas: [
+      {
+        id: `${classId}-f1`,
+        issue: `When ${lower} applies`,
+        clarification: `${topic} applies only when the conditions in the definition hold, so check them first.`,
+      },
+    ],
+    keyTopics: [
+      { id: `${classId}-t1`, name: topic, description: 'The main idea of the class.' },
+      { id: `${classId}-t2`, name: 'Practice problems', description: '' },
+    ],
+  }
+}
+
 /** The classes and summaries in `CLASS_PLAN`, dated from `now`. */
 function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
   const classes: ClassRecord[] = []
@@ -119,13 +171,19 @@ function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
     // The class starts at 9:00 local time on its day.
     const start = new Date(now.getTime() + offsetDays * DAY)
     start.setHours(9, 0, 0, 0)
-    const id = `${courseId}-${number}`
+    const id = `${courseId}-${String(number)}`
+    // Classes still to come have no notes; others a steady, varied count.
+    const noteCount = offsetDays > 0 ? 0 : 12 + ((number * 5) % 11)
+    // Only summaries the AI has drafted have text.
+    const drafted = stage === 'in_review' || stage === 'published'
+    const published = stage === 'published'
     classes.push({
       id,
       courseId,
       number,
-      title: `${course?.title ?? courseId}, week ${number}`,
+      title: `${course?.title ?? courseId}, week ${String(number)}`,
       startsAt: start.toISOString(),
+      noteCount,
       // A class in an archived course is archived with it.
       archivedAt: course?.archivedAt ?? null,
     })
@@ -136,6 +194,13 @@ function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
       // A summary entered review three hours after its class.
       inReviewSince:
         stage === 'in_review' ? new Date(start.getTime() + 3 * HOUR).toISOString() : null,
+      // A published summary went out two days after its class, approved by the course's teacher.
+      publishedAt: published ? new Date(start.getTime() + 2 * DAY + 4 * HOUR).toISOString() : null,
+      reviewedBy: published ? (course?.teacherId ?? null) : null,
+      draft: drafted ? draftFor(id, TOPICS[courseId]?.[number - 1] ?? 'The class') : emptyDraft(),
+      version: 1,
+      notesAnalyzedCount: drafted ? noteCount : 0,
+      studentCount: drafted ? Math.max(1, noteCount - 3) : 0,
     })
   }
   return { classes, summaries }

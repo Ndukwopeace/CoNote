@@ -103,5 +103,87 @@ export function describeTeachingServiceContract(name: string, create: TeachingSe
         kind: 'unauthorized',
       })
     })
+
+    describe('getMyCourse', () => {
+      // Proves a course comes back with its classes, newest first, each with its stage.
+      it('returns the course with its classes, newest first', async () => {
+        const data = emptyPlatformData({
+          courses: [courseRecord({ id: 'c1', code: 'C 1', title: 'Course one', teacherId: 't1' })],
+          classes: [
+            classRecord({ id: 'k1', courseId: 'c1', number: 1, noteCount: 4 }),
+            classRecord({ id: 'k2', courseId: 'c1', number: 2 }),
+            classRecord({
+              id: 'k3',
+              courseId: 'c1',
+              number: 3,
+              archivedAt: '2026-01-01T00:00:00.000Z',
+            }),
+          ],
+          summaries: [
+            summaryRecord({
+              id: 's1',
+              classId: 'k1',
+              status: 'published',
+              publishedAt: '2026-09-12T10:00:00.000Z',
+            }),
+            summaryRecord({ id: 's2', classId: 'k2', status: 'in_review' }),
+          ],
+        })
+        const course = await create(data, 't1').getMyCourse('c1')
+        expect(course).toMatchObject({
+          id: 'c1',
+          code: 'C 1',
+          title: 'Course one',
+          status: 'ongoing',
+        })
+        // Archived class left out; newest (highest number) first.
+        expect(course.classes.map((cls) => cls.id)).toEqual(['k2', 'k1'])
+        expect(course.classes[0]).toMatchObject({
+          summaryId: 's2',
+          stage: 'in_review',
+          publishedAt: null,
+        })
+        expect(course.classes[1]).toMatchObject({
+          summaryId: 's1',
+          stage: 'published',
+          noteCount: 4,
+          publishedAt: '2026-09-12T10:00:00.000Z',
+        })
+      })
+
+      // Proves a class with no summary record yet reads as still collecting.
+      it('treats a class without a summary as collecting', async () => {
+        const data = emptyPlatformData({
+          courses: [courseRecord({ id: 'c1', teacherId: 't1' })],
+          classes: [classRecord({ id: 'k1', courseId: 'c1' })],
+        })
+        const course = await create(data, 't1').getMyCourse('c1')
+        expect(course.classes[0]).toMatchObject({ summaryId: null, stage: 'collecting' })
+      })
+
+      // SECURITY: proves another teacher's, an archived and an unknown course all answer the same
+      // not_found, so the answer doesn't reveal which exist.
+      it('answers not_found for any course that is not the teacher’s own and live', async () => {
+        const data = emptyPlatformData({
+          courses: [
+            courseRecord({ id: 'theirs', teacherId: 't2' }),
+            courseRecord({ id: 'old', teacherId: 't1', archivedAt: '2026-01-01T00:00:00.000Z' }),
+          ],
+        })
+        for (const id of ['theirs', 'old', 'nope']) {
+          await expect(create(data, 't1').getMyCourse(id)).rejects.toMatchObject({
+            kind: 'not_found',
+          })
+        }
+      })
+
+      // SECURITY: proves a signed-out caller gets nothing.
+      it('refuses a signed-out caller', async () => {
+        const data = emptyPlatformData({ courses: [courseRecord({ id: 'c1', teacherId: 't1' })] })
+        await expect(create(data, null).getMyCourse('c1')).rejects.toMatchObject({
+          kind: 'unauthorized',
+        })
+      })
+    })
   })
 }

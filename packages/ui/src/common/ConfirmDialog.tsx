@@ -26,6 +26,9 @@ interface ConfirmDialogProps {
   cancelLabel?: string
   // Runs when the student confirms.
   onConfirm: () => void
+  // "destructive" (red) for something that can't be undone; "default" for a plain yes, such as
+  // publishing. Red unless said otherwise.
+  confirmVariant?: 'destructive' | 'default'
 }
 
 /** A centred confirmation with Cancel and a red confirm button. */
@@ -37,6 +40,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancel',
   onConfirm,
+  confirmVariant = 'destructive',
 }: Readonly<ConfirmDialogProps>) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -58,9 +62,9 @@ export function ConfirmDialog({
             <AlertDialog.Cancel className={buttonVariants({ variant: 'outline' })}>
               {cancelLabel}
             </AlertDialog.Cancel>
-            {/* Confirm, in the destructive colour. */}
+            {/* Confirm, in the destructive colour unless the caller chose the plain one. */}
             <AlertDialog.Action
-              className={buttonVariants({ variant: 'destructive' })}
+              className={buttonVariants({ variant: confirmVariant })}
               onClick={onConfirm}
             >
               {confirmLabel}

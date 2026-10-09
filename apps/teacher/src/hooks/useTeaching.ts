@@ -23,3 +23,13 @@ export function useMyCourses() {
     queryFn: () => appQuery(() => teaching.listMyCourses()),
   })
 }
+
+/** One of the teacher's courses with its classes. An unknown ID is a not_found error. */
+export function useMyCourse(courseId: string) {
+  // The teaching service.
+  const { teaching } = useServices()
+  return useQuery({
+    queryKey: queryKeys.teaching.course(courseId),
+    queryFn: () => appQuery(() => teaching.getMyCourse(courseId)),
+  })
+}

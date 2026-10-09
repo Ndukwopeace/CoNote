@@ -3,15 +3,17 @@
  * how many classes it has, and how many summaries wait for the teacher.
  */
 
+// Client-side link.
+import { Link } from 'react-router'
+
 // The status label.
 import { CourseStatusBadge } from '@/components/courses/CourseStatusBadge'
+// Counts wording.
+import { classesText } from '@/lib/format'
+// Where the course page is.
+import { routeTo } from '@/lib/routes'
 // The shape shown.
 import type { TeacherCourse } from '@/types/teaching'
-
-/** "1 class", "3 classes". */
-function classesText(count: number): string {
-  return count === 1 ? '1 class' : `${String(count)} classes`
-}
 
 /** A course card. */
 export function CourseCard({ course }: Readonly<{ course: TeacherCourse }>) {
@@ -22,7 +24,12 @@ export function CourseCard({ course }: Readonly<{ course: TeacherCourse }>) {
         <p className="text-sm font-semibold text-primary-dark">{course.code}</p>
         <CourseStatusBadge status={course.status} />
       </div>
-      <h2 className="mt-1 text-lg font-bold">{course.title}</h2>
+      <h2 className="mt-1 text-lg font-bold">
+        {/* The title opens the course. */}
+        <Link to={routeTo.course(course.id)} className="hover:underline">
+          {course.title}
+        </Link>
+      </h2>
       {/* The counts. */}
       <p className="mt-3 text-sm text-muted-foreground">{classesText(course.classCount)}</p>
       {/* The teacher's turn, said only when there is one. The text carries the meaning, not colour. */}

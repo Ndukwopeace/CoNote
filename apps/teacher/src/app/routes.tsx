@@ -23,6 +23,24 @@ const portalPages: RouteObject[] = [
     path: TEACHER_ROUTES.courses,
     lazy: async () => ({ Component: (await import('@/pages/courses/CoursesPage')).CoursesPage }),
   },
+  {
+    path: `${TEACHER_ROUTES.courses}/:courseId`,
+    lazy: async () => ({
+      Component: (await import('@/pages/courses/CourseDetailsPage')).CourseDetailsPage,
+    }),
+  },
+  {
+    path: TEACHER_ROUTES.reviews,
+    lazy: async () => ({
+      Component: (await import('@/pages/reviews/ReviewQueuePage')).ReviewQueuePage,
+    }),
+  },
+  {
+    path: `${TEACHER_ROUTES.reviews}/:summaryId`,
+    lazy: async () => ({
+      Component: (await import('@/pages/reviews/ReviewPage')).ReviewPage,
+    }),
+  },
   // Any other /teacher address: not-found, inside the frame so the navigation stays.
   {
     path: '/teacher/*',

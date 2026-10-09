@@ -22,6 +22,7 @@ import {
   readStoredSession,
   SESSION_KEY,
 } from '@/services/mock/mockAuthService'
+import { createMockReviewService } from '@/services/mock/mockReviewService'
 import { createMockTeachingService } from '@/services/mock/mockTeachingService'
 // The records the demo services read.
 import { emptyPlatformData, type PlatformData } from '@/services/platformData'
@@ -43,6 +44,8 @@ interface RenderOptions {
 
 /** Demo services over `platform` and test storage, without delays, on the real clock. */
 export function createTestServices(platform: PlatformData = emptyPlatformData()): Services {
+  // The signed-in teacher, read from the stored session.
+  const actorId = () => readStoredSession(window.sessionStorage)?.user.id ?? null
   return {
     auth: createMockAuthService({
       store: window.sessionStorage,
@@ -51,9 +54,11 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
       // Sign-in checks the account's status on the test platform, as the app does.
       accountStatus: (email) => platform.users.find((user) => user.email === email)?.status,
     }),
-    teaching: createMockTeachingService({
+    teaching: createMockTeachingService({ data: platform, actorId, latencyMs: 0 }),
+    review: createMockReviewService({
       data: platform,
-      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      actorId,
+      now: () => new Date(),
       latencyMs: 0,
     }),
   }

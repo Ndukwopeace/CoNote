@@ -1,6 +1,6 @@
 # CoNote Teacher Portal — Requirements
 
-**Status:** Draft v1 (T1; D74)
+**Status:** Built (T1 and T2; D74, D75)
 **Scope:** Teacher portal only, in `apps/teacher`
 **Related:** [`../MILESTONES.md`](../MILESTONES.md) (milestones T1 and T2), [`../REQUIREMENTS.md`](../REQUIREMENTS.md) (student portal and the decisions log), [`../admin/REQUIREMENTS.md`](../admin/REQUIREMENTS.md) (shared tables and the "nothing fake" rule), [`../ENGINEERING_STANDARDS.md`](../ENGINEERING_STANDARDS.md)
 
@@ -92,11 +92,13 @@ Summaries in `in_review` for the teacher's courses, **longest wait first** (`in_
 ## 9. Review summary (T2)
 
 - **Header:** back link, course code and title, class title, stage badge, "Based on {n} notes from {m} students" (D74).
-- **The draft** has the student summary's four parts (student REQUIREMENTS FR-SUM-2): an overview, key concepts (title and explanation), common areas of confusion (point and clarification), and key topics (name and optional description). Every text field is editable. Parts can be added and removed. Nothing may be left empty: a blank field blocks saving and names the field.
-- **Save draft:** keeps the edits, status stays `in_review`. Unsaved edits warn before the teacher leaves the page.
+- **The draft** has the student summary's four parts (student REQUIREMENTS FR-SUM-2): an overview, key concepts (title and explanation), common areas of confusion (point and clarification), and key topics (name and optional description). Every text field is editable. Parts can be added and removed (at most 30 of each). A blank required field blocks saving and names the field ("Enter the overview."). The overview and each part's title, explanation, point, clarification and name are required; a topic's description is the only optional field, and the lists themselves may be empty. Text is trimmed on save, and limited to 4000 characters for the overview, 200 for titles and names, and 2000 for explanations and descriptions.
+- **Save draft:** keeps the edits, status stays `in_review`, and says "Draft saved." Leaving the page by a link with unsaved edits asks first ("Leave without saving?", with Keep editing); closing the tab uses the browser's own prompt. Signing out is never held up.
 - **Approve & Publish:** asks first ("Publish this summary? Students in {course} will see it."), then publishes the **saved** draft, sets `reviewed_by` and `published_at`, and moves the status to `published`. Unsaved edits are saved first as part of the same action.
 - **Conflicts:** if the draft changed since it was opened (another tab), saving or publishing fails with "This draft changed. Reload to see the latest." and nothing is overwritten.
-- **Published:** read-only, with "Published {date}". No edit or publish action.
+- **Published:** read-only, with "Published {date} by {teacher}". No edit or publish action.
+- **Not drafted yet:** a summary still collecting notes or being drafted opens to "Collecting notes" or "AI is drafting", with no form.
+- **Not found:** a summary that isn't the teacher's, is in an archived course or class, or doesn't exist shows "Summary not found".
 - **Safe text:** draft text is plain text. Anything rendered as HTML goes through `SafeHtml`.
 
 ## 10. Service list
@@ -109,9 +111,9 @@ Pages reach these only through `useServices()`. Each has a contract test that th
 | `teaching`      | `listMyCourses()`                                 | T1. The signed-in teacher's courses with class and waiting counts.                              |
 | `teaching`      | `getMyCourse(courseId)`                           | T2. Rejects `not_found` for another teacher's course.                                           |
 | `review`        | `listReviewQueue()`                               | T2. Oldest wait first.                                                                          |
-| `review`        | `getDraft(summaryId)`                             | T2. Draft, status, version, note and student counts. `not_found` unless the teacher's.          |
-| `review`        | `saveDraft(summaryId, draft, version)`            | T2. `conflict` when `version` is stale; refuses any status but `in_review`.                     |
-| `review`        | `approveAndPublish(summaryId, version)`           | T2. Same checks. The one publish path.                                                          |
+| `review`        | `getDraft(summaryId)`                             | T2. Draft, status, version, note and student counts, in any stage. `not_found` unless the summary is in a live class of one of the teacher's live courses. |
+| `review`        | `saveDraft(summaryId, draft, version)`            | T2. `validation` for a blank required field; `conflict` when `version` is stale or the status is not `in_review`. Returns the saved summary. |
+| `review`        | `approveAndPublish(summaryId, draft, version)`    | T2. Saves `draft` and publishes it in one step, with the same checks. Sets `reviewed_by` and `published_at`. The one publish path. |
 
 In the backend stage, `saveDraft` and `approveAndPublish` run server-side and check that the caller is the course's teacher and the summary is `in_review`. The browser's guard is for the user experience only.
 
@@ -129,7 +131,7 @@ Every data view handles loading, empty, error and not-found (engineering standar
 
 ## 12. Demo data
 
-The teacher demo has its own seed (`apps/teacher/src/services/mock/seed`), as the admin and student demos do. The signed-in teacher is **Sarah Mbarga** (`teacher-1`). Her course **MTH 202 Linear Algebra** matches the admin demo's; the seed adds one more course so the list isn't a single card, and a second teacher's course so the "only your courses" rule is visible in the data. Classes cover every summary stage. Because the apps are separate origins with separate storage, a summary published here does not appear in the student demo: the hand-off is proved by the review contract (T2) and by the real loop (B3).
+The teacher demo has its own seed (`apps/teacher/src/services/mock/seed`), as the admin and student demos do. The signed-in teacher is **Sarah Mbarga** (`teacher-1`). Her course **MTH 202 Linear Algebra** matches the admin demo's; the seed adds one more course so the list isn't a single card, and a second teacher's course so the "only your courses" rule is visible in the data. Classes cover every summary stage, and summaries in review or published have a draft. A teacher's saves and publishes are kept in local storage (`conote-teacher-demo:platform`) so they survive a reload, like server data; clearing the site's storage returns to the seed. Because the apps are separate origins with separate storage, a summary published here does not appear in the student demo: the hand-off is proved by the review contract (T2) and by the real loop (B3).
 
 ## 13. Nothing fake
 

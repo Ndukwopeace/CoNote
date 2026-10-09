@@ -66,6 +66,20 @@ describe('CoursesPage', () => {
     expect(within(card).getByText('1 waiting for review')).toBeInTheDocument()
   })
 
+  // Proves a card's title opens the course page.
+  it('links each course to its page', async () => {
+    renderCourses(
+      emptyPlatformData({
+        courses: [courseRecord({ id: 'mth-202', title: 'Linear Algebra', teacherId: ME })],
+      }),
+    )
+
+    expect(await screen.findByRole('link', { name: 'Linear Algebra' })).toHaveAttribute(
+      'href',
+      '/teacher/courses/mth-202',
+    )
+  })
+
   // Proves a course with nothing waiting says nothing about reviews, and one class is singular.
   it('says nothing about reviews when none wait', async () => {
     renderCourses(
@@ -118,6 +132,7 @@ describe('CoursesPage', () => {
       session: makeSession('teacher'),
       overrides: {
         teaching: {
+          getMyCourse: () => Promise.reject(new AppError('not_found', 'x')),
           listMyCourses: () => {
             calls += 1
             return calls === 1

@@ -7,6 +7,10 @@
 // The shared vocabulary.
 import type { AccountStatus, CourseStatus, Role, SummaryStatus } from '@conote/domain'
 
+// The draft's shape.
+import { emptyDraft } from '@/lib/draftSchema'
+import type { SummaryDraft } from '@/types/review'
+
 /** An account (`profiles`): who can sign in, and as what. */
 export interface UserRecord {
   id: string
@@ -38,6 +42,8 @@ export interface ClassRecord {
   number: number
   title: string
   startsAt: string
+  // How many notes students have contributed. Only the count is known here, never the content.
+  noteCount: number
   archivedAt: string | null
 }
 
@@ -48,6 +54,17 @@ export interface SummaryRecord {
   status: SummaryStatus
   // When it entered review, or null if it hasn't yet.
   inReviewSince: string | null
+  // When a teacher published it, or null if not published.
+  publishedAt: string | null
+  // The teacher who published it (`summaries.reviewed_by`), or null if not published.
+  reviewedBy: string | null
+  // The text. Empty until the AI has written it.
+  draft: SummaryDraft
+  // Starts at 1 and goes up with every save, so a stale tab can't overwrite a newer draft.
+  version: number
+  // "Based on n notes from m students": counts only, never notes (D74).
+  notesAnalyzedCount: number
+  studentCount: number
 }
 
 /** Everything the teacher services read. */
@@ -97,6 +114,7 @@ export function classRecord(
     number: 1,
     title: overrides.id,
     startsAt: '2026-09-10T09:00:00.000Z',
+    noteCount: 0,
     archivedAt: null,
     ...overrides,
   }
@@ -106,5 +124,15 @@ export function classRecord(
 export function summaryRecord(
   overrides: Partial<SummaryRecord> & Pick<SummaryRecord, 'id' | 'classId'>,
 ): SummaryRecord {
-  return { status: 'collecting', inReviewSince: null, ...overrides }
+  return {
+    status: 'collecting',
+    inReviewSince: null,
+    publishedAt: null,
+    reviewedBy: null,
+    draft: emptyDraft(),
+    version: 1,
+    notesAnalyzedCount: 0,
+    studentCount: 0,
+    ...overrides,
+  }
 }

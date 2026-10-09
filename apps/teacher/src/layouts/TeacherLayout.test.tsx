@@ -15,8 +15,8 @@ import { makeSession } from '@/test/factories'
 import { renderWithRouter } from '@/test/renderWithRouter'
 
 describe('TeacherLayout', () => {
-  // Proves the sidebar lists only pages that exist, and no student or admin destination.
-  it('lists only My courses in the sidebar', async () => {
+  // Proves the sidebar lists the portal's two pages, and no student or admin destination.
+  it('lists My courses and the review queue in the sidebar', async () => {
     renderWithRouter({ routes, path: '/teacher/courses', session: makeSession('teacher') })
 
     const nav = await screen.findByRole('navigation', { name: 'Teacher navigation' })
@@ -24,7 +24,7 @@ describe('TeacherLayout', () => {
       within(nav)
         .getAllByRole('link')
         .map((link) => link.textContent.trim()),
-    ).toEqual(['My courses'])
+    ).toEqual(['My courses', 'Review queue'])
     expect(within(nav).getByRole('link', { name: 'My courses' })).toHaveAttribute(
       'href',
       '/teacher/courses',

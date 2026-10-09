@@ -10,5 +10,15 @@ export const queryKeys = {
     all: ['teaching'] as const,
     // The signed-in teacher's courses.
     myCourses: () => [...queryKeys.teaching.all, 'my-courses'] as const,
+    // One course with its classes.
+    course: (courseId: string) => [...queryKeys.teaching.all, 'course', courseId] as const,
+  },
+  review: {
+    // Every query about summaries under review.
+    all: ['review'] as const,
+    // The review queue.
+    queue: () => [...queryKeys.review.all, 'queue'] as const,
+    // One summary opened for review.
+    details: (summaryId: string) => [...queryKeys.review.all, 'details', summaryId] as const,
   },
 }

@@ -7,7 +7,10 @@ import { describe, expect, it } from 'vitest'
 
 // The demo sign-in accounts.
 import { DEMO_ACCOUNTS } from '../mockAuthService'
-// The service that reads the seed.
+// The draft's rules.
+import { draftSchema } from '@/lib/draftSchema'
+// The services that read the seed.
+import { createMockReviewService } from '../mockReviewService'
 import { createMockTeachingService } from '../mockTeachingService'
 
 // The unit under test.
@@ -58,5 +61,47 @@ describe('createPlatformSeed', () => {
     expect(
       data.classes.filter((cls) => cls.courseId === 'mth-101').every((cls) => cls.archivedAt),
     ).toBe(true)
+  })
+
+  // Proves every drafted summary (in review or published) holds a draft that passes the rules, so
+  // the demo can be saved and published without first fixing it.
+  it('gives every drafted summary a valid draft', () => {
+    const drafted = createPlatformSeed(NOW).summaries.filter(
+      (summary) => summary.status === 'in_review' || summary.status === 'published',
+    )
+    expect(drafted.length).toBeGreaterThan(0)
+    for (const summary of drafted) {
+      expect(draftSchema.safeParse(summary.draft).success).toBe(true)
+      expect(summary.notesAnalyzedCount).toBeGreaterThan(0)
+    }
+  })
+
+  // Proves summaries not yet drafted have no text, and published ones say who published them.
+  it('leaves undrafted summaries empty and credits published ones', () => {
+    for (const summary of createPlatformSeed(NOW).summaries) {
+      if (summary.status === 'collecting' || summary.status === 'processing') {
+        expect(summary.draft.overview).toBe('')
+      }
+      if (summary.status === 'published') {
+        expect(summary.publishedAt).not.toBeNull()
+        expect(summary.reviewedBy).not.toBeNull()
+      }
+    }
+  })
+
+  // Proves the demo teacher's queue holds her two MTH 202 summaries, the older wait first, and
+  // none of the other teacher's.
+  it('queues the two MTH 202 summaries, oldest first', async () => {
+    const service = createMockReviewService({
+      data: createPlatformSeed(NOW),
+      actorId: () => 'teacher-1',
+      now: () => NOW,
+      latencyMs: 0,
+    })
+    const queue = await service.listReviewQueue()
+    expect(queue.map((item) => [item.courseCode, item.classNumber])).toEqual([
+      ['MTH 202', 4],
+      ['MTH 202', 5],
+    ])
   })
 })
