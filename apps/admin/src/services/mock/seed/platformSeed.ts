@@ -18,6 +18,7 @@ import type {
   ClassRecord,
   CourseRecord,
   EnrollmentRecord,
+  EnrollmentRequestRecord,
   PlatformData,
   ResourceRecord,
   SummaryRecord,
@@ -241,6 +242,52 @@ function buildEnrollments(users: UserRecord[], courses: CourseRecord[]): Enrollm
     for (const courseId of courseIds) enrollments.push({ courseId, studentId: user.id })
   })
   return enrollments
+}
+
+/**
+ * Requests to join courses (D76): pending ones waiting for the administrator, and one that was
+ * declined earlier. Each goes to a course its student isn't in; times run from hours to days ago.
+ */
+function buildEnrollmentRequests(
+  users: UserRecord[],
+  enrollments: EnrollmentRecord[],
+  clock: SeedClock,
+): EnrollmentRequestRecord[] {
+  // [course, hours ago, status]: two requests for MTH 202, one each for others, one declined.
+  const plan = [
+    ['mth-202', 30, 'pending'],
+    ['mth-202', 6, 'pending'],
+    ['swe-311', 52, 'pending'],
+    ['phy-101', 3, 'pending'],
+    ['eng-201', 200, 'declined'],
+  ] as const
+  // Active students who are not the sign-in student, in order.
+  const candidates = users.filter(
+    (user) => user.role === 'student' && user.status === 'active' && user.id !== 'student-1',
+  )
+  const used = new Set<string>()
+  const requests: EnrollmentRequestRecord[] = []
+  for (const [courseId, hours, status] of plan) {
+    // The next student not yet in this course, and not already used for another request.
+    const student = candidates.find(
+      (candidate) =>
+        !used.has(candidate.id) &&
+        !enrollments.some((e) => e.courseId === courseId && e.studentId === candidate.id),
+    )
+    if (!student) continue
+    used.add(student.id)
+    const createdAt = clock.ago(hours * HOUR)
+    requests.push({
+      id: `request-${String(requests.length + 1)}`,
+      courseId,
+      studentId: student.id,
+      status,
+      createdAt,
+      decidedAt: status === 'pending' ? null : clock.ago((hours - 20) * HOUR),
+      decidedBy: status === 'pending' ? null : 'admin-1',
+    })
+  }
+  return requests
 }
 
 /** The audit history behind the users: each invitation, and the status changes since. */
@@ -560,9 +607,11 @@ export function createPlatformSeed(now: Date): PlatformData {
   const activity = buildActivity(clock, random)
 
   const users = buildUsers(clock)
+  const enrollments = buildEnrollments(users, courses)
   return {
     users,
-    enrollments: buildEnrollments(users, courses),
+    enrollments,
+    enrollmentRequests: buildEnrollmentRequests(users, enrollments, clock),
     auditLog: buildAuditLog(users, clock),
     courses,
     resources: buildResources(courses, clock),

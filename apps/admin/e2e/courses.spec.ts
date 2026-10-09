@@ -127,3 +127,38 @@ test('an archived course leaves the list, refuses changes, and comes back when r
   await page.getByRole('menuitem', { name: 'Restore' }).click()
   await expect(page.getByText('CSC 301 restored.')).toBeVisible()
 })
+
+test('the dashboard alert leads to courses with requests, and a request is approved then declined', async ({
+  page,
+}) => {
+  // Watch for Content-Security-Policy breaks throughout.
+  const cspViolations = watchCspViolations(page)
+  // The dashboard's link: courses with students waiting to join.
+  await page.goto('/admin/login?redirect=%2Fadmin%2Fcourses%3Frequests%3Dwaiting')
+  await signInAs(page)
+  await expect(page.getByLabel('Requests waiting')).toBeChecked()
+  // MTH 202 has two students waiting.
+  await expect(page.getByText('2 waiting')).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // Open the course's Requests tab.
+  await page.getByRole('link', { name: 'MTH 202' }).click()
+  await page.getByRole('tab', { name: 'Requests (2)' }).click()
+  const table = page.getByRole('table', { name: 'Requests to join MTH 202' })
+  await expect(table.getByRole('row')).toHaveCount(3)
+  await expectNoAxeViolations(page)
+
+  // Approve the first: the tab count drops, and the student is on the roster.
+  await table
+    .getByRole('button', { name: /^Approve / })
+    .first()
+    .click()
+  await expect(page.getByText(/ added to MTH 202\./)).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Requests (1)' })).toBeVisible()
+
+  // Decline the other: nobody is left waiting.
+  await table.getByRole('button', { name: /^Decline / }).click()
+  await expect(page.getByText('No students are waiting to join.')).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Requests', exact: true })).toBeVisible()
+  expect(cspViolations).toEqual([])
+})

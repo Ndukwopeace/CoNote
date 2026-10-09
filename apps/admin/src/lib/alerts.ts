@@ -85,6 +85,13 @@ export function alertContent({ kind, count, days }: PlatformAlert): AlertContent
         severity: 'warning',
         to: withQuery(ADMIN_ROUTES.aiSummaries, { status: 'in_review' }),
       }
+    // Students' requests to join courses, waiting for an administrator (D76).
+    case 'enrollment_requests_waiting':
+      return {
+        message: `${counted(count, 'student', 'students')} waiting to join a course`,
+        severity: 'warning',
+        to: withQuery(ADMIN_ROUTES.courses, { requests: 'waiting' }),
+      }
     // A new kind must be described here before the code compiles.
     default:
       return assertNever(kind)

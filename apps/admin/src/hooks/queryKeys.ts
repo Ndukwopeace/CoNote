@@ -46,6 +46,8 @@ export const queryKeys = {
     // A course's students, narrowed by a search.
     students: (courseId: string, q: string) =>
       [...queryKeys.courses.all, 'students', courseId, q] as const,
+    // A course's requests to join.
+    requests: (courseId: string) => [...queryKeys.courses.all, 'requests', courseId] as const,
   },
   users: {
     // Every user query; cleared after any change to an account.

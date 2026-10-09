@@ -19,11 +19,19 @@ import type {
   CourseSort,
   EnrolledStudent,
   EnrollmentMatch,
+  EnrollmentRequest,
   PersonRef,
+  RequestDecision,
 } from '@/types/courses'
 
 // The records it reads and writes.
-import type { AuditEntry, CourseRecord, PlatformData, UserRecord } from '../platformData'
+import type {
+  AuditEntry,
+  CourseRecord,
+  EnrollmentRequestRecord,
+  PlatformData,
+  UserRecord,
+} from '../platformData'
 // The interface implemented here.
 import type { CourseService } from '../types'
 
@@ -35,6 +43,9 @@ export const COURSE_PAGE_SIZE = 20
 
 /** What an archived course says to every change. */
 const ARCHIVED_MESSAGE = 'This course is archived. Restore it to make changes.'
+
+/** What a request from an account that can't be enrolled gets told. */
+const CANNOT_ENROL_MESSAGE = "This account can't be enrolled."
 
 /** What an unusable teacher gets told. */
 const TEACHER_MESSAGE = 'Choose an active teacher.'
@@ -143,6 +154,13 @@ export function createMockCourseService({
     return new Set(data.enrollments.filter((e) => e.courseId === courseId).map((e) => e.studentId))
   }
 
+  /** The requests to join `courseId` that are waiting for a decision, oldest first. */
+  function pendingRequests(courseId: string): EnrollmentRequestRecord[] {
+    return data.enrollmentRequests
+      .filter((request) => request.courseId === courseId && request.status === 'pending')
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+  }
+
   /** The student as the enrolment screens show them. */
   function toStudent(user: UserRecord): EnrolledStudent {
     return {
@@ -168,6 +186,7 @@ export function createMockCourseService({
       // Classes still in use.
       classCount: data.classes.filter((c) => c.courseId === course.id && c.archivedAt === null)
         .length,
+      pendingRequestCount: pendingRequests(course.id).length,
       archivedAt: course.archivedAt,
     }
   }
@@ -233,6 +252,7 @@ export function createMockCourseService({
         (filter.teacher === 'none'
           ? course.teacherId === null
           : course.teacherId === filter.teacher)) &&
+      (!filter.requests || pendingRequests(course.id).length > 0) &&
       (!q || course.code.toLowerCase().includes(q) || course.title.toLowerCase().includes(q))
     )
   }
@@ -470,6 +490,66 @@ export function createMockCourseService({
       if (index === -1) throw new AppError('not_found', 'This student isn’t in the course.')
       data.enrollments.splice(index, 1)
       record(actor, 'enrollment.removed', course, { studentId })
+    },
+
+    async listEnrollmentRequests(courseId) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      find(courseId)
+      // The waiting requests, oldest first, each with the student who asked.
+      return pendingRequests(courseId).flatMap((request): EnrollmentRequest[] => {
+        const student = data.users.find((user) => user.id === request.studentId)
+        return student
+          ? [{ id: request.id, student: toStudent(student), requestedAt: request.createdAt }]
+          : []
+      })
+    },
+
+    async decideEnrollmentRequest(requestId, decision: RequestDecision) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // SECURITY: only a signed-in administrator decides.
+      const actor = requireActor()
+      const request = data.enrollmentRequests.find((candidate) => candidate.id === requestId)
+      if (!request) throw new AppError('not_found', 'Request not found.')
+      // A request is decided once.
+      if (request.status !== 'pending') {
+        throw new AppError('conflict', 'This request has already been decided.')
+      }
+      // An archived course refuses both decisions.
+      const course = findInUse(request.courseId)
+      const student = data.users.find((user) => user.id === request.studentId)
+
+      if (decision === 'approved') {
+        // SECURITY: only an active student can be enrolled, whatever the request says.
+        if (student?.role !== 'student' || student.status !== 'active') {
+          throw new AppError('validation', CANNOT_ENROL_MESSAGE)
+        }
+        // Enrol them, unless they got in another way meanwhile.
+        const already = data.enrollments.some(
+          (enrollment) => enrollment.courseId === course.id && enrollment.studentId === student.id,
+        )
+        if (!already) data.enrollments.push({ courseId: course.id, studentId: student.id })
+        // Close the request, then record both facts.
+        request.status = 'approved'
+        request.decidedAt = now().toISOString()
+        request.decidedBy = actor
+        record(actor, 'enrollment_request.approved', course, {
+          studentId: request.studentId,
+          requestId: request.id,
+        })
+        if (!already) record(actor, 'enrollment.added', course, { studentId: request.studentId })
+        return
+      }
+
+      // Declined: close it, and enrol nobody.
+      request.status = 'declined'
+      request.decidedAt = now().toISOString()
+      request.decidedBy = actor
+      record(actor, 'enrollment_request.declined', course, {
+        studentId: request.studentId,
+        requestId: request.id,
+      })
     },
   }
 }

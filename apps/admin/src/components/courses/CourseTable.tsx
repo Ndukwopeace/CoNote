@@ -26,9 +26,17 @@ const COLUMNS: DataColumn<CourseListItem, CourseSortField>[] = [
   {
     heading: 'Code',
     cell: (course) => (
-      <Link to={routeTo.course(course.id)} className="font-medium hover:underline">
-        {course.code}
-      </Link>
+      <span className="flex flex-wrap items-center gap-2">
+        <Link to={routeTo.course(course.id)} className="font-medium hover:underline">
+          {course.code}
+        </Link>
+        {/* Students waiting to join, so the list shows where work is. */}
+        {course.pendingRequestCount > 0 && (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+            {course.pendingRequestCount} waiting
+          </span>
+        )}
+      </span>
     ),
     sortField: 'code',
   },

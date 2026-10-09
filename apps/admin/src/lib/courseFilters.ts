@@ -35,6 +35,8 @@ export function readCourseFilter(params: URLSearchParams): CourseFilter {
   if (department) filter.department = department
   const teacher = params.get('teacher')?.trim()
   if (teacher) filter.teacher = teacher
+  // Only the exact word narrows to courses with requests waiting.
+  if (params.get('requests') === 'waiting') filter.requests = 'waiting'
   // Only the exact word turns on the archived view.
   if (params.get('archived') === 'true') filter.archived = true
   const sort = oneOf(SORTS, params.get('sort'))
@@ -50,6 +52,7 @@ export function writeCourseFilter(filter: CourseFilter): Record<string, string> 
   if (filter.status) params.status = filter.status
   if (filter.department) params.department = filter.department
   if (filter.teacher) params.teacher = filter.teacher
+  if (filter.requests) params.requests = filter.requests
   if (filter.archived) params.archived = 'true'
   if (filter.sort) params.sort = filter.sort
   if (filter.page && filter.page > 1) params.page = String(filter.page)
@@ -58,5 +61,5 @@ export function writeCourseFilter(filter: CourseFilter): Record<string, string> 
 
 /** True when the search or any filter is set (the archived view, sort and page don't count). */
 export function hasCourseFilters(filter: CourseFilter): boolean {
-  return [filter.q, filter.status, filter.department, filter.teacher].some(Boolean)
+  return [filter.q, filter.status, filter.department, filter.teacher, filter.requests].some(Boolean)
 }

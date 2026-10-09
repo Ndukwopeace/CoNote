@@ -13,6 +13,7 @@ import {
   type PlatformData,
   classRecord,
   aiJobRecord,
+  enrollmentRequestRecord,
 } from '../platformData'
 // The interface under test.
 import type { AlertService } from '../types'
@@ -122,6 +123,31 @@ export function describeAlertServiceContract(name: string, create: CreateAlertSe
       // Act and assert.
       await expect(create(data, NOW).listAlerts()).resolves.toEqual([
         { kind: 'classes_in_archived_courses', count: 1 },
+      ])
+    })
+
+    // Proves only waiting requests on courses in use are counted: not decided ones, and not
+    // those on an archived course, which refuses decisions (D76).
+    it('counts requests to join that are waiting on courses in use', async () => {
+      // Arrange: two waiting on a live course, one declined, one waiting on an archived course.
+      const data = emptyPlatformData({
+        courses: [course('live', 't1'), course('old', 't1', hoursAgo(48))],
+        enrollmentRequests: [
+          enrollmentRequestRecord({ id: 'q1', courseId: 'live', studentId: 's1' }),
+          enrollmentRequestRecord({ id: 'q2', courseId: 'live', studentId: 's2' }),
+          enrollmentRequestRecord({
+            id: 'q3',
+            courseId: 'live',
+            studentId: 's3',
+            status: 'declined',
+          }),
+          enrollmentRequestRecord({ id: 'q4', courseId: 'old', studentId: 's4' }),
+        ],
+      })
+
+      // Act and assert.
+      await expect(create(data, NOW).listAlerts()).resolves.toEqual([
+        { kind: 'enrollment_requests_waiting', count: 2 },
       ])
     })
 

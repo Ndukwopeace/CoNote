@@ -87,6 +87,17 @@ const aiJobSchema = z.object({
   finishedAt: z.string().nullable(),
 })
 
+/** What a saved enrolment request must look like. */
+const enrollmentRequestSchema = z.object({
+  id: z.string(),
+  courseId: z.string(),
+  studentId: z.string(),
+  status: z.enum(['pending', 'approved', 'declined', 'cancelled']),
+  createdAt: z.string(),
+  decidedAt: z.string().nullable(),
+  decidedBy: z.string().nullable(),
+})
+
 /** What the saved records must look like. Courses and resources are optional so that records
  *  saved before the Courses milestone still load. */
 const storedSchema = z.object({
@@ -96,6 +107,8 @@ const storedSchema = z.object({
   classes: z.array(classSchema).optional(),
   summaries: z.array(summarySchema).optional(),
   aiJobs: z.array(aiJobSchema).optional(),
+  // Requests to join courses; absent in a save made before they existed.
+  enrollmentRequests: z.array(enrollmentRequestSchema).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -121,7 +134,8 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
     const parsed = storedSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) return seed
     // Courses and resources saved by an older version are absent: keep the seed's.
-    const { courses, resources, classes, summaries, aiJobs, ...saved } = parsed.data
+    const { courses, resources, classes, summaries, aiJobs, enrollmentRequests, ...saved } =
+      parsed.data
     // Classes, summaries and jobs describe one another, so they are taken from the save together.
     const savedClasses = classes && summaries && aiJobs
     return {
@@ -132,6 +146,7 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       classes: savedClasses ? classes : seed.classes,
       summaries: savedClasses ? summaries : seed.summaries,
       aiJobs: savedClasses ? aiJobs : seed.aiJobs,
+      enrollmentRequests: enrollmentRequests ?? seed.enrollmentRequests,
     }
   } catch {
     // Not JSON.
@@ -142,7 +157,17 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
 /** Saves `data`'s users, courses, resources, classes (with their summaries and jobs), enrolments and audit log. */
 export function savePlatform(store: Storage, data: PlatformData) {
   // Only the records that change; everything else comes from the seed each time.
-  const { users, courses, resources, classes, summaries, aiJobs, enrollments, auditLog } = data
+  const {
+    users,
+    courses,
+    resources,
+    classes,
+    summaries,
+    aiJobs,
+    enrollments,
+    enrollmentRequests,
+    auditLog,
+  } = data
   store.setItem(
     PLATFORM_KEY,
     JSON.stringify({
@@ -153,6 +178,7 @@ export function savePlatform(store: Storage, data: PlatformData) {
       summaries,
       aiJobs,
       enrollments,
+      enrollmentRequests,
       auditLog,
     }),
   )

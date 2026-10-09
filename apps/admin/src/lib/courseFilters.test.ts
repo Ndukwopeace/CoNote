@@ -23,13 +23,14 @@ describe('readCourseFilter', () => {
   it('reads every filter', () => {
     expect(
       read(
-        'q=swe&status=ongoing&department=English&teacher=none&archived=true&sort=-students&page=2',
+        'q=swe&status=ongoing&department=English&teacher=none&requests=waiting&archived=true&sort=-students&page=2',
       ),
     ).toEqual({
       q: 'swe',
       status: 'ongoing',
       department: 'English',
       teacher: 'none',
+      requests: 'waiting',
       archived: true,
       sort: '-students',
       page: 2,
@@ -38,14 +39,23 @@ describe('readCourseFilter', () => {
 
   // Proves values typed into the address by hand can't break the list.
   it('ignores unknown or malformed values', () => {
-    expect(read('status=closed&archived=maybe&sort=random&page=zero')).toEqual({ page: 1 })
+    expect(read('status=closed&requests=all&archived=maybe&sort=random&page=zero')).toEqual({
+      page: 1,
+    })
   })
 })
 
 describe('writeCourseFilter', () => {
   // Proves a filter round-trips through the address, defaults left out.
   it('round-trips through the address, leaving out defaults', () => {
-    const filter = { q: 'eng', teacher: 't1', archived: true, sort: 'title' as const, page: 3 }
+    const filter = {
+      q: 'eng',
+      teacher: 't1',
+      requests: 'waiting' as const,
+      archived: true,
+      sort: 'title' as const,
+      page: 3,
+    }
     expect(read(new URLSearchParams(writeCourseFilter(filter)).toString())).toEqual(filter)
     expect(writeCourseFilter({ page: 1 })).toEqual({})
   })
@@ -56,5 +66,6 @@ describe('hasCourseFilters', () => {
   it('counts the search and filters only', () => {
     expect(hasCourseFilters({ archived: true, sort: 'title', page: 2 })).toBe(false)
     expect(hasCourseFilters({ teacher: 'none' })).toBe(true)
+    expect(hasCourseFilters({ requests: 'waiting' })).toBe(true)
   })
 })

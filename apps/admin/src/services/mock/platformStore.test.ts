@@ -12,6 +12,7 @@ import {
   classRecord,
   courseRecord,
   emptyPlatformData,
+  enrollmentRequestRecord,
   userRecord,
 } from '../platformData'
 
@@ -134,4 +135,38 @@ describe('platformStore', () => {
       expect(loadPlatform(window.localStorage, seed())).toEqual(seed())
     },
   )
+
+  // Proves requests to join and their decisions are saved, and a store saved before requests
+  // existed keeps the seed's.
+  it('restores saved requests to join, and tolerates older saves', () => {
+    // Arrange: a decided request, saved.
+    const changed = emptyPlatformData({
+      enrollmentRequests: [
+        enrollmentRequestRecord({
+          id: 'q1',
+          courseId: 'c1',
+          studentId: 's1',
+          status: 'approved',
+          decidedAt: '2026-09-21T09:00:00.000Z',
+          decidedBy: 'a1',
+        }),
+      ],
+    })
+    savePlatform(window.localStorage, changed)
+    const seeded = emptyPlatformData({
+      enrollmentRequests: [enrollmentRequestRecord({ id: 'q9', courseId: 'c1', studentId: 's2' })],
+    })
+
+    // Act and assert: the saved decision wins over the seed.
+    expect(loadPlatform(window.localStorage, seeded).enrollmentRequests).toEqual(
+      changed.enrollmentRequests,
+    )
+
+    // An older save has no requests: the seed's stay.
+    window.localStorage.setItem(
+      PLATFORM_KEY,
+      JSON.stringify({ users: [], enrollments: [], auditLog: [] }),
+    )
+    expect(loadPlatform(window.localStorage, seeded).enrollmentRequests).toHaveLength(1)
+  })
 })

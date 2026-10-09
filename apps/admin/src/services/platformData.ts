@@ -34,6 +34,22 @@ export interface EnrollmentRecord {
   studentId: string
 }
 
+/** Where a student's request to join a course stands (`enrollment_requests.status`, D76). */
+export type EnrollmentRequestStatus = 'pending' | 'approved' | 'declined' | 'cancelled'
+
+/** A student's request to join a course (`enrollment_requests`, D76). */
+export interface EnrollmentRequestRecord {
+  id: string
+  courseId: string
+  studentId: string
+  status: EnrollmentRequestStatus
+  // When the student asked.
+  createdAt: string
+  // When an admin decided, and who; null while pending (and when the student withdrew it).
+  decidedAt: string | null
+  decidedBy: string | null
+}
+
 /**
  * One recorded platform action (`audit_logs`). Append-only: written by the backend, never by the
  * browser. A user's status history is read from these entries.
@@ -168,6 +184,8 @@ export interface PlatformSettings {
 export interface PlatformData {
   users: UserRecord[]
   enrollments: EnrollmentRecord[]
+  // Students' requests to join courses.
+  enrollmentRequests: EnrollmentRequestRecord[]
   auditLog: AuditEntry[]
   courses: CourseRecord[]
   resources: ResourceRecord[]
@@ -186,6 +204,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
   return {
     users: [],
     enrollments: [],
+    enrollmentRequests: [],
     auditLog: [],
     courses: [],
     resources: [],
@@ -262,6 +281,20 @@ export function aiJobRecord(
     createdAt: '2026-09-10T12:00:00.000Z',
     attempt: 1,
     finishedAt: null,
+    ...overrides,
+  }
+}
+
+/** An enrolment request with sensible defaults, for tests to override only what they check. */
+export function enrollmentRequestRecord(
+  overrides: Partial<EnrollmentRequestRecord> &
+    Pick<EnrollmentRequestRecord, 'id' | 'courseId' | 'studentId'>,
+): EnrollmentRequestRecord {
+  return {
+    status: 'pending',
+    createdAt: '2026-09-20T09:00:00.000Z',
+    decidedAt: null,
+    decidedBy: null,
     ...overrides,
   }
 }

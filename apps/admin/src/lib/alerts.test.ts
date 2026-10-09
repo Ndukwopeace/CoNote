@@ -32,6 +32,19 @@ describe('alertContent', () => {
     )
   })
 
+  // Proves the join-request alert reads naturally and opens the courses with requests waiting.
+  it('describes students waiting to join a course', () => {
+    expect(alertContent({ kind: 'enrollment_requests_waiting', count: 1 }).message).toBe(
+      '1 student waiting to join a course',
+    )
+    expect(alertContent({ kind: 'enrollment_requests_waiting', count: 3 }).message).toBe(
+      '3 students waiting to join a course',
+    )
+    expect(alertContent({ kind: 'enrollment_requests_waiting', count: 3 }).to).toBe(
+      '/admin/courses?requests=waiting',
+    )
+  })
+
   // Proves the review alert names the day limit from Settings.
   it('names the review limit', () => {
     expect(alertContent({ kind: 'summaries_waiting_review', count: 2, days: 5 }).message).toBe(
