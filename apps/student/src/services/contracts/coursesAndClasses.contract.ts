@@ -49,10 +49,12 @@ export function runCoursesAndClassesContract(
         const reads = [courses.getCourse(id), classes.listClasses(id)]
 
         // Assert.
-        for (const attempt of reads) {
-          await expect(attempt).rejects.toBeInstanceOf(AppError)
-          await expect(attempt).rejects.toMatchObject({ kind: 'not_found' })
-        }
+        await Promise.all(
+          reads.flatMap((attempt) => [
+            expect(attempt).rejects.toBeInstanceOf(AppError),
+            expect(attempt).rejects.toMatchObject({ kind: 'not_found' }),
+          ]),
+        )
       },
     )
 
@@ -124,9 +126,12 @@ export function runCoursesAndClassesContract(
       const { courses, classes } = create()
 
       // Act and assert.
-      for (const course of await courses.listMyCourses()) {
-        await expect(classes.listClasses(course.id)).resolves.toHaveLength(course.classCount)
-      }
+      const mine = await courses.listMyCourses()
+      await Promise.all(
+        mine.map((course) =>
+          expect(classes.listClasses(course.id)).resolves.toHaveLength(course.classCount),
+        ),
+      )
     })
   })
 }
