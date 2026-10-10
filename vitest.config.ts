@@ -11,7 +11,11 @@ export default defineConfig({
   test: {
     // Each app, and each package with tests, is a project with its own config (environment,
     // setup files, aliases).
-    projects: ['apps/*/vitest.config.ts', 'packages/*/vitest.config.ts'],
+    projects: [
+      'apps/*/vitest.config.ts',
+      'packages/*/vitest.config.ts',
+      'supabase/functions/vitest.config.ts',
+    ],
     coverage: {
       // Use V8's built-in coverage (fast, no code instrumentation).
       provider: 'v8',
@@ -22,6 +26,7 @@ export default defineConfig({
       include: [
         'packages/core/src/**',
         'packages/supabase/src/**',
+        'supabase/functions/_shared/**',
         'packages/portal/src/auth/**',
         'packages/portal/src/lib/**',
         'apps/*/src/services/**',
@@ -40,6 +45,8 @@ export default defineConfig({
         '**/fakeTables.ts',
         '**/integrationSupport.ts',
         'packages/supabase/src/client.ts',
+        'supabase/functions/_shared/clients.ts',
+        'supabase/functions/*/index.ts',
       ],
       // CI fails if line or branch coverage drops below 80%.
       thresholds: { lines: 80, branches: 80 },

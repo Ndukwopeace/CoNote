@@ -46,6 +46,7 @@ const CHAIN = [
   'gte',
   'lt',
   'in',
+  'contains',
   'is',
   'not',
   'or',

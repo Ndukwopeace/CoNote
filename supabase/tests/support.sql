@@ -38,7 +38,8 @@ alter table auth.users
   add column confirmation_token text, add column recovery_token text,
   add column email_change_token_new text, add column email_change text,
   add column email_change_token_current text, add column reauthentication_token text,
-  add column phone_change text, add column phone_change_token text;
+  add column phone_change text, add column phone_change_token text,
+  add column last_sign_in_at timestamptz;
 -- The identities table the seed fills in, with the columns the seed uses.
 create table auth.identities (
   provider_id text not null,

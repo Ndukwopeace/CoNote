@@ -25,8 +25,8 @@ describe('createServices', () => {
     })
     // Nobody is signed in on a fresh browser; this is answered from storage, with no network.
     await expect(services.auth.getSession()).resolves.toBeNull()
-    await expect(services.users.getUser('x')).rejects.toMatchObject({
-      message: 'Users is not connected to the database yet.',
+    await expect(services.alerts.listAlerts()).rejects.toMatchObject({
+      message: 'Alerts is not connected to the database yet.',
     })
   })
 })
