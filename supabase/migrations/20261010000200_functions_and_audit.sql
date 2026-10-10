@@ -147,7 +147,7 @@ end
 $$;
 
 -- Only signed-in users may call the two functions; the checks inside decide the rest.
-revoke all on function public.decide_enrollment_request(uuid, text), public.publish_summary(uuid, integer) from public;
+revoke all on function public.decide_enrollment_request(uuid, text), public.publish_summary(uuid, integer) from public, anon, authenticated;
 grant execute on function public.decide_enrollment_request(uuid, text), public.publish_summary(uuid, integer)
   to authenticated, service_role;
 
