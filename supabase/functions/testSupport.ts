@@ -72,14 +72,21 @@ export function setupFunction({ answer, caller = ADMIN_ID }: Setup) {
   const resetPasswordForEmail = vi.fn<
     (email: string, options: unknown) => Promise<{ data: unknown; error: unknown }>
   >(() => Promise.resolve({ data: {}, error: null }))
+  const listBuckets = vi.fn<() => Promise<{ data: unknown; error: unknown }>>(() =>
+    Promise.resolve({ data: [], error: null }),
+  )
+  const listUsers = vi.fn<(options: unknown) => Promise<{ data: unknown; error: unknown }>>(() =>
+    Promise.resolve({ data: { users: [] }, error: null }),
+  )
   const service = {
     from: (table: string) => tables.client.from(table),
-    auth: { admin },
+    auth: { admin: { ...admin, listUsers } },
+    storage: { listBuckets },
   } as unknown as SupabaseClient
   const anon = { auth: { resetPasswordForEmail } } as unknown as SupabaseClient
   const clients: Clients = { service, anon, callerId: () => Promise.resolve(caller) }
   const deps: FunctionDeps = { env: ENV, clients, now: () => NOW }
-  return { deps, admin, resetPasswordForEmail, queries: tables.queries }
+  return { deps, admin, listUsers, listBuckets, resetPasswordForEmail, queries: tables.queries }
 }
 
 /** The JSON a response carries. */

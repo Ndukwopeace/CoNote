@@ -1,14 +1,17 @@
 /**
- * The Supabase implementation (milestone B2), built service by service. Services that are not
- * connected yet fail with a clear message instead of showing demo data (admin REQUIREMENTS
- * section 23, "nothing fake"). Sign-in (B2.5), courses (B2.6a), classes (B2.6b) and users (B2.7) are built; the dashboard follows.
+ * The Supabase implementation (milestone B2): every admin service on the shared database. Sign-in
+ * (B2.5), courses (B2.6a), classes (B2.6b), users (B2.7) and the dashboard (B2.8). A service that
+ * is not connected would fail with a clear message instead of showing demo data (admin
+ * REQUIREMENTS section 23, "nothing fake"); none remains.
  */
 
 // The client, and the storage that honours "Remember me".
 import { createSupabaseClient } from '@conote/supabase/client'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
-// Stands in for the services that are not built yet.
-import { notBuilt } from '@conote/supabase/notBuilt'
+// The dashboard services.
+import { createSupabaseAlertService } from './supabaseAlertService'
+import { createSupabaseAnalyticsService } from './supabaseAnalyticsService'
+import { createSupabaseHealthService } from './supabaseHealthService'
 // The class and course services.
 import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
@@ -22,7 +25,7 @@ import { ADMIN_ROUTES } from '@/lib/routes'
 import { ADMIN_STORAGE_PREFIX } from '@/lib/storage'
 
 // The shape the real implementation returns.
-import type { AlertService, AnalyticsService, HealthService, Services } from '../types'
+import type { Services } from '../types'
 
 /** The checked settings the Supabase services need. */
 interface SupabaseSettings {
@@ -67,9 +70,10 @@ export function createSupabaseServices({
       resetPath: ADMIN_ROUTES.resetPassword,
     }),
     // Not connected yet.
-    analytics: notBuilt<AnalyticsService>('The dashboard'),
-    alerts: notBuilt<AlertService>('Alerts'),
-    health: notBuilt<HealthService>('Platform health'),
+    // The dashboard: counts and the activity chart, alerts, and platform health.
+    analytics: createSupabaseAnalyticsService({ client }),
+    alerts: createSupabaseAlertService({ client }),
+    health: createSupabaseHealthService({ client }),
     // Accounts, invitations and status changes (the last two through Edge Functions).
     users: createSupabaseUserService({ client }),
     // Courses, their students and the students' requests to join.
