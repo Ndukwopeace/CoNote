@@ -19,7 +19,7 @@ import type { ClassSession } from '@/types/domain'
 import type { ClassService } from '../types'
 
 // Reads and checks rows.
-import { readOne, readRows } from './rows'
+import { readOne, readRows } from '@conote/supabase/rows'
 
 // The columns of a class the pages show.
 const CLASS_COLUMNS =

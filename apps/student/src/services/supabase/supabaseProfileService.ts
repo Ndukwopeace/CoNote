@@ -24,7 +24,7 @@ import type { StudentProfile } from '@/types/domain'
 import type { ProfileService } from '../types'
 
 // Reads and checks rows.
-import { readOne } from './rows'
+import { readOne } from '@conote/supabase/rows'
 
 // The columns of a profile the page shows.
 const COLUMNS =

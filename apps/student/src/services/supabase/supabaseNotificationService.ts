@@ -21,7 +21,7 @@ import type { AppNotification } from '@/types/domain'
 import type { NotificationService } from '../types'
 
 // Reads and checks rows.
-import { readRows } from './rows'
+import { readRows } from '@conote/supabase/rows'
 
 // The columns of a notification the pages show.
 const COLUMNS = 'id, type, title, body, link, created_at, read'

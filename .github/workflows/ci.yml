@@ -207,3 +207,8 @@ jobs:
       # Runs the shared contracts and the checks only a real backend can answer.
       - name: Run Supabase contract tests
         run: npx vitest run --project student --project portal apps/student/src/services/supabase packages/portal/src/supabase
+
+      # The admin console's contracts come last: loading each contract's small platform first
+      # empties the stack's accounts and courses, which the suites above rely on.
+      - name: Run admin Supabase contract tests
+        run: npx vitest run --project admin apps/admin/src/services/supabase

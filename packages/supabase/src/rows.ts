@@ -8,7 +8,7 @@
 import type { z } from 'zod'
 
 // Turns database failures into the app's error type.
-import { fromSupabaseError } from '@conote/supabase/errors'
+import { fromSupabaseError } from './errors'
 
 /** What a finished query answers with. */
 interface Answer {

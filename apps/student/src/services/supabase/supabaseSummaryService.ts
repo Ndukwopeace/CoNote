@@ -20,7 +20,7 @@ import type { Summary, Teacher } from '@/types/domain'
 import type { SummaryService } from '../types'
 
 // Reads and checks rows.
-import { readOne, readRows } from './rows'
+import { readOne, readRows } from '@conote/supabase/rows'
 
 // The columns of a summary the pages show.
 const SUMMARY_COLUMNS =
