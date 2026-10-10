@@ -25,7 +25,7 @@ import type { Note } from '@/types/domain'
 import type { NoteFilter, NoteService } from '../types'
 
 // Reads and checks rows.
-import { readOne, readRows } from './rows'
+import { readOne, readRows } from '@conote/supabase/rows'
 
 // The columns of a note the pages show.
 const NOTE_COLUMNS =

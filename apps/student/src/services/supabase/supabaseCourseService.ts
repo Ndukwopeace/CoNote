@@ -20,7 +20,7 @@ import type { Course, Teacher } from '@/types/domain'
 import type { CourseService } from '../types'
 
 // Reads and checks rows.
-import { readRows } from './rows'
+import { readRows } from '@conote/supabase/rows'
 
 // The columns of a course the pages show.
 const COURSE_COLUMNS = 'id, code, title, description, status, schedule_text'

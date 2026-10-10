@@ -21,7 +21,7 @@ import type { JoinableCourse, JoinRequest } from '@/types/domain'
 import type { EnrolmentService } from '../types'
 
 // Reads and checks rows.
-import { readOne, readRows } from './rows'
+import { readOne, readRows } from '@conote/supabase/rows'
 
 // The columns of the view the join dialog lists.
 const JOINABLE_COLUMNS = 'id, code, title, status, teacher_name, membership'

@@ -12,6 +12,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface TableAnswer {
   data: unknown
   error: unknown
+  // The row count a query asked for with `{ count: 'exact' }`.
+  count?: number | null
 }
 
 /** One call made on a query, such as `['eq', 'id', '123']`. */
@@ -36,12 +38,20 @@ const CHAIN = [
   'select',
   'insert',
   'update',
+  'upsert',
   'delete',
   'eq',
   'neq',
+  'gt',
+  'gte',
+  'lt',
   'in',
+  'is',
+  'not',
+  'or',
   'order',
   'limit',
+  'range',
   'maybeSingle',
   'single',
 ] as const
@@ -74,6 +84,11 @@ class FakeQuery implements PromiseLike<TableAnswer> {
     }
   }
 
+  /** Records the arguments of a function call, which has no chain of its own. */
+  recordRpc(args: unknown) {
+    this.recorded.calls.push(['rpc', args])
+  }
+
   // Awaiting the query answers it.
   then<A = TableAnswer, B = never>(
     onfulfilled?: ((value: TableAnswer) => A | PromiseLike<A>) | null,
@@ -97,6 +112,12 @@ export function createFakeTables(
   const queries: RecordedQuery[] = []
   const client = {
     from: (table: string) => new FakeQuery(table, answer, queries),
+    // A function call is recorded as a query on "rpc:name" whose only call is its arguments.
+    rpc: (name: string, args: unknown) => {
+      const query = new FakeQuery(`rpc:${name}`, answer, queries)
+      query.recordRpc(args)
+      return query
+    },
     auth: {
       getSession: () =>
         Promise.resolve({

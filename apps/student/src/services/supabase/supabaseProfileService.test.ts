@@ -7,7 +7,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
 // The fake client, and the helper that checks what was asked.
-import { createFakeTables, made, type RecordedQuery, type TableAnswer } from './fakeTables'
+import {
+  createFakeTables,
+  made,
+  type RecordedQuery,
+  type TableAnswer,
+} from '@conote/testing/fakeTables'
 
 // The service under test.
 import { createSupabaseProfileService } from './supabaseProfileService'
