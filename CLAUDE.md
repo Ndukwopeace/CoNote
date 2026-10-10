@@ -9,6 +9,7 @@ The CoNote monorepo (decision D64). Students write private notes per class. An A
 | `apps/teacher`                         | The teacher portal (React + TypeScript + Vite web app, routes under `/teacher`). Teacher screens only. Spec: `docs/teacher/`.                       |
 | `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`                                |
 | `packages/portal` (`@conote/portal`)   | What the staff portals (admin, teacher) share: sign-in state, role guards, the demo auth service, the three sign-in pages, the frame, error screens |
+| `supabase`                             | The shared database: migrations, Row Level Security, dev seed and SQL security tests (D78)                                                          |
 | `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                                                         |
 | `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                                        |
 | `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                                                          |
@@ -45,6 +46,7 @@ Run from the repository root. `build`, `size` and `e2e` run in every app; `dev` 
 - `npm test -- --run --coverage`: unit and component tests with the coverage floor
 - `npm run lint`, `npm run format:check`, `npm run typecheck`
 - `npm run build`, then `npm run size`
+- `npm run test:db`: applies the migrations to a throwaway Postgres and runs the SQL security tests. Needs `DATABASE_URL` (a Postgres you may create databases on; CI uses a service container).
 - `npm run e2e`: Playwright against the production build. In this cloud environment, set `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 
 Run all of these before pushing. CI runs the same set plus `npm audit` and gitleaks.

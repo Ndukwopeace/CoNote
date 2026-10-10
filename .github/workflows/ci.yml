@@ -125,3 +125,36 @@ jobs:
         env:
           # Lets gitleaks read the pull request it is scanning.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The database's own security checks: the migrations are applied to a throwaway Postgres and the
+  # Row Level Security tests run against it (supabase/tests, admin REQUIREMENTS section 25).
+  database:
+    name: Database security tests
+    # A fresh Linux machine for every run.
+    runs-on: ubuntu-latest
+    # Stop a stuck run after 10 minutes.
+    timeout-minutes: 10
+    services:
+      # A throwaway Postgres, thrown away with the machine. The password is a placeholder for this
+      # container only; it holds no real data and is not reachable from outside the runner.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # Wait until the server accepts connections before the steps start.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      # Get the migrations and tests. SECURITY: pinned to an exact commit, like the other jobs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Apply the migrations and run every supabase/tests/*.test.sql file.
+      - name: Database security tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: bash supabase/tests/run.sh

@@ -1,0 +1,37 @@
+# Supabase CLI settings for local development (`supabase start`). Hosted projects are configured in
+# the Supabase dashboard; keep the two in step. Secrets never go in this file.
+
+# Names this project in the CLI.
+project_id = "conote"
+
+[db]
+# Matches the hosted projects' Postgres major version.
+major_version = 16
+
+[db.seed]
+# Loads supabase/seed.sql after the migrations on `supabase db reset`.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+# D76: anyone can sign up. A new account is always a student (the sign-up trigger ignores any role
+# the browser sends); teachers and admins are invited.
+enable_signup = true
+# The browser origins that may receive auth redirects (password reset links). Add each app's
+# deployed address in the hosted project's dashboard.
+site_url = "http://localhost:4173"
+additional_redirect_urls = ["http://localhost:4174", "http://localhost:4175"]
+# A signed-in session lasts one hour before it is refreshed.
+jwt_expiry = 3600
+# Refresh tokens rotate, so a stolen one stops working once the real owner refreshes.
+enable_refresh_token_rotation = true
+# Passwords: at least 8 characters with a letter and a number, the student portal's rule (FR-AUTH-3).
+# Staff accounts need 12; the invite and reset server functions enforce that stricter rule.
+minimum_password_length = 8
+password_requirements = "letters_digits"
+
+[auth.email]
+# Email sign-up is on.
+enable_signup = true
+# Sign-up needs a working email address, which blocks throwaway and mistyped accounts (D76).
+enable_confirmations = true
