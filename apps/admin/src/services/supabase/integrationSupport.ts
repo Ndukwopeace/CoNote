@@ -112,16 +112,29 @@ function ok(result: { error: { message: string } | null }, what: string) {
 }
 
 /** Loads contract platforms into the stack and builds clients for them. */
+/** How a harness treats the accounts between one load and the next. */
+export interface HarnessOptions {
+  // True: every load starts from no accounts at all, with new IDs, so what one test did to an
+  // account (and what the audit log recorded about it) cannot reach the next. False: the accounts
+  // are made once and reused, which is much faster.
+  freshAccounts?: boolean
+}
+
 export class Harness {
-  readonly ids = new IdMap()
+  ids = new IdMap()
   private readonly server = serverClient()
   // Administrators already signed in, by short ID.
   private readonly clients = new Map<string, SupabaseClient>()
   private wiped = false
+  private readonly freshAccounts: boolean
 
-  /** Empties the stack's accounts and courses, once. SECURITY: only ever a local stack. */
+  constructor({ freshAccounts = false }: HarnessOptions = {}) {
+    this.freshAccounts = freshAccounts
+  }
+
+  /** Empties the stack's accounts and courses: once, or before every load when accounts are fresh. */
   private async wipe() {
-    if (this.wiped) return
+    if (this.wiped && !this.freshAccounts) return
     if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(URL ?? '')) {
       throw new Error('The admin harness empties the database; it runs only against a local stack.')
     }
@@ -132,25 +145,31 @@ export class Harness {
     )
     // Every account (their profiles go with them).
     const listed = await this.server.auth.admin.listUsers({ perPage: 1000 })
-    for (const user of listed.data.users) {
-      await this.server.auth.admin.deleteUser(user.id)
+    await Promise.all(listed.data.users.map((user) => this.server.auth.admin.deleteUser(user.id)))
+    // New accounts get new IDs, and nobody is signed in.
+    if (this.freshAccounts) {
+      this.ids = new IdMap()
+      this.clients.clear()
     }
     this.wiped = true
   }
 
   /** Creates the accounts of `users` that do not exist yet. */
   private async ensureUsers(users: UserRecord[]) {
-    for (const user of users) {
-      if (this.ids.down(user.id) !== user.id) continue
-      const created = await this.server.auth.admin.createUser({
-        email: user.email,
-        password: PASSWORD,
-        email_confirm: true,
-      })
-      const id = created.data.user?.id
-      if (!id) throw new Error(`Could not create ${user.email}`)
-      this.ids.set(user.id, id)
-    }
+    await Promise.all(
+      users
+        .filter((user) => this.ids.down(user.id) === user.id)
+        .map(async (user) => {
+          const created = await this.server.auth.admin.createUser({
+            email: user.email,
+            password: PASSWORD,
+            email_confirm: true,
+          })
+          const id = created.data.user?.id
+          if (!id) throw new Error(`Could not create ${user.email}`)
+          this.ids.set(user.id, id)
+        }),
+    )
   }
 
   /** Makes the stack hold exactly `data`'s accounts, courses and what hangs off them. */
@@ -173,6 +192,8 @@ export class Harness {
           department: user.department,
           level: user.level,
           phone: user.phone,
+          created_at: user.createdAt,
+          last_active_at: user.lastActiveAt,
         })),
       ),
       'profiles',
@@ -206,6 +227,24 @@ export class Harness {
           'teacher status',
         )
       }
+    }
+    if (data.auditLog.length > 0) {
+      const roleOf = new Map(data.users.map((user) => [user.id, user.role]))
+      ok(
+        await this.server.from('audit_logs').insert(
+          data.auditLog.map((entry) => ({
+            id: id(entry.id),
+            created_at: entry.at,
+            actor_id: entry.actorId === null ? null : id(entry.actorId),
+            actor_role: entry.actorId === null ? null : (roleOf.get(entry.actorId) ?? null),
+            action: entry.action,
+            entity_type: entry.entityType,
+            entity_id: entry.entityType === 'user' ? id(entry.entityId) : entry.entityId,
+            metadata: entry.metadata,
+          })),
+        ),
+        'insert audit entries',
+      )
     }
     if (data.enrollments.length > 0) {
       ok(

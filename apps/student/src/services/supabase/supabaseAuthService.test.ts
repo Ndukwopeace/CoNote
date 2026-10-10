@@ -435,6 +435,32 @@ describe('password reset', () => {
     expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
   })
 
+  // Proves choosing a password also accepts an invitation, while the temporary session is open
+  // and before it ends.
+  it('accepts an invitation while the temporary session is open', async () => {
+    const { service, auth, rpc } = setup()
+    const order: string[] = []
+    rpc.mockImplementationOnce(() => {
+      order.push('accept')
+      return Promise.resolve({ data: null, error: null })
+    })
+    auth.signOut.mockImplementationOnce(() => {
+      order.push('sign out')
+      return Promise.resolve({ data: {}, error: null })
+    })
+    await service.resetPassword('hash', 'password1')
+    expect(rpc).toHaveBeenCalledWith('accept_invitation')
+    expect(order).toEqual(['accept', 'sign out'])
+  })
+
+  // Proves a failure to accept does not undo a reset that already worked.
+  it('still finishes the reset when accepting fails', async () => {
+    const { service, auth, rpc } = setup()
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'raw' } })
+    await expect(service.resetPassword('hash', 'password1')).resolves.toBeUndefined()
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
+  })
+
   // Proves a session that timed out while the form was open reads as an expired link.
   it('reports a timed-out reset as an expired link', async () => {
     const { service, auth } = setup()

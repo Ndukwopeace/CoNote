@@ -1,25 +1,28 @@
-// TypeScript settings for the shared @conote/testing package (D64): test helpers that each app's
-// tests compile from source. Same strictness as the apps (ENGINEERING_STANDARDS.md section 4.1).
+// TypeScript settings for the Edge Functions' code (D86). The functions run in Supabase's Deno
+// runtime, but all the logic is plain TypeScript that Node tooling checks and tests; only the thin
+// `index.ts` entry files use Deno, through the small declaration in deno.d.ts.
 {
   "compilerOptions": {
     // Where incremental build info is cached.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     // Modern JavaScript.
     "target": "es2023",
-    // Built-in types for the code in this package.
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    // Built-in types: modern JavaScript, plus the Request and Response the handlers use.
+    "lib": ["ES2023", "DOM"],
+    // No ambient packages: Deno brings its own, declared in deno.d.ts.
+    "types": [],
     // ES modules, resolved the way Vite resolves them.
     "module": "esnext",
     "moduleResolution": "bundler",
-    // Don't type-check library declaration files.
-    // The Edge Function code, which tests run in-process, writes ".ts" on its relative imports.
+    // Deno needs the ".ts" on every relative import; TypeScript must allow it.
     "allowImportingTsExtensions": true,
+    // Don't type-check library declaration files.
     "skipLibCheck": true,
     // Keep imports exactly as written; requires `import type` for types.
     "verbatimModuleSyntax": true,
     // Every file is a module.
     "moduleDetection": "force",
-    // Only type-check; the apps build this code.
+    // Only type-check; Supabase builds this code.
     "noEmit": true,
     // All strict checks, plus the extra ones the apps use.
     "strict": true,
@@ -31,6 +34,7 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true
   },
-  // The package source.
-  "include": ["src"]
+  // The functions' source, its declaration, and its tests.
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
 }

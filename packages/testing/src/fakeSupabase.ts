@@ -113,11 +113,16 @@ export function createFakeSupabase() {
     single: () =>
       (profile.holds.shift() ?? profile.hold ?? Promise.resolve()).then(() => profile.answer),
   }
-  const client = { auth, from: () => query } as unknown as SupabaseClient
+  // The call that accepts an invitation after a password is chosen.
+  const rpc = vi.fn<(name: string) => Promise<Answer>>(() =>
+    Promise.resolve({ data: null, error: null }),
+  )
+  const client = { auth, from: () => query, rpc } as unknown as SupabaseClient
 
   return {
     client,
     auth,
+    rpc,
     rememberStorage,
     profile,
     unsubscribe,

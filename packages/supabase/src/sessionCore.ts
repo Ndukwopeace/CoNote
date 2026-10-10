@@ -275,6 +275,11 @@ export function createSessionCore({
         // The temporary session timed out while the form was open.
         throw mapped.kind === 'unauthorized' ? new AppError('validation', LINK_EXPIRED) : mapped
       }
+      // An invited person has just accepted the invitation by choosing a password: move them from
+      // "pending" to "active" while the temporary session is open. For anyone else this does
+      // nothing. A failure is not reported here: the password is already set, and the account
+      // simply stays pending until an administrator looks at it.
+      await client.rpc('accept_invitation')
       // The link is spent. End the temporary session, so the person signs in with the new
       // password.
       linkChecks.delete(code)

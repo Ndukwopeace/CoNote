@@ -212,6 +212,13 @@ export default tseslint.config(
     rules: { 'react-refresh/only-export-components': 'off' },
   },
 
+  // The one test helper that runs the Edge Functions' own code in-process. The functions live in
+  // supabase/functions, which is not a package, so it has to reach them by path.
+  {
+    files: ['packages/testing/src/functionsBridge.ts'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+
   // Tests may build fixtures more loosely.
   {
     files: [

@@ -45,6 +45,13 @@ import { databaseCode, databaseMessage } from './databaseErrors'
 /** How many courses a page holds. */
 const PAGE_SIZE = 20
 
+/** The list's column for each sort field. */
+const SORT_COLUMNS: Record<string, string> = {
+  students: 'student_count',
+  title: 'title',
+  code: 'code',
+}
+
 /** What an archived course says to every change. */
 const ARCHIVED_MESSAGE = 'This course is archived. Restore it to make changes.'
 /** What an unusable teacher gets told. */
@@ -323,7 +330,7 @@ export function createSupabaseCourseService({
       const sort: CourseSort = filter.sort ?? 'code'
       const descending = sort.startsWith('-')
       const field = descending ? sort.slice(1) : sort
-      const column = field === 'students' ? 'student_count' : field === 'title' ? 'title' : 'code'
+      const column = SORT_COLUMNS[field] ?? 'code'
       const start = (page - 1) * PAGE_SIZE
       let query = listQuery(filter, COURSE_COLUMNS, false).order(column, { ascending: !descending })
       if (column !== 'code') query = query.order('code')

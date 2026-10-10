@@ -14,6 +14,7 @@
     { "path": "./packages/core" },
     { "path": "./packages/supabase" },
     { "path": "./packages/testing" },
+    { "path": "./supabase/functions" },
     { "path": "./tsconfig.node.json" }
   ]
 }
