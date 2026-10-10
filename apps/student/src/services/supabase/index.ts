@@ -15,6 +15,9 @@ import type { Services } from '../types'
 
 // The services built so far.
 import { createSupabaseAuthService } from './supabaseAuthService'
+import { createSupabaseClassService } from './supabaseClassService'
+import { createSupabaseCourseService } from './supabaseCourseService'
+import { createSupabaseEnrolmentService } from './supabaseEnrolmentService'
 // Stands in for the rest.
 import { notBuilt } from './notBuilt'
 
@@ -55,10 +58,11 @@ export function createSupabaseServices({
       storageKey: AUTH_STORAGE_KEY,
       origin: window.location.origin,
     }),
+    // Courses, classes and asking to join them.
+    courses: createSupabaseCourseService({ client }),
+    classes: createSupabaseClassService({ client }),
+    enrolment: createSupabaseEnrolmentService({ client }),
     // Not connected yet.
-    courses: notBuilt('Courses'),
-    classes: notBuilt('Classes'),
-    enrolment: notBuilt('Joining courses'),
     notes: notBuilt('Notes'),
     summaries: notBuilt('Summaries'),
     notifications: notBuilt('Notifications'),

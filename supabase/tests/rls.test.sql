@@ -96,6 +96,27 @@ select tests.login(:s1);
 select tests.rows('select * from public.course_teachers', 1, 'student sees the teacher of their course');
 select tests.reset();
 
+-- ===== Student counts per course: numbers only, and only for courses the caller may see =====
+select tests.login(:s1);
+select tests.rows('select * from public.course_student_counts', 1, 'student sees the count of their own course');
+select tests.is((select student_count from public.course_student_counts), 1, 'the count is right');
+select tests.reset();
+select tests.login(:s2);
+select tests.rows('select * from public.course_student_counts', 0, 'a student in no course sees no counts');
+select tests.reset();
+select tests.login(:t1);
+select tests.rows('select * from public.course_student_counts', 1, 'teacher sees the count of their own course');
+select tests.reset();
+select tests.login(:t2);
+select tests.rows('select * from public.course_student_counts', 0, 'another teacher sees no counts for this course');
+select tests.reset();
+select tests.login(:admin);
+select tests.rows('select * from public.course_student_counts', 1, 'admin sees the counts');
+select tests.reset();
+select tests.anonymous();
+select tests.denied('select * from public.course_student_counts', 'a visitor reads no counts');
+select tests.reset();
+
 -- ===== Operations tables: administrators read, nobody writes =====
 select tests.login(:s1);
 select tests.rows('select * from public.audit_logs', 0, 'student reads no audit entries');
