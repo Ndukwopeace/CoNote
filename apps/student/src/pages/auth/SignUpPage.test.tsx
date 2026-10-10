@@ -12,7 +12,7 @@ import { routes } from '@/app/routes'
 // Accessibility check.
 import { expectNoAxeViolations } from '@conote/testing/axe'
 // An auth service that hangs.
-import { hangingAuth } from '@/test/authServices'
+import { authWith, hangingAuth } from '@/test/authServices'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 // Services type.
@@ -111,6 +111,32 @@ describe('SignUpPage', () => {
         name: /Good (morning|afternoon|evening), Ada/,
       }),
     ).toBeInTheDocument()
+  })
+
+  // Proves a backend that needs email confirmation (D76) shows what to do next instead of
+  // pretending the student is signed in.
+  it('asks the student to check their email when confirmation is required', async () => {
+    // Arrange: a service that reports "confirm your email".
+    const { user } = await renderSignUp({
+      auth: authWith({ signUp: () => Promise.resolve({ status: 'confirm_email' as const }) }),
+    })
+
+    // Act.
+    await user.type(screen.getByLabelText('Full name'), 'Ada Obi')
+    await user.type(screen.getByLabelText('Email address'), 'ada@example.com')
+    await user.type(screen.getByLabelText('Password'), 'password1')
+    await user.type(screen.getByLabelText('Confirm password'), 'password1')
+    await user.click(screen.getByRole('checkbox'))
+    await user.click(screen.getByRole('button', { name: 'Sign up' }))
+
+    // Assert: the next step names the address and offers the way back to sign in.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Check your email' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/ada@example\.com/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to sign in' })).toHaveAttribute('href', '/login')
+    // The form is gone, so nothing can be submitted twice.
+    expect(screen.queryByRole('button', { name: 'Sign up' })).toBeNull()
   })
 
   // Proves the button shows progress while the account is created (FR-AUTH-6).

@@ -2,17 +2,18 @@
 
 The CoNote monorepo (decision D64). Students write private notes per class. An AI pipeline and teacher review produce summaries, and students see only teacher-approved ones. Each role gets its own app; all apps share one backend and the packages below.
 
-| Folder                                 | What it is                                                                                                                                          |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/student`                         | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.**                                   |
-| `apps/admin`                           | The admin console (React + TypeScript + Vite web app, routes under `/admin`). Admin screens only. Spec: `docs/admin/`.                              |
-| `apps/teacher`                         | The teacher portal (React + TypeScript + Vite web app, routes under `/teacher`). Teacher screens only. Spec: `docs/teacher/`.                       |
-| `packages/ui` (`@conote/ui`)           | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`                                |
-| `packages/portal` (`@conote/portal`)   | What the staff portals (admin, teacher) share: sign-in state, role guards, the demo auth service, the three sign-in pages, the frame, error screens |
-| `supabase`                             | The shared database: migrations, Row Level Security, dev seed and SQL security tests (D78)                                                          |
-| `packages/domain` (`@conote/domain`)   | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                                                         |
-| `packages/core` (`@conote/core`)       | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                                        |
-| `packages/testing` (`@conote/testing`) | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                                                          |
+| Folder                                   | What it is                                                                                                                                          |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/student`                           | The student portal (React + TypeScript + Vite PWA). **Never add teacher or admin screens, routes or links here.**                                   |
+| `apps/admin`                             | The admin console (React + TypeScript + Vite web app, routes under `/admin`). Admin screens only. Spec: `docs/admin/`.                              |
+| `apps/teacher`                           | The teacher portal (React + TypeScript + Vite web app, routes under `/teacher`). Teacher screens only. Spec: `docs/teacher/`.                       |
+| `packages/ui` (`@conote/ui`)             | Shared design system: tokens, Tailwind theme, shadcn-style primitives, `common/` page parts, `forms/`, `toast`, `cn`                                |
+| `packages/portal` (`@conote/portal`)     | What the staff portals (admin, teacher) share: sign-in state, role guards, the demo auth service, the three sign-in pages, the frame, error screens |
+| `packages/supabase` (`@conote/supabase`) | What every app's Supabase services share: client factory, "Remember me" storage, error mapping, profile read (D79)                                  |
+| `supabase`                               | The shared database: migrations, Row Level Security, dev seed and SQL security tests (D78)                                                          |
+| `packages/domain` (`@conote/domain`)     | Shared vocabulary: roles and statuses. Every app and the database spell these the same way.                                                         |
+| `packages/core` (`@conote/core`)         | Shared logic: `AppError`, `appQuery`, `isSafeRedirect`, `reportError`, `parseEnv`, `assertNever`, `initials`                                        |
+| `packages/testing` (`@conote/testing`)   | Test-only helpers: common Vitest setup, axe, Playwright axe and CSP checks                                                                          |
 
 Packages must not import app code (`@/…`); ESLint enforces it. Apps import packages by name (`@conote/ui/button`).
 
@@ -70,6 +71,9 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 - The admin dashboard reads one seeded demo platform (D69). Its health card is all "Operational" unless local storage key `conote-admin-demo:health` says otherwise, for example `{"storage":"degraded"}`. Admin page tests pass their own `platform` records to `renderWithRouter`.
 - Admin demo changes to users, courses, classes and enrolments (invitations, status changes, edits, archiving) are saved under local storage key `conote-admin-demo:platform` and restored over the seed (D70, D71, D72). Classes are saved with their summaries and AI jobs. Clear the site's storage to start from the seed again.
 - Student demo enrolments (which courses the student is in, and their requests to join) are saved under local storage key `conote:mock:enrolment` and survive sign-out, like server data (J1, D76). Signing up starts a student in no courses and opens the join dialog; Reset demo data restores the seed. The admin demo keeps requests in `conote-admin-demo:platform`; the two demos are separate origins, so a request made in one does not reach the other (contract tests show the hand-off, B2 makes it real).
+- `createServices` is asynchronous: the Supabase code loads only for `VITE_DATA_SOURCE=supabase`, so the demo bundle stays small. Services not built yet in Supabase mode fail with "… is not connected to the database yet" (`notBuilt`). `npm run size` checks the entry chunk and the whole startup set (D79).
+- Supabase services are tested against a fake client (`fakeSupabase.ts`) and, when `VITE_SUPABASE_TEST_URL`, `_ANON_KEY`, `_EMAIL`, `_SUSPENDED_EMAIL` and `_PASSWORD` are set, against a real project (CI starts a local stack with `supabase@2.120.0 start` and seeds it from `supabase/seed.sql`). This sandbox cannot reach `*.supabase.co`, so only the fake-client tests run here.
+- Password-reset emails use `supabase/templates/recovery.html` (a token hash, not Supabase's default link). Paste it into the hosted project's dashboard as well (D79).
 - Test helpers may import demo services; tests themselves import them through `src/test/` (the import-boundary rule).
 - App icons and iPhone launch images: `npm run icons -w @conote/student` (needs `PW_CHROMIUM_PATH` here).
 

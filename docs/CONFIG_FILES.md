@@ -132,11 +132,11 @@ Runs on the files staged for a commit, from the repository root.
 | `dev` | `vite` | Development server with instant reload |
 | `build` | `tsc -b && vite build` | Type check first, then production build into `apps/student/dist`, so a type error can never ship |
 | `preview` | `vite preview` | Serves the production build locally, with the production security headers |
-| `size` | `size-limit` | Check the bundle budget in `apps/student/.size-limit.json` |
+| `size` | `size-limit && node scripts/initial-size.mjs` | Check the entry chunk against `apps/student/.size-limit.json`, then the whole startup set (entry plus the chunks `index.html` preloads) against the same 250 kB budget (D79) |
 | `e2e` | `playwright test` | Browser tests in `apps/student/e2e` |
 | `icons` | `node scripts/generate-icons.mjs` | Redraws the app icons and iPhone launch images into `apps/student/public` |
 
-Its `dependencies` are the browser libraries listed below, plus `@conote/ui`, `@conote/domain` and `@conote/core`; its `devDependencies` hold `@conote/testing`. All four resolve to the workspace folders, never to the npm registry.
+Its `dependencies` are the browser libraries listed below, plus `@conote/ui`, `@conote/domain`, `@conote/core` and `@conote/supabase`, and `@supabase/supabase-js` (the Supabase client: it talks to Auth and the database, MIT licence, about 57 kB gzipped, loaded only in Supabase mode, maintained by Supabase); its `devDependencies` hold `@conote/testing`. The `@conote/*` ones resolve to the workspace folders, never to the npm registry.
 
 ### `apps/admin/package.json`
 

@@ -1,0 +1,15 @@
+{
+  "name": "@conote/supabase",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@conote/core": "0.1.0",
+    "@conote/domain": "0.1.0",
+    "@supabase/supabase-js": "^2.117.3",
+    "zod": "^4.6.5"
+  }
+}

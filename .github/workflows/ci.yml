@@ -158,3 +158,48 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: bash supabase/tests/run.sh
+
+  # The Supabase services are tested against a real local Supabase stack (Auth, the API and a
+  # database built from the migrations), using the same contract suites the demo services pass.
+  supabase:
+    name: Supabase contract tests
+    # A fresh Linux machine for every run; it has Docker, which the local stack needs.
+    runs-on: ubuntu-latest
+    # Starting the stack takes a few minutes the first time.
+    timeout-minutes: 20
+    steps:
+      # Get the code. SECURITY: pinned to an exact commit, like the other jobs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Install the Node version from .nvmrc, with npm's download cache.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # SECURITY: `npm ci` installs exactly what package-lock.json lists.
+      - name: Install
+        run: npm ci
+
+      # Starts Auth, the API, the mail catcher and the database, builds the database from the
+      # migrations and loads supabase/seed.sql. The version is pinned so a new CLI release cannot
+      # change the result. Services the tests do not use are left out to save time.
+      - name: Start local Supabase
+        run: npx --yes supabase@2.120.0 start -x studio,realtime,storage-api,imgproxy,edge-runtime,logflare,vector,postgres-meta,supavisor
+
+      # Reads the local project's address and public key. These belong to the throwaway stack on
+      # this machine; they are not secrets.
+      - name: Read local project settings
+        run: |
+          npx --yes supabase@2.120.0 status -o env > local.env
+          {
+            echo "VITE_SUPABASE_TEST_URL=$(grep '^API_URL=' local.env | cut -d= -f2- | tr -d '"')"
+            echo "VITE_SUPABASE_TEST_ANON_KEY=$(grep '^ANON_KEY=' local.env | cut -d= -f2- | tr -d '"')"
+            echo "VITE_SUPABASE_TEST_EMAIL=student@conote.example"
+            echo "VITE_SUPABASE_TEST_SUSPENDED_EMAIL=suspended@conote.example"
+            echo "VITE_SUPABASE_TEST_PASSWORD=password1"
+          } >> "$GITHUB_ENV"
+
+      # Runs the shared contracts and the checks only a real backend can answer.
+      - name: Run Supabase contract tests
+        run: npx vitest run --project student apps/student/src/services/supabase

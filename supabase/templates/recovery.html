@@ -1,0 +1,12 @@
+<!-- Password reset email. {{ .RedirectTo }} is the app's reset page; {{ .TokenHash }} is a hash of
+     a single-use token, which the app turns into a temporary session with verifyOtp. Unlike the
+     default link, it works in any browser (a student often asks on a laptop and opens the email on
+     a phone), and a mail scanner that opens the link does not use the token up. In the hosted
+     project, paste this into Authentication > Emails > Templates > Reset Password. -->
+<h2>Reset your CoNote password</h2>
+<p>Someone asked to reset the password for this account. If that was you, choose a new one:</p>
+<p><a href="{{ .RedirectTo }}?code={{ .TokenHash }}">Choose a new password</a></p>
+<p>
+  The link works once and expires soon. If you did not ask for this, ignore this email and your
+  password stays as it is.
+</p>

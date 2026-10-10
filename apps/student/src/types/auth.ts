@@ -48,6 +48,16 @@ export interface SignUpInput {
   password: string
 }
 
+/**
+ * What signing up returns. A backend that requires email confirmation (D76) creates the account
+ * but cannot sign the student in until they open the link in their email, so it says so.
+ */
+export type SignUpResult =
+  // The student is signed in now (the demo, or a backend with confirmation switched off).
+  | { status: 'signed_in'; session: Session }
+  // The account exists; a confirmation email was sent.
+  | { status: 'confirm_email' }
+
 /** What a password reset request returns. */
 export interface PasswordResetRequest {
   /**

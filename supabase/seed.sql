@@ -15,7 +15,8 @@ from (values
   ('10000000-0000-0000-0000-000000000003'::uuid, 'smith@conote.example', 'Dr. Smith'),
   ('10000000-0000-0000-0000-000000000004'::uuid, 'student@conote.example', 'Victory Eze'),
   ('10000000-0000-0000-0000-000000000005'::uuid, 'ada@conote.example', 'Ada Obi'),
-  ('10000000-0000-0000-0000-000000000006'::uuid, 'tunde@conote.example', 'Tunde Bello')
+  ('10000000-0000-0000-0000-000000000006'::uuid, 'tunde@conote.example', 'Tunde Bello'),
+  ('10000000-0000-0000-0000-000000000007'::uuid, 'suspended@conote.example', 'Sam Suspended')
 ) as demo (id, email, full_name);
 
 -- Roles and numbers, set by the server (here, the seed) and never by a browser.
@@ -25,6 +26,8 @@ update public.profiles set role = 'teacher', staff_number = 'S-0003', department
 update public.profiles set student_number = 'U2023/5001', department = 'Computer Science' where email = 'student@conote.example';
 update public.profiles set student_number = 'U2023/5002' where email = 'ada@conote.example';
 update public.profiles set student_number = 'U2023/5003' where email = 'tunde@conote.example';
+-- A suspended student, for the sign-in tests: the right password, but the account may not sign in.
+update public.profiles set status = 'suspended' where email = 'suspended@conote.example';
 
 -- Courses: Sarah teaches MTH 202, Dr. Smith teaches SWE 311, PHY 101 has no teacher yet.
 insert into public.courses (id, code, title, department, teacher_id, status) values

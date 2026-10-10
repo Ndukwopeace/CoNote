@@ -21,6 +21,7 @@ export default defineConfig({
       // to the shared logic in packages/core and the staff-portal logic in packages/portal (auth, lib).
       include: [
         'packages/core/src/**',
+        'packages/supabase/src/**',
         'packages/portal/src/auth/**',
         'packages/portal/src/lib/**',
         'apps/*/src/services/**',
@@ -29,7 +30,15 @@ export default defineConfig({
         'apps/*/src/features/**',
       ],
       // Tests, shared contracts, pure type files and seed data aren't logic to cover.
-      exclude: ['**/*.test.{ts,tsx}', '**/*.contract.ts', '**/types.ts', '**/seed/**'],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/*.contract.ts',
+        '**/types.ts',
+        '**/seed/**',
+        // Test double and thin wiring of the Supabase SDK, covered by the integration run in CI.
+        '**/fakeSupabase.ts',
+        'packages/supabase/src/client.ts',
+      ],
       // CI fails if line or branch coverage drops below 80%.
       thresholds: { lines: 80, branches: 80 },
     },

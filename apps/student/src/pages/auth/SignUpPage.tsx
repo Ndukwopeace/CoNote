@@ -5,6 +5,8 @@
 
 // Connects zod schemas to react-hook-form.
 import { zodResolver } from '@hookform/resolvers/zod'
+// Remembers where the confirmation email went.
+import { useState } from 'react'
 // Form state, validation timing and field registration.
 import { useForm } from 'react-hook-form'
 // Links to sign in and the legal pages.
@@ -44,19 +46,43 @@ const EMPTY: SignUpValues = {
 
 /**
  * Create an account. A successful sign-up signs the student in, and RedirectIfSignedIn then
- * opens the dashboard; the page itself never navigates.
+ * opens the dashboard; the page itself never navigates. When the backend needs the email
+ * confirmed first (D76), the page says to check the inbox instead.
  */
 export function SignUpPage() {
   // The actions this page uses.
   const { signUp, signInWithProvider } = useAuth()
   // Busy flag, server error and the request runner.
   const { error, isPending, run } = useAuthRequest()
+  // The address a confirmation email was sent to, once the backend asks for confirmation (D76).
+  const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null)
   // The form. Errors appear when a field loses focus and on submit (FR-AUTH-3).
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({ resolver: zodResolver(signUpSchema), mode: 'onTouched', defaultValues: EMPTY })
+
+  // The backend created the account but needs the email confirmed before sign-in (D76).
+  if (confirmationSentTo !== null) {
+    return (
+      <div>
+        {/* Tab title. */}
+        <PageTitle title="Check your email" />
+        <h1 className="text-2xl font-bold">Check your email</h1>
+        {/* Polite status so screen readers announce the change of screen. */}
+        <p role="status" className="mt-2 text-sm text-muted-foreground">
+          We sent a confirmation link to <strong>{confirmationSentTo}</strong>. Open it to finish
+          creating your account, then sign in.
+        </p>
+        <p className="mt-6 text-center text-sm">
+          <Link to={ROUTES.login} className="font-medium text-primary hover:underline">
+            Back to sign in
+          </Link>
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -81,9 +107,11 @@ export function SignUpPage() {
       <form
         noValidate
         onSubmit={(event) =>
-          void handleSubmit(({ fullName, email, password }) =>
-            run(() => signUp({ fullName, email, password })),
-          )(event)
+          void handleSubmit(async ({ fullName, email, password }) => {
+            const result = await run(() => signUp({ fullName, email, password }))
+            // Signed in: RedirectIfSignedIn takes over. Otherwise show the next step.
+            if (result.ok && result.value.status === 'confirm_email') setConfirmationSentTo(email)
+          })(event)
         }
         className="mt-6 space-y-4"
       >

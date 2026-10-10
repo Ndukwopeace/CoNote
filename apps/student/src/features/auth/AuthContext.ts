@@ -12,6 +12,7 @@ import type {
   Session,
   SignInInput,
   SignUpInput,
+  SignUpResult,
 } from '@/types/auth'
 
 /** Where sign-in stands. Exactly one of three states, so screens can't mix them up. */
@@ -36,7 +37,7 @@ export type AuthContextValue = AuthState & {
   // Sign in with email and password.
   signIn: (input: SignInInput) => Promise<Session>
   // Create an account.
-  signUp: (input: SignUpInput) => Promise<Session>
+  signUp: (input: SignUpInput) => Promise<SignUpResult>
   // Sign in with Google.
   signInWithProvider: (provider: OAuthProvider) => Promise<Session>
   // Send a password reset link; the demo also returns the link (FR-AUTH-7).
