@@ -303,6 +303,35 @@ describe('onAuthChange', () => {
     expect(listener.mock.calls.every(([session]) => session === null)).toBe(true)
   })
 
+  // Proves the profile is read again and announced, so a new name reaches the navigation.
+  it('announces the refreshed profile', async () => {
+    const { service, profile, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: supabaseSession() }, error: null })
+    service.onAuthChange(listener)
+    await service.signIn({
+      email: 'student@conote.example',
+      password: 'password1',
+      remember: false,
+    })
+    listener.mockClear()
+    profile.answer = { data: profileRow({ full_name: 'Ada Lovelace' }), error: null }
+
+    await service.refreshUser()
+
+    expect(listener).toHaveBeenCalledOnce()
+    expect(listener.mock.calls[0]?.[0]?.user.fullName).toBe('Ada Lovelace')
+  })
+
+  // Proves refreshing does nothing, quietly, when nobody is signed in.
+  it('does nothing on refresh when signed out', async () => {
+    const { service } = setup()
+    service.onAuthChange(listener)
+
+    await expect(service.refreshUser()).resolves.toBeUndefined()
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+
   // Proves events that are not changes of who is signed in are ignored.
   it('ignores the initial report and token refreshes', async () => {
     const { service, emit } = setup()

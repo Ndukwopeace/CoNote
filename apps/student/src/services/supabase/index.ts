@@ -19,6 +19,8 @@ import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
 import { createSupabaseEnrolmentService } from './supabaseEnrolmentService'
 import { createSupabaseNoteService } from './supabaseNoteService'
+import { createSupabaseNotificationService } from './supabaseNotificationService'
+import { createSupabaseProfileService } from './supabaseProfileService'
 import { createSupabaseSummaryService } from './supabaseSummaryService'
 // Stands in for the rest.
 import { notBuilt } from './notBuilt'
@@ -52,14 +54,15 @@ export function createSupabaseServices({
     storage: rememberStorage.storage,
     storageKey: AUTH_STORAGE_KEY,
   })
+  // Sign-up, sign-in and password reset.
+  const auth = createSupabaseAuthService({
+    client,
+    rememberStorage,
+    storageKey: AUTH_STORAGE_KEY,
+    origin: window.location.origin,
+  })
   return {
-    // Sign-up, sign-in and password reset.
-    auth: createSupabaseAuthService({
-      client,
-      rememberStorage,
-      storageKey: AUTH_STORAGE_KEY,
-      origin: window.location.origin,
-    }),
+    auth,
     // Courses, classes and asking to join them.
     courses: createSupabaseCourseService({ client }),
     classes: createSupabaseClassService({ client }),
@@ -67,9 +70,13 @@ export function createSupabaseServices({
     // Notes and published summaries.
     notes: createSupabaseNoteService({ client }),
     summaries: createSupabaseSummaryService({ client }),
+    // Notifications, and the student's profile (a new name reaches the navigation at once).
+    notifications: createSupabaseNotificationService({ client, origin: window.location.origin }),
+    profile: createSupabaseProfileService({
+      client,
+      afterNameChange: () => auth.refreshUser(),
+    }),
     // Not connected yet.
-    notifications: notBuilt('Notifications'),
     ai: notBuilt('Ask AI'),
-    profile: notBuilt('Your profile'),
   }
 }

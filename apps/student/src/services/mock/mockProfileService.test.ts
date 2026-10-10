@@ -5,6 +5,8 @@
 // Vitest building blocks.
 import { beforeEach, describe, expect, it } from 'vitest'
 
+// The shared contract.
+import { runProfileServiceContract } from '../contracts/profileService.contract'
 // Storage key helpers.
 import { MOCK_DATA_PREFIX, storageKey } from '@/lib/storage'
 // Factories.
@@ -34,6 +36,12 @@ function createServices() {
 beforeEach(() => {
   window.localStorage.clear()
   window.sessionStorage.clear()
+})
+
+// Run the shared contract against the mock.
+runProfileServiceContract('mock', {
+  create: () => ({ profile: createServices().profile }),
+  supportsAvatar: true,
 })
 
 describe('mock profile service', () => {

@@ -48,13 +48,19 @@ const INACTIVE = 'This account is not active. Contact your administrator.'
 // Shown when a reset link cannot be used any more.
 const LINK_EXPIRED = 'This reset link has expired. Request a new one.'
 
+/** The Supabase auth service: the shared interface, and a way to refresh who is shown as signed in. */
+export type SupabaseAuthService = AuthService & {
+  // Reads the profile again and tells listeners, so a renamed student sees the new name at once.
+  refreshUser(): Promise<void>
+}
+
 /** The Supabase auth service. */
 export function createSupabaseAuthService({
   client,
   rememberStorage,
   storageKey,
   origin,
-}: SupabaseAuthOptions): AuthService {
+}: SupabaseAuthOptions): SupabaseAuthService {
   // Everyone who asked to hear about session changes (the AuthProvider, mainly).
   const listeners = new Set<(session: Session | null) => void>()
   // Reset-link checks already made, by code. A reset code is single-use, so the answer to the
@@ -285,6 +291,15 @@ export function createSupabaseAuthService({
     },
 
     checkResetLink,
+
+    async refreshUser() {
+      // Nobody signed in: nothing to refresh.
+      const { data } = await client.auth.getSession()
+      if (!data.session) return
+      // The profile as it is now (a rename, for example). The same person, so this is announced
+      // even though the ID has not changed.
+      emit(await loadSession(data.session.user.id))
+    },
 
     async resetPassword(code, newPassword) {
       // SECURITY: the same strength rules as sign-up, checked first so a weak password does not

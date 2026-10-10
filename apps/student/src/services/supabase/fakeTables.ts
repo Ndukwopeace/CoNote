@@ -85,14 +85,25 @@ class FakeQuery implements PromiseLike<TableAnswer> {
   }
 }
 
-/** Builds a client whose tables answer through `answer`, and the list of queries it saw. */
+/**
+ * Builds a client whose tables answer through `answer`, and the list of queries it saw. When
+ * `userId` is given, `auth.getSession()` reports that person as signed in; otherwise nobody is.
+ */
 export function createFakeTables(
   answer: (query: RecordedQuery) => TableAnswer | Promise<TableAnswer>,
+  { userId }: { userId?: string } = {},
 ) {
   // Every query that was awaited, in order.
   const queries: RecordedQuery[] = []
   const client = {
     from: (table: string) => new FakeQuery(table, answer, queries),
+    auth: {
+      getSession: () =>
+        Promise.resolve({
+          data: { session: userId === undefined ? null : { user: { id: userId } } },
+          error: null,
+        }),
+    },
   } as unknown as SupabaseClient
   return { client, queries }
 }

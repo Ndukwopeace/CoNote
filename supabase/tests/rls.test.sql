@@ -85,6 +85,14 @@ select tests.denied('update public.profiles set role = ''admin'' where id = ' ||
 select tests.denied('update public.profiles set status = ''active'' where id = ' || quote_literal(:s1), 'student cannot change their own status');
 select tests.affects('update public.profiles set full_name = ''Vic'' where id = ' || quote_literal(:s1), 1, 'student edits their own name');
 select tests.affects('update public.profiles set full_name = ''X'' where id = ' || quote_literal(:s2), 0, 'student cannot edit another profile');
+-- The database holds the line on what a profile may contain, even for a request that skips the app.
+select tests.fails_with('update public.profiles set avatar_url = ''javascript:alert(1)'' where id = ' || quote_literal(:s1), '23514', 'a picture address must be https');
+select tests.fails_with('update public.profiles set avatar_url = ''http://tracker.example/p.png'' where id = ' || quote_literal(:s1), '23514', 'a plain http picture address is refused');
+select tests.affects('update public.profiles set avatar_url = ''https://cdn.example/p.png'' where id = ' || quote_literal(:s1), 1, 'an https picture address is allowed');
+select tests.fails_with('update public.profiles set full_name = repeat(''n'', 101) where id = ' || quote_literal(:s1), '23514', 'a long name is refused');
+select tests.fails_with('update public.profiles set phone = repeat(''1'', 21) where id = ' || quote_literal(:s1), '23514', 'a long phone number is refused');
+select tests.fails_with('update public.profiles set notification_prefs = ''[1]''::jsonb where id = ' || quote_literal(:s1), '23514', 'notification settings must be an object');
+select tests.fails_with('update public.profiles set notification_prefs = jsonb_build_object(''x'', repeat(''y'', 3000)) where id = ' || quote_literal(:s1), '23514', 'huge notification settings are refused');
 select tests.rows('select * from public.profiles', 1, 'student reads only their own profile');
 select tests.reset();
 select tests.login(:admin);
@@ -94,6 +102,23 @@ select tests.reset();
 -- ===== Teachers' names for enrolled students, without contact details =====
 select tests.login(:s1);
 select tests.rows('select * from public.course_teachers', 1, 'student sees the teacher of their course');
+select tests.reset();
+
+-- ===== Notifications: a person reads their own and marks them read; the server writes them =====
+select tests.server();
+insert into public.notifications (id, user_id, type, title) values
+  ('00000000-0000-0000-0000-00000000a001', :s1, 'summary', 'For student 1'),
+  ('00000000-0000-0000-0000-00000000a002', :s2, 'system', 'For student 2');
+select tests.reset();
+select tests.login(:s1);
+select tests.rows('select * from public.notifications', 1, 'a student reads only their own notifications');
+select tests.affects('update public.notifications set read = true', 1, 'a student marks their own notification read');
+select tests.denied('update public.notifications set title = ''hacked''', 'a student cannot rewrite a notification');
+select tests.denied('insert into public.notifications (user_id, type, title) values (' || quote_literal(:s1) || ', ''system'', ''forged'')', 'a student cannot write a notification');
+select tests.denied('delete from public.notifications', 'a student cannot delete a notification');
+select tests.reset();
+select tests.login(:admin);
+select tests.rows('select * from public.notifications', 0, 'an administrator reads no one''s notifications');
 select tests.reset();
 
 -- ===== Student counts per course: numbers only, and only for courses the caller may see =====
