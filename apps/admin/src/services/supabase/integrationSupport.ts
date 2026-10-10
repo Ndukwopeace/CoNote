@@ -134,9 +134,19 @@ function withStubs(data: PlatformData): PlatformData {
     ...data.enrollments.map((enrollment) => enrollment.studentId),
     ...data.enrollmentRequests.map((request) => request.studentId),
   ])
+  // Teachers the courses name but the records do not describe (a course in a contract may name
+  // "t1" without listing a person), who must exist for the course to be saved.
+  const wantedTeachers = new Set(
+    data.courses.flatMap((course) => (course.teacherId === null ? [] : [course.teacherId])),
+  )
   const missingClasses = [...wantedClasses].filter((id) => !knownClasses.has(id))
   const missingUsers = [...wantedUsers].filter((id) => !knownUsers.has(id))
-  if (missingClasses.length === 0 && missingUsers.length === 0) return data
+  const missingTeachers = [...wantedTeachers].filter(
+    (id) => !knownUsers.has(id) && !missingUsers.includes(id),
+  )
+  if (missingClasses.length === 0 && missingUsers.length === 0 && missingTeachers.length === 0) {
+    return data
+  }
   const stubCourse = courseRecord({
     id: 'harness-stub-course',
     code: 'STUB 000',
@@ -145,7 +155,11 @@ function withStubs(data: PlatformData): PlatformData {
   })
   return {
     ...data,
-    users: [...data.users, ...missingUsers.map((id) => userRecord({ id, role: 'student' }))],
+    users: [
+      ...data.users,
+      ...missingUsers.map((id) => userRecord({ id, role: 'student' })),
+      ...missingTeachers.map((id) => userRecord({ id, role: 'teacher' })),
+    ],
     courses: missingClasses.length > 0 ? [...data.courses, stubCourse] : data.courses,
     classes: [
       ...data.classes,
