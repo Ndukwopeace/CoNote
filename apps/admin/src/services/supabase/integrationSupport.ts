@@ -224,7 +224,12 @@ export class Harness {
               title: item.title,
               description: item.description,
               starts_at: item.startsAt,
-              ends_at: item.endsAt,
+              // The database refuses a class that ends before it starts, and the contract's
+              // records keep a default end time; such a class gets an hour.
+              ends_at:
+                item.endsAt > item.startsAt
+                  ? item.endsAt
+                  : new Date(Date.parse(item.startsAt) + 3_600_000).toISOString(),
               archived_at: item.archivedAt,
             }
           }),
