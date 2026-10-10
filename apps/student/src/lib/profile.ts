@@ -7,6 +7,8 @@ import { z } from 'zod'
 
 // The name rule shared with sign-up.
 import { fullNameSchema } from './authSchemas'
+// The settings shape.
+import type { NotificationPrefs } from '@/types/domain'
 
 /** An optional short text field: trimmed, up to `max` characters. */
 function optionalText(max: number, label: string) {
@@ -36,3 +38,20 @@ export const profileSchema = z.object({
 
 /** What the profile form holds. */
 export type ProfileValues = z.input<typeof profileSchema>
+
+/** A new student's notification settings: everything on, except email class reminders. */
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  summaryPublished: { inApp: true, email: true },
+  classReminders: { inApp: true, email: false },
+  announcements: { inApp: true, email: true },
+}
+
+/** One channel pair: in the app, and by email. */
+const channelSchema = z.object({ inApp: z.boolean(), email: z.boolean() })
+
+/** The notification settings shape (FR-SET-3). */
+export const notificationPrefsSchema = z.object({
+  summaryPublished: channelSchema,
+  classReminders: channelSchema,
+  announcements: channelSchema,
+})

@@ -11,11 +11,11 @@ import { avatarProblem } from '@/lib/avatar'
 // The error type.
 import { AppError } from '@conote/core/errors'
 // Profile rules shared with the form.
-import { profileSchema } from '@/lib/profile'
+import { DEFAULT_NOTIFICATION_PREFS, notificationPrefsSchema, profileSchema } from '@/lib/profile'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
 // Shapes.
-import type { NotificationPrefs, StudentProfile } from '@/types/domain'
+import type { StudentProfile } from '@/types/domain'
 
 // The interfaces implemented.
 import type { ProfileService, ProfileUpdate } from '../types'
@@ -27,22 +27,6 @@ import type { MockAuthService } from './mockAuthService'
 
 /** Where profile changes are kept. */
 const PROFILE_KEY = `${MOCK_DATA_PREFIX}profile`
-
-/** A new student's notification settings: everything on. */
-const DEFAULT_PREFS: NotificationPrefs = {
-  summaryPublished: { inApp: true, email: true },
-  classReminders: { inApp: true, email: false },
-  announcements: { inApp: true, email: true },
-}
-
-/** One channel pair. */
-const channelSchema = z.object({ inApp: z.boolean(), email: z.boolean() })
-/** The notification settings shape. */
-const prefsSchema = z.object({
-  summaryPublished: channelSchema,
-  classReminders: channelSchema,
-  announcements: channelSchema,
-})
 
 /**
  * A profile picture address the app will show.
@@ -61,7 +45,7 @@ const storedSchema = z.object({
   level: z.string().default(''),
   phone: z.string().default(''),
   avatarUrl: avatarUrlSchema.optional(),
-  notificationPrefs: prefsSchema.default(DEFAULT_PREFS),
+  notificationPrefs: notificationPrefsSchema.default(DEFAULT_NOTIFICATION_PREFS),
 })
 /** The stored record type. */
 type Stored = z.output<typeof storedSchema>
@@ -141,7 +125,7 @@ export function createMockProfileService({
         .object({
           ...profileSchema.partial().shape,
           avatarUrl: avatarUrlSchema.optional(),
-          notificationPrefs: prefsSchema.optional(),
+          notificationPrefs: notificationPrefsSchema.optional(),
         })
         .safeParse(changes)
       if (!checked.success) {

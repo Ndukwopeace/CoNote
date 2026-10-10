@@ -14,5 +14,7 @@ select tests.rows('select * from public.summaries', 1, 'the demo student sees on
 -- The join dialog lists courses in use only: not the completed one, not the archived one.
 select tests.rows('select * from public.joinable_courses', 4, 'the demo student can look at four courses to join');
 select tests.is((select student_count from public.course_student_counts where course_id = '20000000-0000-0000-0000-000000000001'), 2, 'MTH 202 has two students');
+select tests.rows('select * from public.notifications', 3, 'the demo student has three notifications');
+select tests.rows('select * from public.notifications where not read', 2, 'two of them are unread');
 select tests.reset();
 rollback;

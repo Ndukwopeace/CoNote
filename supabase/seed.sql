@@ -82,3 +82,9 @@ values
 insert into public.enrollment_requests (course_id, student_id) values
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000006'),
   ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000006');
+
+-- Notifications for the demo student: two unread and one read.
+insert into public.notifications (user_id, type, title, body, link, read, created_at) values
+  ('10000000-0000-0000-0000-000000000004', 'summary', 'New summary: Vectors', 'Your teacher approved the summary for MTH 202.', '/classes/30000000-0000-0000-0000-000000000001', false, now() - interval '8 days'),
+  ('10000000-0000-0000-0000-000000000004', 'system', 'Class reminder', 'Matrices starts soon.', '/classes/30000000-0000-0000-0000-000000000002', false, now() - interval '1 day'),
+  ('10000000-0000-0000-0000-000000000004', 'system', 'Welcome to CoNote', 'Write notes after each class.', null, true, now() - interval '10 days');

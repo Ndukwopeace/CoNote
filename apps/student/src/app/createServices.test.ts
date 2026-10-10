@@ -31,8 +31,8 @@ describe('createServices', () => {
     // Assert: auth is the real service (no stored session, so signed out without a request)...
     await expect(services.auth.getSession()).resolves.toBeNull()
     // ...and a service not built yet says so.
-    await expect(services.notifications.list()).rejects.toMatchObject({
-      message: 'Notifications is not connected to the database yet.',
+    await expect(services.ai.askAi({ scope: 'all' }, [])).rejects.toMatchObject({
+      message: 'Ask AI is not connected to the database yet.',
     })
     // The demo-only actions are absent outside mock mode.
     expect(services.demo).toBeUndefined()
