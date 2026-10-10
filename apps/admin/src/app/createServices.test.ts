@@ -15,9 +15,8 @@ describe('createServices', () => {
     await expect(services.auth.getSession()).resolves.toBeNull()
   })
 
-  // Proves Supabase mode connects sign-in and leaves the unbuilt services failing clearly, so a
-  // half-connected deploy shows an error instead of demo data.
-  it('connects sign-in in Supabase mode and refuses the rest for now', async () => {
+  // Proves Supabase mode builds every service, and sign-in is answered from storage.
+  it('builds every service in Supabase mode', async () => {
     const services = await createServices({
       dataSource: 'supabase',
       supabaseUrl: 'https://example.supabase.co',
@@ -25,8 +24,15 @@ describe('createServices', () => {
     })
     // Nobody is signed in on a fresh browser; this is answered from storage, with no network.
     await expect(services.auth.getSession()).resolves.toBeNull()
-    await expect(services.alerts.listAlerts()).rejects.toMatchObject({
-      message: 'Alerts is not connected to the database yet.',
-    })
+    // Every service exists.
+    expect(Object.keys(services).sort()).toEqual([
+      'alerts',
+      'analytics',
+      'auth',
+      'classes',
+      'courses',
+      'health',
+      'users',
+    ])
   })
 })

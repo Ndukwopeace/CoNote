@@ -6,6 +6,7 @@
  */
 
 // The handlers, the settings and the real clients, exactly as the functions use them.
+import { healthHandler } from '../../../supabase/functions/_shared/health.ts'
 import { inviteUserHandler } from '../../../supabase/functions/_shared/inviteUser.ts'
 import { sendPasswordResetHandler } from '../../../supabase/functions/_shared/sendPasswordReset.ts'
 import { setUserStatusHandler } from '../../../supabase/functions/_shared/setUserStatus.ts'
@@ -30,7 +31,7 @@ export interface BridgeOptions {
   token: () => Promise<string | null>
 }
 
-/** Builds a caller that answers "invite-user", "set-user-status" and "send-password-reset". */
+/** Builds a caller that answers each function by name. */
 export function createFunctionBridge({ url, anonKey, serviceKey, now, token }: BridgeOptions) {
   // The settings, with app addresses the emails would link to.
   const settings: Record<string, string> = {
@@ -45,6 +46,7 @@ export function createFunctionBridge({ url, anonKey, serviceKey, now, token }: B
   const deps = { env, clients: createClients(env), now }
   // Each function's handler, by name.
   const handlers: Record<string, ((request: Request) => Promise<Response>) | undefined> = {
+    health: healthHandler(deps),
     'invite-user': inviteUserHandler(deps),
     'set-user-status': setUserStatusHandler(deps),
     'send-password-reset': sendPasswordResetHandler(deps),

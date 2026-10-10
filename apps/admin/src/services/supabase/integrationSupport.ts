@@ -15,8 +15,14 @@ import {
   type SupabaseClientOptions,
 } from '@supabase/supabase-js'
 
-// The records a contract builds.
-import type { PlatformData, UserRecord } from '../platformData'
+// The records a contract builds, and the builders for the stand-ins it may need.
+import {
+  classRecord,
+  courseRecord,
+  userRecord,
+  type PlatformData,
+  type UserRecord,
+} from '../platformData'
 
 /** A setting from the environment, or undefined when it is missing or empty. */
 function setting(name: string): string | undefined {
@@ -99,6 +105,79 @@ class IdMap {
   }
 }
 
+/** The administrator the dashboard contracts act as, for platforms that have none of their own. */
+export const HARNESS_ADMIN = userRecord({
+  id: 'harness-admin',
+  role: 'admin',
+  fullName: 'Harness Admin',
+})
+
+/** `data` with the harness administrator added, so a contract that names no actor can sign in. */
+export function withAdmin(data: PlatformData): PlatformData {
+  return { ...data, users: [...data.users, HARNESS_ADMIN] }
+}
+
+/**
+ * `data` plus stand-ins for what its records point at but do not describe. The dashboard contracts
+ * list jobs and summaries for classes that do not exist, and requests from students who are not
+ * listed; the database requires them to exist. The stand-in classes are archived inside an
+ * archived course, so they change none of the counts a contract checks.
+ */
+function withStubs(data: PlatformData): PlatformData {
+  const knownClasses = new Set(data.classes.map((item) => item.id))
+  const knownUsers = new Set(data.users.map((user) => user.id))
+  const wantedClasses = new Set([
+    ...data.summaries.map((summary) => summary.classId),
+    ...data.aiJobs.map((job) => job.classId),
+  ])
+  const wantedUsers = new Set([
+    ...data.enrollments.map((enrollment) => enrollment.studentId),
+    ...data.enrollmentRequests.map((request) => request.studentId),
+  ])
+  // Teachers the courses name but the records do not describe (a course in a contract may name
+  // "t1" without listing a person), who must exist for the course to be saved.
+  const wantedTeachers = new Set(
+    data.courses.flatMap((course) => (course.teacherId === null ? [] : [course.teacherId])),
+  )
+  const missingClasses = [...wantedClasses].filter((id) => !knownClasses.has(id))
+  const missingUsers = [...wantedUsers].filter((id) => !knownUsers.has(id))
+  const missingTeachers = [...wantedTeachers].filter(
+    (id) => !knownUsers.has(id) && !missingUsers.includes(id),
+  )
+  if (missingClasses.length === 0 && missingUsers.length === 0 && missingTeachers.length === 0) {
+    return data
+  }
+  const stubCourse = courseRecord({
+    id: 'harness-stub-course',
+    code: 'STUB 000',
+    title: 'Stand-in',
+    archivedAt: '2000-01-02T00:00:00.000Z',
+  })
+  return {
+    ...data,
+    users: [
+      ...data.users,
+      ...missingUsers.map((id) => userRecord({ id, role: 'student' })),
+      ...missingTeachers.map((id) => userRecord({ id, role: 'teacher' })),
+    ],
+    courses: missingClasses.length > 0 ? [...data.courses, stubCourse] : data.courses,
+    classes: [
+      ...data.classes,
+      ...missingClasses.map((id, index) =>
+        classRecord({
+          id,
+          courseId: stubCourse.id,
+          number: index + 1,
+          title: id,
+          startsAt: '2000-01-01T09:00:00.000Z',
+          endsAt: '2000-01-01T10:00:00.000Z',
+          archivedAt: '2000-01-02T00:00:00.000Z',
+        }),
+      ),
+    ],
+  }
+}
+
 /** A client with the server key, which bypasses Row Level Security. */
 function serverClient(): SupabaseClient {
   const options: SupabaseClientOptions<'public'> = { auth: { persistSession: false } }
@@ -172,9 +251,31 @@ export class Harness {
     )
   }
 
-  /** Makes the stack hold exactly `data`'s accounts, courses and what hangs off them. */
-  async load(data: PlatformData) {
+  /** Makes the stack hold exactly `source`'s accounts, courses and what hangs off them. */
+  async load(source: PlatformData) {
+    const data = withStubs(source)
     await this.wipe()
+    // The activity and failure logs start empty, and the settings are the platform's.
+    const nobody = '00000000-0000-0000-0000-000000000000'
+    for (const table of [
+      'activity_events',
+      'security_events',
+      'delivery_failures',
+      'storage_errors',
+    ]) {
+      ok(await this.server.from(table).delete().neq('id', nobody), `clear ${table}`)
+    }
+    ok(
+      await this.server
+        .from('platform_settings')
+        .update({
+          term_starts_on: data.settings.termStartsOn,
+          term_ends_on: data.settings.termEndsOn,
+          review_alert_days: data.settings.reviewAlertDays,
+        })
+        .eq('id', true),
+      'settings',
+    )
     await this.ensureUsers(data.users)
     // The accounts as the contract describes them now.
     ok(
@@ -371,6 +472,43 @@ export class Harness {
           })),
         ),
         'insert requests',
+      )
+    }
+
+    if (data.activity.length > 0) {
+      ok(
+        await this.server
+          .from('activity_events')
+          .insert(data.activity.map((event) => ({ kind: event.kind, created_at: event.at }))),
+        'insert activity',
+      )
+    }
+    if (data.deliveryFailures.length > 0) {
+      ok(
+        await this.server
+          .from('delivery_failures')
+          .insert(data.deliveryFailures.map((item) => ({ id: id(item.id), created_at: item.at }))),
+        'insert delivery failures',
+      )
+    }
+    if (data.storageErrors.length > 0) {
+      ok(
+        await this.server
+          .from('storage_errors')
+          .insert(data.storageErrors.map((item) => ({ id: id(item.id), created_at: item.at }))),
+        'insert storage errors',
+      )
+    }
+    if (data.securityEvents.length > 0) {
+      ok(
+        await this.server.from('security_events').insert(
+          data.securityEvents.map((item) => ({
+            id: id(item.id),
+            action: item.action,
+            created_at: item.at,
+          })),
+        ),
+        'insert security events',
       )
     }
   }
