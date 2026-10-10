@@ -108,6 +108,18 @@ export function CourseFilters({ filter, onChange, onClear }: Readonly<CourseFilt
           ))}
         </NativeSelect>
       </label>
+      {/* Courses with students waiting to join (the dashboard alert's link). */}
+      <label className="flex h-10 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={filter.requests === 'waiting'}
+          onChange={(event) => {
+            onChange({ requests: event.target.checked ? 'waiting' : undefined })
+          }}
+          className="size-4 accent-primary"
+        />
+        <span>Requests waiting</span>
+      </label>
       {/* Archived courses are hidden unless asked for. */}
       <label className="flex h-10 items-center gap-2 text-sm">
         <input
@@ -118,7 +130,7 @@ export function CourseFilters({ filter, onChange, onClear }: Readonly<CourseFilt
           }}
           className="size-4 accent-primary"
         />
-        Show archived courses
+        <span>Show archived courses</span>
       </label>
       {/* Clear, when anything is set. */}
       {hasCourseFilters(filter) && (

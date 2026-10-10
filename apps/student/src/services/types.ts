@@ -12,6 +12,8 @@ import type {
   AppNotification,
   ClassSession,
   Course,
+  JoinableCourse,
+  JoinRequest,
   Note,
   NotificationPrefs,
   StudentProfile,
@@ -69,6 +71,32 @@ export interface CourseService {
   listMyCourses(): Promise<Course[]>
   /** One enrolled course. */
   getCourse(courseId: string): Promise<Course>
+}
+
+/**
+ * Asking to join courses (FR-ENR, D76). Joining needs an admin's approval, which happens in the
+ * admin console, so no method here enrols anyone. A student sees and changes only their own
+ * requests (RLS, section 12.2).
+ */
+export interface EnrolmentService {
+  /**
+   * Courses in use (ongoing or upcoming, not archived) whose code or title contains `query`,
+   * with the student's standing in each. A blank query lists them all.
+   */
+  listJoinableCourses(query?: string): Promise<JoinableCourse[]>
+  /**
+   * The latest request for each course when it is pending or declined, newest first. Approved
+   * requests are not listed: the course is in My Courses by then.
+   */
+  listMyJoinRequests(): Promise<JoinRequest[]>
+  /**
+   * Asks to join a course. Rejects with validation for a course that is archived, completed or
+   * unknown ("This course isn't open for requests."), and with conflict when the student is
+   * already in the course or has a request waiting.
+   */
+  requestToJoin(courseId: string): Promise<JoinRequest>
+  /** Withdraws a pending request. Rejects with not_found for an unknown ID, and conflict once decided. */
+  cancelJoinRequest(requestId: string): Promise<void>
 }
 
 /** Class sessions (FR-CLS). Unknown IDs reject with a not_found AppError. */
@@ -177,6 +205,8 @@ export interface Services {
   courses: CourseService
   // Class sessions.
   classes: ClassService
+  // Asking to join courses.
+  enrolment: EnrolmentService
   // The student's notes.
   notes: NoteService
   // Published summaries.

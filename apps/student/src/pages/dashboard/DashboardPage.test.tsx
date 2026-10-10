@@ -123,9 +123,10 @@ describe('DashboardPage', () => {
     // Assert.
     expect(
       await screen.findByText(
-        "You're not enrolled in any courses yet. Your teacher or administrator will add you.",
+        /You're not enrolled in any courses yet\. Find a course to request to join, or wait for your teacher or administrator to add you\./,
       ),
     ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find courses' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Upcoming Classes' })).toBeNull()
   })
 

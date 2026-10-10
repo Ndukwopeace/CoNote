@@ -104,6 +104,7 @@ describe.each(nows)('createPlatformSeed at %s', (now) => {
       'courses_without_teacher',
       'classes_in_archived_courses',
       'summaries_waiting_review',
+      'enrollment_requests_waiting',
     ])
   })
 

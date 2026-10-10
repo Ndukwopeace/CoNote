@@ -58,6 +58,9 @@ export function createMockAlertService({ data, now, latencyMs }: MockAlertOption
         classes_in_archived_courses: data.classes.filter(
           (cls) => cls.archivedAt === null && archivedCourses.has(cls.courseId),
         ).length,
+        enrollment_requests_waiting: data.enrollmentRequests.filter(
+          (request) => request.status === 'pending' && !archivedCourses.has(request.courseId),
+        ).length,
         summaries_waiting_review: data.summaries.filter(
           (summary) =>
             summary.status === 'in_review' &&

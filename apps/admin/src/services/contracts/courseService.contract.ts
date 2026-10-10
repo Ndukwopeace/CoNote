@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import {
   courseRecord,
   emptyPlatformData,
+  enrollmentRequestRecord,
   userRecord,
   type PlatformData,
   classRecord,
@@ -133,6 +134,55 @@ function platform(): PlatformData {
       { courseId: 'c2', studentId: 's01' },
       { courseId: 'c2', studentId: 's02' },
       { courseId: 'c3', studentId: 's01' },
+    ],
+    // Requests to join: three waiting on SWE 311 (one from a suspended student), two on CSC 101
+    // (one from a student who is already in it), one declined, and one on the archived course.
+    enrollmentRequests: [
+      enrollmentRequestRecord({
+        id: 'q1',
+        courseId: 'c4',
+        studentId: 's04',
+        createdAt: '2026-10-02T09:00:00.000Z',
+      }),
+      enrollmentRequestRecord({
+        id: 'q2',
+        courseId: 'c4',
+        studentId: 's05',
+        createdAt: '2026-10-01T09:00:00.000Z',
+      }),
+      enrollmentRequestRecord({
+        id: 'q3',
+        courseId: 'c1',
+        studentId: 's02',
+        createdAt: '2026-10-03T09:00:00.000Z',
+      }),
+      enrollmentRequestRecord({
+        id: 'q4',
+        courseId: 'c4',
+        studentId: 's03',
+        createdAt: '2026-10-04T09:00:00.000Z',
+      }),
+      enrollmentRequestRecord({
+        id: 'q5',
+        courseId: 'c4',
+        studentId: 's01',
+        status: 'declined',
+        createdAt: '2026-09-25T09:00:00.000Z',
+        decidedAt: '2026-09-26T09:00:00.000Z',
+        decidedBy: 'a1',
+      }),
+      enrollmentRequestRecord({
+        id: 'q6',
+        courseId: 'c3',
+        studentId: 's02',
+        createdAt: '2026-10-05T09:00:00.000Z',
+      }),
+      enrollmentRequestRecord({
+        id: 'q7',
+        courseId: 'c1',
+        studentId: 's01',
+        createdAt: '2026-10-06T09:00:00.000Z',
+      }),
     ],
     classes: [
       classRecord({
@@ -602,6 +652,139 @@ export function describeCourseServiceContract(name: string, create: CreateCourse
       })
       await expect(svc.removeStudent('nope', 's01')).rejects.toMatchObject({ kind: 'not_found' })
       await expect(svc.archiveCourse('nope')).rejects.toMatchObject({ kind: 'not_found' })
+    })
+
+    describe('requests to join (D76)', () => {
+      // Proves the waiting requests come oldest first, each with who asked, and the declined
+      // one is left out.
+      it('lists the waiting requests, oldest first', async () => {
+        const requests = await service().listEnrollmentRequests('c4')
+
+        expect(requests.map((request) => request.id)).toEqual(['q2', 'q1', 'q4'])
+        expect(requests[0]).toEqual({
+          id: 'q2',
+          requestedAt: '2026-10-01T09:00:00.000Z',
+          student: {
+            id: 's05',
+            fullName: 'Student 05',
+            email: 'student05@conote.example',
+            studentNumber: 'U2023/5005',
+            status: 'active',
+          },
+        })
+      })
+
+      // Proves a course with no requests gives an empty list, an archived course can still be read,
+      // and an unknown course is not found.
+      it('lists nothing for a course without requests, and rejects an unknown course', async () => {
+        const svc = service()
+
+        await expect(svc.listEnrollmentRequests('c2')).resolves.toEqual([])
+        await expect(svc.listEnrollmentRequests('c3')).resolves.toHaveLength(1)
+        await expect(svc.listEnrollmentRequests('nope')).rejects.toMatchObject({
+          kind: 'not_found',
+        })
+      })
+
+      // Proves approving enrols the student and takes the request off the list.
+      it('enrols the student on approval', async () => {
+        const svc = service()
+
+        await svc.decideEnrollmentRequest('q1', 'approved')
+
+        expect((await svc.listEnrollmentRequests('c4')).map((r) => r.id)).toEqual(['q2', 'q4'])
+        expect((await svc.listEnrollments('c4')).map((student) => student.id)).toContain('s04')
+      })
+
+      // Proves declining enrols nobody and takes the request off the list.
+      it('enrols nobody on a decline', async () => {
+        const svc = service()
+
+        await svc.decideEnrollmentRequest('q2', 'declined')
+
+        expect((await svc.listEnrollmentRequests('c4')).map((r) => r.id)).toEqual(['q1', 'q4'])
+        expect((await svc.listEnrollments('c4')).map((student) => student.id)).not.toContain('s05')
+      })
+
+      // Proves a request from someone already in the course is closed without enrolling twice.
+      it('closes a request from a student who is already in the course', async () => {
+        const svc = service()
+        const before = (await svc.listEnrollments('c1')).length
+
+        await svc.decideEnrollmentRequest('q7', 'approved')
+
+        expect(await svc.listEnrollments('c1')).toHaveLength(before)
+        expect((await svc.listEnrollmentRequests('c1')).map((r) => r.id)).toEqual(['q3'])
+      })
+
+      // SECURITY: proves an account that can't be enrolled (suspended) can't be approved, and the
+      // request stays waiting so the administrator can decline it.
+      it('refuses to approve a student who can not be enrolled', async () => {
+        const svc = service()
+
+        await expect(svc.decideEnrollmentRequest('q4', 'approved')).rejects.toMatchObject({
+          kind: 'validation',
+          message: "This account can't be enrolled.",
+        })
+
+        expect((await svc.listEnrollmentRequests('c4')).map((r) => r.id)).toContain('q4')
+        await expect(svc.decideEnrollmentRequest('q4', 'declined')).resolves.toBeUndefined()
+      })
+
+      // Proves an archived course refuses both decisions, and the request stays waiting.
+      it.each(['approved', 'declined'] as const)(
+        'refuses to decide a request on an archived course (%s)',
+        async (decision) => {
+          const svc = service()
+
+          await expect(svc.decideEnrollmentRequest('q6', decision)).rejects.toMatchObject({
+            kind: 'validation',
+            message: ARCHIVED_MESSAGE,
+          })
+
+          await expect(svc.listEnrollmentRequests('c3')).resolves.toHaveLength(1)
+        },
+      )
+
+      // Proves a request is decided once, and an unknown or already-closed one is refused.
+      it('refuses a second decision and an unknown request', async () => {
+        const svc = service()
+        await svc.decideEnrollmentRequest('q1', 'approved')
+
+        await expect(svc.decideEnrollmentRequest('q1', 'declined')).rejects.toMatchObject({
+          kind: 'conflict',
+        })
+        await expect(svc.decideEnrollmentRequest('q5', 'approved')).rejects.toMatchObject({
+          kind: 'conflict',
+        })
+        await expect(svc.decideEnrollmentRequest('nope', 'approved')).rejects.toMatchObject({
+          kind: 'not_found',
+        })
+      })
+
+      // SECURITY: proves nobody who isn't signed in as an administrator can decide a request.
+      it('refuses a caller who is not signed in', async () => {
+        const svc = create(platform(), NOW, '')
+
+        await expect(svc.decideEnrollmentRequest('q1', 'approved')).rejects.toMatchObject({
+          kind: 'unauthorized',
+        })
+      })
+
+      // Proves each row counts its waiting requests, and the filter keeps only courses that have any.
+      it('counts waiting requests per course and filters on them', async () => {
+        const svc = service()
+
+        const rows = (await svc.listCourses({ requests: 'waiting' })).items
+
+        expect(rows.map((row) => [row.code, row.pendingRequestCount])).toEqual([
+          ['CSC 101', 2],
+          ['SWE 311', 3],
+        ])
+        // A course without any shows zero in the unfiltered list.
+        const eng = (await svc.listCourses({ q: 'ENG' })).items[0]
+        expect(eng?.pendingRequestCount).toBe(0)
+      })
     })
   })
 }

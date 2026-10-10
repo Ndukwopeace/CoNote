@@ -70,6 +70,7 @@ export const ALERT_KINDS = [
   'courses_without_teacher',
   'classes_in_archived_courses',
   'summaries_waiting_review',
+  'enrollment_requests_waiting',
 ] as const
 
 /** One kind of problem. */

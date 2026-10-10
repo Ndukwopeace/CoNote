@@ -16,6 +16,15 @@ export const queryKeys = {
     // One course.
     detail: (courseId: string) => [...queryKeys.courses.all, 'detail', courseId] as const,
   },
+  enrolment: {
+    // Every query about joining courses; cleared after a request is made or withdrawn. Not kept
+    // for offline reading: a student's requests are not course content (lib/offlineCache.ts).
+    all: ['enrolment'] as const,
+    // The courses the student could join, narrowed by a search.
+    joinable: (query: string) => [...queryKeys.enrolment.all, 'joinable', query] as const,
+    // The student's pending and declined requests.
+    requests: () => [...queryKeys.enrolment.all, 'requests'] as const,
+  },
   classes: {
     // Every class query.
     all: ['classes'] as const,

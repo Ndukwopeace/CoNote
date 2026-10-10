@@ -22,6 +22,8 @@ import type { AuthService } from '../types'
 
 // Fake network delay.
 import { simulateLatency } from './latency'
+// Starts a new student in no courses.
+import { startNewStudent } from './mockEnrolment'
 // The demo student's ID, shared with the demo data so seeded notes belong to this account.
 import { DEMO_STUDENT_ID } from './seed/constants'
 
@@ -212,6 +214,9 @@ export function createMockAuthService({
       // the form (for example, sent from the browser console) can't create a weak password.
       assertRule(fullNameSchema, fullName)
       assertRule(newPasswordSchema, password)
+      // A new account is in no courses yet; the demo starts it that way, so joining is the next
+      // step (D76).
+      startNewStudent(localStore)
       // New accounts are remembered, as most sign-up flows do.
       return store(demoSession(email, fullName.trim()), true)
     },

@@ -26,11 +26,16 @@ import { createMockAiService } from '@/services/mock/mockAiService'
 import { createMockProfileService } from '@/services/mock/mockProfileService'
 // The demo catalog services and their data, used as the test fakes.
 import { createMockCatalog } from '@/services/mock/mockCatalog'
+import { createMockEnrolment } from '@/services/mock/mockEnrolment'
 import { createSeed } from '@/services/mock/seed'
 // Services type.
 import type { Services } from '@/services/types'
 // Session type.
 import type { Session } from '@/types/auth'
+
+// Starts a student in no courses, as signing up does (re-exported for tests, which may not reach
+// the demo services directly).
+export { startNewStudent } from '@/services/mock/mockEnrolment'
 
 /** What a test can pass in. */
 interface RenderOptions {
@@ -52,13 +57,24 @@ export function createTestServices(overrides: Partial<Services> = {}): Services 
     sessionStore: window.sessionStorage,
     latencyMs: 0,
   })
+  // Fresh demo data, and the student's enrolments over it, kept in the test's storage as the app
+  // keeps them (a sign-up in the test starts a student in no courses).
+  const seed = createSeed(new Date())
+  const enrolment = createMockEnrolment({
+    catalog: seed.catalog,
+    initialEnrolledIds: seed.courses.map((course) => course.id),
+    latencyMs: 0,
+    store: window.localStorage,
+  })
   return {
     // Demo sign-in.
     auth,
     // The profile, instant.
     profile: createMockProfileService({ auth, store: window.localStorage, latencyMs: 0 }),
-    // Courses, classes, notes, summaries and notifications over fresh demo data, instant.
-    ...createMockCatalog({ seed: createSeed(new Date()), latencyMs: 0 }),
+    // Asking to join courses, instant.
+    enrolment: enrolment.service,
+    // Courses, classes, notes, summaries and notifications over the demo data, instant.
+    ...createMockCatalog({ seed, latencyMs: 0, enrolledCourseIds: enrolment.enrolledIds }),
     // The demo AI, answering at once.
     ai: createMockAiService({ delay: () => 0 }),
     // The test's replacements win.

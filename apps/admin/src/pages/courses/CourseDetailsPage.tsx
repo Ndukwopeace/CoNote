@@ -20,6 +20,7 @@ import { CourseStatusBadge } from '@/components/courses/CourseStatusBadge'
 // The tabs and the actions shared with the list.
 import { CourseClassesTab } from '@/features/courses/CourseClassesTab'
 import { CourseOverview } from '@/features/courses/CourseOverview'
+import { CourseRequests } from '@/features/courses/CourseRequests'
 import { CourseResourcesTab } from '@/features/courses/CourseResourcesTab'
 import { CourseStudents } from '@/features/courses/CourseStudents'
 import { useCourseActions } from '@/features/courses/useCourseActions'
@@ -86,6 +87,11 @@ function Details({ course }: Readonly<{ course: CourseDetails }>) {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
+          <TabsTrigger value="requests">
+            {course.pendingRequestCount > 0
+              ? `Requests (${course.pendingRequestCount})`
+              : 'Requests'}
+          </TabsTrigger>
           <TabsTrigger value="classes">Classes</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
         </TabsList>
@@ -95,6 +101,9 @@ function Details({ course }: Readonly<{ course: CourseDetails }>) {
         </TabsContent>
         <TabsContent value="students">
           <CourseStudents courseId={course.id} code={course.code} locked={actions.isArchived} />
+        </TabsContent>
+        <TabsContent value="requests">
+          <CourseRequests courseId={course.id} code={course.code} locked={actions.isArchived} />
         </TabsContent>
         <TabsContent value="classes">
           <CourseClassesTab classes={course.classes} />

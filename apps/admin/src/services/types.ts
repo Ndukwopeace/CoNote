@@ -25,6 +25,8 @@ import type {
   CoursePage,
   EnrolledStudent,
   EnrollmentMatch,
+  EnrollmentRequest,
+  RequestDecision,
 } from '@/types/courses'
 // Dashboard shapes.
 import type {
@@ -120,6 +122,17 @@ export interface CourseService {
   enrollStudents(courseId: string, studentIds: string[]): Promise<{ added: number }>
   /** Removes one student from the course. */
   removeStudent(courseId: string, studentId: string): Promise<void>
+  /**
+   * The course's students' requests to join that are waiting for a decision, oldest first
+   * (D76). Rejects with not_found for an unknown course.
+   */
+  listEnrollmentRequests(courseId: string): Promise<EnrollmentRequest[]>
+  /**
+   * Approves or declines a waiting request. Approving enrols the student, as bulk enrolment
+   * does; an archived course refuses both, an account that can't be enrolled refuses approval,
+   * and a request already decided is a conflict. Rejects with not_found for an unknown request.
+   */
+  decideEnrollmentRequest(requestId: string, decision: RequestDecision): Promise<void>
 }
 
 /**

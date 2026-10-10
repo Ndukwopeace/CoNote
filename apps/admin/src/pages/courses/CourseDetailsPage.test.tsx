@@ -20,6 +20,7 @@ import {
   userRecord,
   type PlatformData,
   classRecord,
+  enrollmentRequestRecord,
 } from '@/services/platformData'
 // Session builder.
 import { makeSession } from '@/test/factories'
@@ -107,6 +108,7 @@ function platform(): PlatformData {
         publishedAt: null,
       },
     ],
+    enrollmentRequests: [enrollmentRequestRecord({ id: 'q1', courseId: 'c1', studentId: 's4' })],
     resources: [
       {
         id: 'r1',
@@ -415,5 +417,46 @@ describe('CourseDetailsPage', () => {
     await openTab(user, 'Students')
     await screen.findByRole('table', { name: 'Students in CSC 101' })
     await expectNoAxeViolations(container)
+  })
+
+  // Proves the Requests tab lists who is waiting, and the tab title counts them.
+  it('lists the students waiting to join', async () => {
+    const { user } = renderCourse()
+    await openTab(user, 'Requests (1)')
+
+    const table = await screen.findByRole('table', { name: 'Requests to join CSC 101' })
+    expect(within(table).getByText('Student 4')).toBeInTheDocument()
+    expect(within(table).getByText('student4@conote.example')).toBeInTheDocument()
+  })
+
+  // Proves approving enrols the student and the request leaves the list.
+  it('approves a request and enrols the student', async () => {
+    const { user } = renderCourse()
+    await openTab(user, 'Requests (1)')
+    await user.click(await screen.findByRole('button', { name: 'Approve Student 4' }))
+
+    expect(await screen.findByText('No students are waiting to join.')).toBeInTheDocument()
+    expect(await screen.findByText('Student 4 added to CSC 101.')).toBeInTheDocument()
+    await openTab(user, 'Students')
+    expect(await screen.findByText('Student 4')).toBeInTheDocument()
+  })
+
+  // Proves declining removes the request without enrolling.
+  it('declines a request', async () => {
+    const { user } = renderCourse()
+    await openTab(user, 'Requests (1)')
+    await user.click(await screen.findByRole('button', { name: 'Decline Student 4' }))
+
+    expect(await screen.findByText('No students are waiting to join.')).toBeInTheDocument()
+    await openTab(user, 'Students')
+    await screen.findByText('Student 1')
+    expect(screen.queryByText('Student 4')).not.toBeInTheDocument()
+  })
+
+  // Proves an archived course shows requests but offers no decision.
+  it('offers no decision on an archived course', async () => {
+    const { user } = renderCourse('c3')
+    await openTab(user, 'Requests')
+    expect(await screen.findByText('No students are waiting to join.')).toBeInTheDocument()
   })
 })

@@ -13,7 +13,7 @@ import { appQuery } from '@conote/core/appQuery'
 // The services.
 import { useServices } from '@/services/useServices'
 // Course shapes.
-import type { CourseFilter, CourseInput } from '@/types/courses'
+import type { CourseFilter, CourseInput, RequestDecision } from '@/types/courses'
 
 // Query keys.
 import { queryKeys } from './queryKeys'
@@ -173,6 +173,28 @@ export function useRemoveStudent() {
   return useMutation({
     mutationFn: ({ courseId, studentId }: { courseId: string; studentId: string }) =>
       appQuery(() => courses.removeStudent(courseId, studentId)),
+    onSuccess: refresh,
+  })
+}
+
+/** A course's students' requests to join, oldest first. */
+export function useEnrollmentRequests(courseId: string) {
+  // The course service.
+  const { courses } = useServices()
+  return useQuery({
+    queryKey: queryKeys.courses.requests(courseId),
+    queryFn: () => appQuery(() => courses.listEnrollmentRequests(courseId)),
+  })
+}
+
+/** Approves or declines a request. Approving enrols the student, so every course list refreshes. */
+export function useDecideEnrollmentRequest() {
+  // The course service, and the refresh after a change.
+  const { courses } = useServices()
+  const refresh = useRefreshCourses()
+  return useMutation({
+    mutationFn: ({ requestId, decision }: { requestId: string; decision: RequestDecision }) =>
+      appQuery(() => courses.decideEnrollmentRequest(requestId, decision)),
     onSuccess: refresh,
   })
 }

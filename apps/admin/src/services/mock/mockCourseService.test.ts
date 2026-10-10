@@ -9,7 +9,12 @@ import { describe, expect, it, vi } from 'vitest'
 // The shared rules.
 import { describeCourseServiceContract } from '../contracts/courseService.contract'
 // The data the service reads.
-import { courseRecord, emptyPlatformData, userRecord } from '../platformData'
+import {
+  courseRecord,
+  emptyPlatformData,
+  enrollmentRequestRecord,
+  userRecord,
+} from '../platformData'
 
 // The unit under test.
 import { createMockCourseService } from './mockCourseService'
@@ -142,5 +147,72 @@ describe('mock CourseService', () => {
     await expect(service.enrollStudents('c1', ['s1'])).rejects.toMatchObject({
       kind: 'unauthorized',
     })
+  })
+
+  // Proves each decision on a request is audited and reported for saving, and the request records
+  // who decided and when (D76).
+  it('audits decisions on requests to join', async () => {
+    // Arrange: two waiting requests on the small platform's course.
+    const data = smallPlatform()
+    data.enrollmentRequests = [
+      enrollmentRequestRecord({ id: 'q1', courseId: 'c1', studentId: 's1' }),
+      enrollmentRequestRecord({ id: 'q2', courseId: 'c1', studentId: 's2' }),
+    ]
+    const onChange = vi.fn()
+    const service = createMockCourseService({
+      data,
+      now: () => new Date('2026-10-08T12:00:00Z'),
+      actorId: () => 'a1',
+      latencyMs: 0,
+      onChange,
+    })
+
+    // Act.
+    await service.decideEnrollmentRequest('q1', 'approved')
+    await service.decideEnrollmentRequest('q2', 'declined')
+
+    // Assert: the approval enrols and is recorded twice over; the decline once.
+    expect(data.auditLog.map((entry) => entry.action)).toEqual([
+      'enrollment_request.approved',
+      'enrollment.added',
+      'enrollment_request.declined',
+    ])
+    expect(data.auditLog[0]).toMatchObject({
+      actorId: 'a1',
+      entityType: 'course',
+      entityId: 'c1',
+      metadata: { studentId: 's1', requestId: 'q1' },
+    })
+    expect(data.enrollmentRequests.map((r) => [r.id, r.status, r.decidedBy])).toEqual([
+      ['q1', 'approved', 'a1'],
+      ['q2', 'declined', 'a1'],
+    ])
+    expect(data.enrollmentRequests[0]?.decidedAt).toBe('2026-10-08T12:00:00.000Z')
+    expect(onChange).toHaveBeenCalledTimes(3)
+  })
+
+  // Proves a refused decision leaves no trace: no audit entry and nothing to save.
+  it('writes nothing when a decision is refused', async () => {
+    const data = smallPlatform()
+    data.enrollmentRequests = [
+      enrollmentRequestRecord({ id: 'q1', courseId: 'c1', studentId: 's1' }),
+    ]
+    const onChange = vi.fn()
+    const service = createMockCourseService({
+      data,
+      now: () => new Date(),
+      actorId: () => 'a1',
+      latencyMs: 0,
+      onChange,
+    })
+    data.users = data.users.map((user) =>
+      user.id === 's1' ? { ...user, status: 'suspended' } : user,
+    )
+
+    await expect(service.decideEnrollmentRequest('q1', 'approved')).rejects.toThrow()
+
+    expect(data.auditLog).toEqual([])
+    expect(onChange).not.toHaveBeenCalled()
+    expect(data.enrollmentRequests[0]?.status).toBe('pending')
   })
 })

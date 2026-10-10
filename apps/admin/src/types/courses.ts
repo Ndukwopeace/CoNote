@@ -20,6 +20,8 @@ export interface CourseFilter {
   department?: string | undefined
   // A teacher's ID, or "none" for courses without one.
   teacher?: string | undefined
+  // "waiting" narrows to courses with students' requests to join waiting for a decision (D76).
+  requests?: 'waiting' | undefined
   // True for archived courses; otherwise courses in use.
   archived?: boolean | undefined
   sort?: CourseSort | undefined
@@ -43,6 +45,8 @@ export interface CourseListItem {
   teacher: PersonRef | null
   studentCount: number
   classCount: number
+  // Requests to join waiting for a decision (D76).
+  pendingRequestCount: number
   archivedAt: string | null
 }
 
@@ -125,3 +129,14 @@ export interface EnrollmentMatch {
   alreadyEnrolled: EnrolledStudent[]
   unmatched: { value: string; reason: UnmatchedReason }[]
 }
+
+/** A student's request to join a course, waiting for a decision (D76). */
+export interface EnrollmentRequest {
+  id: string
+  student: EnrolledStudent
+  // When the student asked, as ISO text.
+  requestedAt: string
+}
+
+/** What an administrator can decide about a request. */
+export type RequestDecision = 'approved' | 'declined'

@@ -75,4 +75,52 @@ describe('mock catalog services', () => {
     expect((await again.summaries.getByClass('swe-311-c2')).viewedByMe).toBe(true)
     await expect(again.notifications.unreadCount()).resolves.toBe(0)
   })
+
+  // SECURITY: proves a student in no courses sees nothing of the demo's courses, classes, notes,
+  // summaries or notifications, and a course they aren't in is not found (D76).
+  it('shows nothing to a student who is in no courses', async () => {
+    const catalog = createMockCatalog({
+      seed: createSeed(new Date()),
+      latencyMs: 0,
+      enrolledCourseIds: () => new Set<string>(),
+    })
+
+    await expect(catalog.courses.listMyCourses()).resolves.toEqual([])
+    await expect(catalog.classes.listMyClasses()).resolves.toEqual([])
+    await expect(catalog.notes.listMyNotes()).resolves.toEqual([])
+    await expect(catalog.summaries.listPublished()).resolves.toEqual([])
+    await expect(catalog.notifications.list()).resolves.toEqual([])
+    await expect(catalog.courses.getCourse('swe-311')).rejects.toMatchObject({ kind: 'not_found' })
+    await expect(catalog.classes.listClasses('swe-311')).rejects.toMatchObject({
+      kind: 'not_found',
+    })
+    await expect(
+      catalog.notes.createNote({
+        classId: 'swe-311-c1',
+        title: 'x',
+        contentHtml: '<p>x</p>',
+        tags: [],
+      }),
+    ).rejects.toMatchObject({ kind: 'not_found' })
+  })
+
+  // Proves only the courses the student is in contribute, and the answer follows a change at once.
+  it('follows the courses the student is in, call by call', async () => {
+    let enrolled = new Set(['swe-311'])
+    const catalog = createMockCatalog({
+      seed: createSeed(new Date()),
+      latencyMs: 0,
+      enrolledCourseIds: () => enrolled,
+    })
+
+    expect((await catalog.courses.listMyCourses()).map((course) => course.id)).toEqual(['swe-311'])
+    expect((await catalog.classes.listMyClasses()).every((c) => c.courseId === 'swe-311')).toBe(
+      true,
+    )
+    enrolled = new Set(['swe-311', 'eng-201'])
+    expect((await catalog.courses.listMyCourses()).map((course) => course.id)).toEqual([
+      'swe-311',
+      'eng-201',
+    ])
+  })
 })
