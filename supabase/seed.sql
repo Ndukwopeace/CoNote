@@ -63,7 +63,9 @@ insert into public.enrollments (course_id, student_id) values
 insert into public.class_sessions (id, course_id, number, title, starts_at, ends_at) values
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 1, 'Vectors', now() - interval '9 days', now() - interval '9 days' + interval '1 hour'),
   ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 2, 'Matrices', now() - interval '2 days', now() - interval '2 days' + interval '1 hour'),
-  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000002', 1, 'Software Requirements', now() - interval '5 days', now() - interval '5 days' + interval '1 hour');
+  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000002', 1, 'Software Requirements', now() - interval '5 days', now() - interval '5 days' + interval '1 hour'),
+  -- A class of a course the demo student is not in, for the tests that prove it stays hidden.
+  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003', 1, 'Motion', now() + interval '3 days', now() + interval '3 days' + interval '1 hour');
 
 -- Notes by the demo student.
 insert into public.notes (student_id, course_id, class_id, title, content_html, tags) values

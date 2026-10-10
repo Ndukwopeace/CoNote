@@ -6,7 +6,9 @@
 import { describe, expect, it } from 'vitest'
 
 // The shared contract.
-import { runCatalogServicesContract } from '../contracts/catalogServices.contract'
+import { runNotesServiceContract } from '../contracts/notesService.contract'
+import { runNotificationServiceContract } from '../contracts/notificationService.contract'
+import { runSummaryServiceContract } from '../contracts/summaryService.contract'
 import { runCoursesAndClassesContract } from '../contracts/coursesAndClasses.contract'
 
 // The implementation under test, and the seed it serves.
@@ -19,8 +21,10 @@ function createCatalog() {
 }
 
 // Run the shared contract against the mock.
-runCatalogServicesContract('mock', { create: createCatalog })
+runNotificationServiceContract('mock', { create: createCatalog })
 runCoursesAndClassesContract('mock', { create: createCatalog })
+runNotesServiceContract('mock', { create: createCatalog })
+runSummaryServiceContract('mock', { create: createCatalog })
 
 describe('mock catalog services', () => {
   // Proves the lists are sorted the way the pages show them.

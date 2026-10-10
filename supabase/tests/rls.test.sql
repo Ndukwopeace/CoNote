@@ -132,6 +132,8 @@ select tests.denied('update public.platform_settings set review_alert_days = 9',
 select tests.reset();
 
 -- ===== Signed-out visitors =====
+-- No view is open to visitors, whatever the platform grants new objects by default.
+select tests.is((select count(*)::int from unnest(array['course_teachers','joinable_courses','class_note_counts','summary_monitor','course_student_counts']) v where has_table_privilege('anon', 'public.' || v, 'select')), 0, 'no view is readable by visitors');
 select tests.anonymous();
 select tests.denied('select * from public.courses', 'a visitor reads nothing');
 select tests.reset();
