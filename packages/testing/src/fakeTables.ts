@@ -43,6 +43,8 @@ const CHAIN = [
   'eq',
   'neq',
   'gt',
+  'gte',
+  'lt',
   'in',
   'is',
   'not',

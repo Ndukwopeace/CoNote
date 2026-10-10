@@ -37,6 +37,8 @@ import type {
 // The interface this implementation must satisfy.
 import type { CourseService } from '../types'
 
+// Search text, times and names.
+import { compareText, iso, safeSearch } from './queryText'
 // Errors from the database, with the code and message the rules above rely on.
 import { databaseCode, databaseMessage } from './databaseErrors'
 
@@ -134,25 +136,6 @@ interface SupabaseCourseOptions {
   now?: () => Date
 }
 
-/** Compares names for sorting, ignoring case and accents. */
-function compareText(a: string, b: string) {
-  return a.localeCompare(b, 'en', { sensitivity: 'base' })
-}
-
-/** `value` as ISO text with a "Z", whatever form the database wrote it in. */
-function iso(value: string): string {
-  return new Date(value).toISOString()
-}
-
-/**
- * The search text made safe for a filter. Commas and brackets would end a condition early and
- * `%` and `_` are wildcards, so they are replaced by spaces. SECURITY: stops a search from
- * adding conditions of its own to the query.
- */
-function safeSearch(q: string | undefined): string {
-  return (q ?? '').replaceAll(/[,()"'\\%_*:]/g, ' ').trim()
-}
-
 /** The course as a list row. */
 function toListItem(row: CourseRow): CourseListItem {
   return {
@@ -203,6 +186,9 @@ export function createSupabaseCourseService({
     query = filter.archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null)
     if (filter.status) query = query.eq('status', filter.status)
     if (filter.department) query = query.eq('department', filter.department)
+    // A teacher's ID, or "none" for courses without one.
+    if (filter.teacher === 'none') query = query.is('teacher_id', null)
+    else if (filter.teacher) query = query.eq('teacher_id', filter.teacher)
     if (filter.requests) query = query.gt('pending_request_count', 0)
     const q = safeSearch(filter.q)
     if (q) query = query.or(`code.ilike.%${q}%,title.ilike.%${q}%`)
@@ -323,6 +309,10 @@ export function createSupabaseCourseService({
 
   return {
     async listCourses(filter) {
+      // SECURITY: a teacher ID that is not a UUID matches nothing and never reaches a query.
+      if (filter.teacher && filter.teacher !== 'none' && !isUuid(filter.teacher)) {
+        return { items: [], total: 0, page: 1, pageSize: PAGE_SIZE }
+      }
       // How many courses match, so a page past the end can show the last page instead.
       const counted = await listQuery(filter, 'id', true)
       if (counted.error) throw fromSupabaseError(counted.error)

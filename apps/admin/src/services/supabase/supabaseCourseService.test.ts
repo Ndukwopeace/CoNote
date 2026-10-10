@@ -133,6 +133,23 @@ describe('listCourses', () => {
     expect(made(query, 'gt', 'pending_request_count', 0)).toBe(true)
   })
 
+  // Proves the teacher filter asks for one teacher, or for courses without one.
+  it('filters by teacher, or by no teacher', async () => {
+    const one = setup(() => ({ data: null, error: null, count: 0 }))
+    await one.service.listCourses({ teacher: TEACHER })
+    expect(made(one.queries[0]!, 'eq', 'teacher_id', TEACHER)).toBe(true)
+    const none = setup(() => ({ data: null, error: null, count: 0 }))
+    await none.service.listCourses({ teacher: 'none' })
+    expect(made(none.queries[0]!, 'is', 'teacher_id', null)).toBe(true)
+  })
+
+  // SECURITY: proves a teacher ID that is not a UUID matches nothing and never reaches a query.
+  it('matches nothing for a teacher ID that is not a UUID', async () => {
+    const { service, queries } = setup(() => ({ data: null, error: null, count: 5 }))
+    await expect(service.listCourses({ teacher: 'ghost' })).resolves.toMatchObject({ total: 0 })
+    expect(queries).toHaveLength(0)
+  })
+
   // Proves a refused read becomes an AppError.
   it('reports a refused read', async () => {
     const { service } = setup(() => refusal('42501'))

@@ -164,7 +164,9 @@ export class Harness {
           id: this.ids.uuid(user.id),
           email: user.email,
           role: user.role,
-          status: user.status,
+          // A course can only be given an active teacher, so a teacher who is inactive in the
+          // records is made active here and switched off again once the courses are in.
+          status: user.role === 'teacher' ? 'active' : user.status,
           full_name: user.fullName,
           student_number: user.studentNumber,
           staff_number: user.staffNumber,
@@ -197,6 +199,14 @@ export class Harness {
       ),
       'insert courses',
     )
+    for (const user of data.users) {
+      if (user.role === 'teacher' && user.status !== 'active') {
+        ok(
+          await this.server.from('profiles').update({ status: user.status }).eq('id', id(user.id)),
+          'teacher status',
+        )
+      }
+    }
     if (data.enrollments.length > 0) {
       ok(
         await this.server.from('enrollments').insert(
@@ -209,18 +219,27 @@ export class Harness {
       )
     }
     if (data.classes.length > 0) {
-      // Numbered in time order within each course, whatever the record says.
-      const byCourse = new Map<string, number>()
+      // A course keeps the numbers its records carry when they differ; records that repeat a
+      // number (the course contract's defaults) are numbered in time order instead.
       const ordered = [...data.classes].sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+      const counters = new Map<string, number>()
+      // Each course's numbers, to see whether any repeat.
+      const numbers = new Map<string, number[]>()
+      for (const item of data.classes) {
+        numbers.set(item.courseId, [...(numbers.get(item.courseId) ?? []), item.number])
+      }
+      const distinct = new Map(
+        [...numbers].map(([courseId, list]) => [courseId, new Set(list).size === list.length]),
+      )
       ok(
         await this.server.from('class_sessions').insert(
           ordered.map((item) => {
-            const number = (byCourse.get(item.courseId) ?? 0) + 1
-            byCourse.set(item.courseId, number)
+            const next = (counters.get(item.courseId) ?? 0) + 1
+            counters.set(item.courseId, next)
             return {
               id: id(item.id),
               course_id: id(item.courseId),
-              number,
+              number: distinct.get(item.courseId) ? item.number : next,
               title: item.title,
               description: item.description,
               starts_at: item.startsAt,
@@ -236,6 +255,18 @@ export class Harness {
         ),
         'insert classes',
       )
+      // Notes are private, and the console only counts them: the record's count becomes that many
+      // notes, written by the students in turn.
+      const students = data.users.filter((user) => user.role === 'student')
+      const notes = data.classes.flatMap((item) =>
+        Array.from({ length: item.noteCount }, (_unused, index) => ({
+          student_id: id(students[index % Math.max(students.length, 1)]?.id ?? ''),
+          course_id: id(item.courseId),
+          class_id: id(item.id),
+          title: `Note ${String(index + 1)}`,
+        })),
+      )
+      if (notes.length > 0) ok(await this.server.from('notes').insert(notes), 'insert notes')
     }
     if (data.summaries.length > 0) {
       const courseOf = new Map(data.classes.map((item) => [item.id, item.courseId]))
@@ -251,6 +282,23 @@ export class Harness {
           })),
         ),
         'insert summaries',
+      )
+    }
+    if (data.aiJobs.length > 0) {
+      const courseOfClass = new Map(data.classes.map((item) => [item.id, item.courseId]))
+      ok(
+        await this.server.from('ai_jobs').insert(
+          data.aiJobs.map((job) => ({
+            id: id(job.id),
+            class_id: id(job.classId),
+            course_id: id(courseOfClass.get(job.classId) ?? ''),
+            status: job.status,
+            attempt: job.attempt,
+            created_at: job.createdAt,
+            finished_at: job.finishedAt,
+          })),
+        ),
+        'insert jobs',
       )
     }
     if (data.resources.length > 0) {
