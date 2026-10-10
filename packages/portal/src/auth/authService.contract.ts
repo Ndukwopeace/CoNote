@@ -6,7 +6,7 @@
 // Shared error type.
 import { AppError } from '@conote/core/errors'
 // Vitest building blocks.
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The interface under test, and the reset request shape.
 import type { AuthService, PasswordResetRequest } from './types'
@@ -15,8 +15,13 @@ import type { AuthService, PasswordResetRequest } from './types'
 export interface AuthContractSetup {
   createService: () => AuthService
   account: { email: string; password: string; fullName: string; role: string }
-  /** The code from a reset request (the demo returns a link; a real backend would email it). */
-  resetCodeFrom: (request: PasswordResetRequest) => string
+  /**
+   * The code from a reset request (the demo returns a link; a real backend would email it, so a
+   * test fetches the code another way).
+   */
+  resetCodeFrom: (request: PasswordResetRequest) => string | Promise<string>
+  /** Runs before each test, to put the account back as it was (a real backend keeps changes). */
+  beforeEachTest?: () => Promise<void>
 }
 
 /** A new password that meets the staff rules (12+ characters, a letter and a number). */
@@ -25,6 +30,11 @@ const NEW_PASSWORD = 'new-password-2026'
 /** Registers the AuthService contract suite under `name`. */
 export function describeAuthServiceContract(name: string, setup: AuthContractSetup) {
   describe(`AuthService contract: ${name}`, () => {
+    // A real backend keeps the password a test sets, so the account is put back first.
+    beforeEach(async () => {
+      await setup.beforeEachTest?.()
+    })
+
     // Proves a new visitor starts signed out.
     it('starts with no session', async () => {
       await expect(setup.createService().getSession()).resolves.toBeNull()
@@ -102,7 +112,9 @@ export function describeAuthServiceContract(name: string, setup: AuthContractSet
     // Proves the whole reset: the link works once, the new password signs in, the old one doesn't.
     it('resets the password once with a valid link', async () => {
       const service = setup.createService()
-      const code = setup.resetCodeFrom(await service.requestPasswordReset(setup.account.email))
+      const code = await setup.resetCodeFrom(
+        await service.requestPasswordReset(setup.account.email),
+      )
       await expect(service.checkResetLink(code)).resolves.toBe(true)
       await service.resetPassword(code, NEW_PASSWORD)
       // SECURITY: the code is spent, so the same link can't change the password again.
@@ -124,7 +136,9 @@ export function describeAuthServiceContract(name: string, setup: AuthContractSet
     // link stays usable so the user can try again.
     it('refuses a weak new password without spending the link', async () => {
       const service = setup.createService()
-      const code = setup.resetCodeFrom(await service.requestPasswordReset(setup.account.email))
+      const code = await setup.resetCodeFrom(
+        await service.requestPasswordReset(setup.account.email),
+      )
       await expect(service.resetPassword(code, 'short1')).rejects.toMatchObject({
         kind: 'validation',
       })
@@ -134,8 +148,12 @@ export function describeAuthServiceContract(name: string, setup: AuthContractSet
     // SECURITY: only the newest link works, so an older email can't be used after a new request.
     it('replaces an older link with a newer one', async () => {
       const service = setup.createService()
-      const older = setup.resetCodeFrom(await service.requestPasswordReset(setup.account.email))
-      const newer = setup.resetCodeFrom(await service.requestPasswordReset(setup.account.email))
+      const older = await setup.resetCodeFrom(
+        await service.requestPasswordReset(setup.account.email),
+      )
+      const newer = await setup.resetCodeFrom(
+        await service.requestPasswordReset(setup.account.email),
+      )
       await expect(service.checkResetLink(older)).resolves.toBe(false)
       await expect(service.checkResetLink(newer)).resolves.toBe(true)
     })

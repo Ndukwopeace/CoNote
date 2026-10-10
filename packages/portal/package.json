@@ -9,13 +9,16 @@
     "./pages/login": "./src/pages/LoginPage.tsx",
     "./pages/forgot-password": "./src/pages/ForgotPasswordPage.tsx",
     "./pages/reset-password": "./src/pages/ResetPasswordPage.tsx",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./supabase-auth": "./src/supabase/staffAuthService.ts"
   },
   "dependencies": {
     "@conote/core": "0.1.0",
     "@conote/domain": "0.1.0",
+    "@conote/supabase": "0.1.0",
     "@conote/ui": "0.1.0",
     "@hookform/resolvers": "^5.9.1",
+    "@supabase/supabase-js": "^2.117.3",
     "@tanstack/react-query": "^5.104.0",
     "lucide-react": "^1.49.0",
     "zod": "^4.6.5"

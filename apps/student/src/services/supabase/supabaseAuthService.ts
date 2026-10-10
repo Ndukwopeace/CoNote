@@ -1,23 +1,22 @@
 /**
  * Authentication on Supabase (milestone B2). It meets the same AuthService contract as the demo,
  * so no page changes when the data source does. Sessions live in the storage the client was
- * built with, so "Remember me" decides how long they last.
+ * built with, so "Remember me" decides how long they last. The session machinery (listeners, late
+ * reports, the reset link) is shared with the staff portals in @conote/supabase/sessionCore
+ * (D83); this file adds the student's rules, wording, sign-up, Google and password change.
  */
 
 // The client type.
-import type {
-  AuthChangeEvent,
-  Session as SupabaseSession,
-  SupabaseClient,
-} from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
-// Turns Supabase failures into AppErrors, and reads the signed-in person's profile.
+// Turns Supabase failures into AppErrors.
 import { fromSupabaseError } from '@conote/supabase/errors'
-import { fetchProfile, toSessionUser } from '@conote/supabase/profile'
 // Where the session is kept, with the "Remember me" switch.
 import type { RememberStorage } from '@conote/supabase/rememberStorage'
+// The session machinery shared with the staff portals.
+import { createSessionCore } from '@conote/supabase/sessionCore'
 
 // The checks every auth service runs, and the name and password rules.
 import { assertEmail, assertRule } from '@/lib/authRules'
@@ -43,11 +42,6 @@ interface SupabaseAuthOptions {
   origin: string
 }
 
-// Shown when an account exists but may not sign in.
-const INACTIVE = 'This account is not active. Contact your administrator.'
-// Shown when a reset link cannot be used any more.
-const LINK_EXPIRED = 'This reset link has expired. Request a new one.'
-
 /** The Supabase auth service: the shared interface, and a way to refresh who is shown as signed in. */
 export type SupabaseAuthService = AuthService & {
   // Reads the profile again and tells listeners, so a renamed student sees the new name at once.
@@ -61,168 +55,16 @@ export function createSupabaseAuthService({
   storageKey,
   origin,
 }: SupabaseAuthOptions): SupabaseAuthService {
-  // Everyone who asked to hear about session changes (the AuthProvider, mainly).
-  const listeners = new Set<(session: Session | null) => void>()
-  // Reset-link checks already made, by code. A reset code is single-use, so the answer to the
-  // first check is kept and the page can ask again without spending the code twice.
-  const linkChecks = new Map<string, Promise<boolean>>()
-  // True between opening a reset link and finishing the reset. Opening the link signs in a
-  // temporary "recovery" session; the app must not treat it as a normal sign-in.
-  let recovering = false
-  // Changes are handled one at a time, in the order they arrive.
-  let queue: Promise<void> = Promise.resolve()
-  // The stop function for the Supabase subscription, while anyone is listening.
-  let unsubscribeFromSupabase: (() => void) | null = null
-
-  // Who listeners were last told is signed in (null: nobody). Supabase reports the changes this
-  // service makes itself, and sometimes late; comparing with this keeps each change announced once
-  // and stops a late "signed in" report from reviving a student who has just signed out.
-  let announcedUserId: string | null = null
-  // Counts announcements. A report that was being checked while an announcement happened (a
-  // sign-out, say) is out of date and must not announce anything when its check ends.
-  let announcements = 0
-
-  /** Tells every listener about the new session, or null after sign-out. */
-  function emit(session: Session | null) {
-    // Remember who was announced, so the same change is not announced twice.
-    announcedUserId = session?.user.id ?? null
-    // Anything still being checked is now out of date.
-    announcements += 1
-    // Tell each listener in turn.
-    for (const listener of listeners) listener(session)
-  }
-
-  /**
-   * Reads the profile of account `id` and builds the session. An account that may not sign in
-   * is signed out again and refused. SECURITY: the check reads the profile row, which only an
-   * administrator can change, never anything the browser sends.
-   */
-  async function loadSession(id: string): Promise<Session> {
-    // Read the account's profile row (Row Level Security lets a person read their own).
-    const profile = await fetchProfile(client, id)
-    // Only active accounts may sign in.
-    if (profile.status !== 'active') {
-      // End the session that was just created, then refuse.
-      await client.auth.signOut({ scope: 'local' })
-      throw new AppError('forbidden', INACTIVE)
-    }
-    // The student as the app sees them.
-    return { user: toSessionUser(profile) }
-  }
-
-  /** Handles one change reported by Supabase. */
-  async function handle(event: AuthChangeEvent, session: SupabaseSession | null) {
-    // A recovery session is not a sign-in, and the first report on subscribing is not a change.
-    if (recovering || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
-    // The reset flow handles its own temporary session.
-    if (event === 'PASSWORD_RECOVERY') return
-    if (!session) {
-      // Already announced (for example by signOut): nothing changed.
-      if (announcedUserId !== null) emit(null)
-      return
-    }
-    // Already announced by signIn or signUp: nothing changed.
-    if (session.user.id === announcedUserId) return
-    // Note the count now, to notice an announcement made while the checks below run.
-    const seen = announcements
-    try {
-      // SECURITY: the report may be late. Only announce a sign-in if the session still exists.
-      const current = await client.auth.getSession()
-      if (!current.data.session) return
-      const loaded = await loadSession(session.user.id)
-      // SECURITY: a sign-out (or another change) happened during the checks; this report is
-      // stale and must not bring the student back.
-      if (announcements !== seen) return
-      emit(loaded)
-    } catch {
-      // A stale report says nothing about who is signed in now.
-      if (announcements !== seen) return
-      // A profile that cannot be read or may not sign in counts as signed out.
-      emit(null)
-    }
-  }
-
-  /** Starts following Supabase's session changes. */
-  function subscribe() {
-    const { data } = client.auth.onAuthStateChange((event, session) => {
-      // Supabase warns against calling its own methods from inside this callback; deferring the
-      // work lets the call that caused the event finish first.
-      setTimeout(() => {
-        // Handle changes one at a time, in order; one failure does not stop the next.
-        queue = queue.then(() => handle(event, session)).catch(() => undefined)
-      }, 0)
-    })
-    // Remember how to stop following, for when the last listener leaves.
-    unsubscribeFromSupabase = () => {
-      data.subscription.unsubscribe()
-    }
-  }
-
-  /**
-   * Opens a reset link: swaps its code for a temporary session that may set a new password.
-   * The link carries a hash of a single-use token, so it works in any browser, not only the one
-   * that asked for it (a student often asks on a laptop and opens the email on a phone).
-   */
-  async function openResetLink(code: string): Promise<boolean> {
-    // The recovery session this creates must not look like a sign-in.
-    recovering = true
-    // Swap the code for a temporary session; Supabase refuses used, expired and made-up codes.
-    const { error } = await client.auth.verifyOtp({ type: 'recovery', token_hash: code })
-    // Accepted: the temporary session lets the student set a new password.
-    if (!error) return true
-    // Refused: nothing is pending any more.
-    recovering = false
-    // A dropped connection says nothing about the link, so it is not "expired".
-    if (fromSupabaseError(error).kind === 'network') throw fromSupabaseError(error)
-    // Missing, made-up, used and replaced codes are all refused the same way.
-    return false
-  }
-
-  /** True when `code` (from the reset link) can still be used. Asking again is safe. */
-  function checkResetLink(code: string | null): Promise<boolean> {
-    // A missing code is always refused.
-    if (code === null || code === '') return Promise.resolve(false)
-    // Use the earlier answer if this code was already checked.
-    let check = linkChecks.get(code)
-    if (!check) {
-      // First time: open the link (this spends the code).
-      check = openResetLink(code)
-      // Keep the answer for the next check.
-      linkChecks.set(code, check)
-      // A failed attempt (offline) can be retried.
-      check.catch(() => linkChecks.delete(code))
-    }
-    return check
-  }
+  // Reading, signing in and out, the reset link and the listeners.
+  const core = createSessionCore({ client, rememberStorage, storageKey })
 
   return {
-    async getSession() {
-      // Read the session kept in this browser's storage.
-      const { data, error } = await client.auth.getSession()
-      if (error) throw fromSupabaseError(error)
-      // Nobody is signed in on this browser.
-      if (!data.session) return null
-      try {
-        return await loadSession(data.session.user.id)
-      } catch (error_) {
-        // An account that may not sign in has already been signed out; the visitor is signed out.
-        if (error_ instanceof AppError && error_.kind === 'forbidden') return null
-        throw error_
-      }
-    },
+    getSession: core.getSession,
 
     async signIn({ email, password, remember }) {
       assertEmail(email)
       if (password.length === 0) throw new AppError('validation', 'Enter your password.')
-      // The choice must be recorded before the session is written.
-      rememberStorage.setRemember(remember)
-      const { data, error } = await client.auth.signInWithPassword({ email, password })
-      if (error) throw fromSupabaseError(error)
-      const session = await loadSession(data.user.id)
-      // Tell the app now, as the demo does, instead of waiting for Supabase's own report. If that
-      // report was handled first it has already told them, and they are not told twice.
-      if (announcedUserId !== session.user.id) emit(session)
-      return session
+      return core.signInWithPassword(email, password, remember)
     },
 
     async signUp({ fullName, email, password }) {
@@ -247,9 +89,7 @@ export function createSupabaseAuthService({
       if (error) throw fromSupabaseError(error)
       // Email confirmation is on (D76): the account exists but cannot sign in yet.
       if (!data.session) return { status: 'confirm_email' }
-      const session = await loadSession(data.session.user.id)
-      // Not announced twice if Supabase's own report was handled first (see signIn).
-      if (announcedUserId !== session.user.id) emit(session)
+      const session = await core.adoptSession(data.session.user.id)
       return { status: 'signed_in', session }
     },
 
@@ -264,61 +104,24 @@ export function createSupabaseAuthService({
       return new Promise<Session>(() => undefined)
     },
 
-    async signOut() {
-      try {
-        const { error } = await client.auth.signOut({ scope: 'local' })
-        if (error) throw fromSupabaseError(error)
-      } finally {
-        // SECURITY: whatever the server said, nothing stays on this computer.
-        rememberStorage.storage.removeItem(storageKey)
-        rememberStorage.setRemember(false)
-        recovering = false
-        linkChecks.clear()
-        emit(null)
-      }
-    },
+    signOut: core.signOut,
 
     async requestPasswordReset(email) {
       assertEmail(email)
-      // SECURITY: Supabase answers the same whether or not the account exists, so this cannot be
-      // used to find out who has an account (account enumeration).
-      const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}${ROUTES.resetPassword}`,
-      })
-      if (error) throw fromSupabaseError(error)
+      await core.requestPasswordReset(email, `${origin}${ROUTES.resetPassword}`)
       // Real services send an email; there is no demo link.
       return {}
     },
 
-    checkResetLink,
+    checkResetLink: core.checkResetLink,
 
-    async refreshUser() {
-      // Nobody signed in: nothing to refresh.
-      const { data } = await client.auth.getSession()
-      if (!data.session) return
-      // The profile as it is now (a rename, for example). The same person, so this is announced
-      // even though the ID has not changed.
-      emit(await loadSession(data.session.user.id))
-    },
+    refreshUser: core.refreshUser,
 
     async resetPassword(code, newPassword) {
       // SECURITY: the same strength rules as sign-up, checked first so a weak password does not
       // spend the link and the student can retry.
       assertRule(newPasswordSchema, newPassword)
-      // SECURITY: the link is checked again here, not only when the page opened.
-      const ok = await checkResetLink(code)
-      if (!ok) throw new AppError('validation', LINK_EXPIRED)
-      const { error } = await client.auth.updateUser({ password: newPassword })
-      if (error) {
-        const mapped = fromSupabaseError(error)
-        // The temporary session timed out while the form was open.
-        throw mapped.kind === 'unauthorized' ? new AppError('validation', LINK_EXPIRED) : mapped
-      }
-      // The link is spent. End the temporary session, so the student signs in with the new
-      // password.
-      linkChecks.delete(code)
-      recovering = false
-      await client.auth.signOut({ scope: 'local' })
+      await core.resetPassword(code, newPassword)
     },
 
     async updatePassword(currentPassword, newPassword) {
@@ -344,17 +147,6 @@ export function createSupabaseAuthService({
       if (update.error) throw fromSupabaseError(update.error)
     },
 
-    onAuthChange(listener) {
-      listeners.add(listener)
-      // Follow Supabase only while someone is listening.
-      if (unsubscribeFromSupabase === null) subscribe()
-      return () => {
-        listeners.delete(listener)
-        if (listeners.size === 0 && unsubscribeFromSupabase !== null) {
-          unsubscribeFromSupabase()
-          unsubscribeFromSupabase = null
-        }
-      }
-    },
+    onAuthChange: core.onAuthChange,
   }
 }

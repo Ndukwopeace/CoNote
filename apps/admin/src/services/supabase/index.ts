@@ -1,18 +1,80 @@
 /**
- * The Supabase implementation, built in the shared backend stage. Until then it refuses to start.
+ * The Supabase implementation (milestone B2), built service by service. Services that are not
+ * connected yet fail with a clear message instead of showing demo data (admin REQUIREMENTS
+ * section 23, "nothing fake"). Sign-in is built (B2.5); the data services follow.
  */
 
-// The shared error type.
-import { AppError } from '@conote/core/errors'
+// The client, and the storage that honours "Remember me".
+import { createSupabaseClient } from '@conote/supabase/client'
+import { createRememberStorage } from '@conote/supabase/rememberStorage'
+// Stands in for the services that are not built yet.
+import { notBuilt } from '@conote/supabase/notBuilt'
+// The staff sign-in service, shared with the teacher portal.
+import { createSupabaseStaffAuthService } from '@conote/portal/supabase-auth'
 
-// The shape the real implementation will return.
-import type { Services } from '../types'
+// The console's reset page address, and its storage prefix.
+import { ADMIN_ROUTES } from '@/lib/routes'
+import { ADMIN_STORAGE_PREFIX } from '@/lib/storage'
 
-/** Placeholder until the backend stage. Fails fast so a misconfigured deploy is obvious. */
-export function createSupabaseServices(): Services {
-  // Stop immediately with instructions, rather than showing a half-working console.
-  throw new AppError(
-    'unknown',
-    'The Supabase data source is not built yet. Set VITE_DATA_SOURCE=mock.',
-  )
+// The shape the real implementation returns.
+import type {
+  AlertService,
+  AnalyticsService,
+  ClassService,
+  CourseService,
+  HealthService,
+  Services,
+  UserService,
+} from '../types'
+
+/** The checked settings the Supabase services need. */
+interface SupabaseSettings {
+  // The project URL.
+  supabaseUrl: string
+  // The public key.
+  supabaseAnonKey: string
+}
+
+/**
+ * The key the client stores its session under. It starts with the console's prefix, so signing
+ * out (which clears every key with that prefix) removes it too.
+ */
+const AUTH_STORAGE_KEY = `${ADMIN_STORAGE_PREFIX}supabase-auth`
+
+/** Builds the Supabase services. */
+export function createSupabaseServices({
+  supabaseUrl,
+  supabaseAnonKey,
+}: SupabaseSettings): Services {
+  // The "Remember me" storage. Staff sign-in never asks to be remembered, so the session stays
+  // in sessionStorage and ends with the tab.
+  const rememberStorage = createRememberStorage({
+    local: window.localStorage,
+    session: window.sessionStorage,
+    flagKey: `${ADMIN_STORAGE_PREFIX}remember`,
+  })
+  // The one client the console uses.
+  const client = createSupabaseClient({
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    storage: rememberStorage.storage,
+    storageKey: AUTH_STORAGE_KEY,
+  })
+  return {
+    // Sign-in, sign-out and password reset.
+    auth: createSupabaseStaffAuthService({
+      client,
+      rememberStorage,
+      storageKey: AUTH_STORAGE_KEY,
+      origin: window.location.origin,
+      resetPath: ADMIN_ROUTES.resetPassword,
+    }),
+    // Not connected yet.
+    analytics: notBuilt<AnalyticsService>('The dashboard'),
+    alerts: notBuilt<AlertService>('Alerts'),
+    health: notBuilt<HealthService>('Platform health'),
+    users: notBuilt<UserService>('Users'),
+    courses: notBuilt<CourseService>('Courses'),
+    classes: notBuilt<ClassService>('Classes'),
+  }
 }
