@@ -44,6 +44,13 @@ import { databaseCode } from './databaseErrors'
 // Search text, times and names.
 import { compareText, iso, safeSearch } from './queryText'
 
+/** The list's column for each sort field. */
+const SORT_COLUMNS: Record<string, string> = {
+  name: 'full_name',
+  created: 'created_at',
+  lastActive: 'last_active_at',
+}
+
 /** How many accounts a page holds. */
 const PAGE_SIZE = 20
 
@@ -233,8 +240,7 @@ export function createSupabaseUserService({
       const sort: UserSort = filter.sort ?? 'name'
       const descending = sort.startsWith('-')
       const field = descending ? sort.slice(1) : sort
-      const column =
-        field === 'created' ? 'created_at' : field === 'lastActive' ? 'last_active_at' : 'full_name'
+      const column = SORT_COLUMNS[field] ?? 'full_name'
       const start = (page - 1) * PAGE_SIZE
       const query = listQuery(filter, USER_COLUMNS, false).order(column, {
         ascending: !descending,
@@ -255,8 +261,8 @@ export function createSupabaseUserService({
         ),
       ])
       return {
-        departments: departments.map((row) => row.department).sort(compareText),
-        courses: courses.sort((a, b) => compareText(a.code, b.code)),
+        departments: departments.map((row) => row.department).toSorted(compareText),
+        courses: courses.toSorted((a, b) => compareText(a.code, b.code)),
       }
     },
 

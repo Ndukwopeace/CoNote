@@ -43,6 +43,13 @@ import { compareText, iso, safeSearch } from './queryText'
 /** How many classes a page holds. */
 const PAGE_SIZE = 20
 
+/** The list's column for each sort field. */
+const SORT_COLUMNS: Record<string, string> = {
+  title: 'title',
+  course: 'course_code',
+  date: 'starts_at',
+}
+
 /** What an archived course says to a new class. */
 const COURSE_ARCHIVED_MESSAGE = 'This course is archived. Restore it to make changes.'
 
@@ -117,6 +124,25 @@ function endOfDay(date: string): string {
   return new Date(year, month - 1, day + 1).toISOString()
 }
 
+/** The summary timeline: each stage, whether it was reached, and when. */
+function timelineOf(row: ClassRow, jobCreatedTimes: string[]): SummaryStep[] {
+  const stage = stageOf(row)
+  // How far the summary has got; nothing, without one.
+  const reachedRank = stage === null ? -1 : STAGES.indexOf(stage)
+  // When each stage began, where it is recorded.
+  const times: Record<SummaryStatus, string | null> = {
+    collecting: iso(row.starts_at),
+    processing: jobCreatedTimes[0] ?? null,
+    in_review: row.in_review_since === null ? null : iso(row.in_review_since),
+    published: row.published_at === null ? null : iso(row.published_at),
+  }
+  return STAGES.map((name, rank) => ({
+    stage: name,
+    at: rank <= reachedRank ? times[name] : null,
+    reached: rank <= reachedRank,
+  }))
+}
+
 /** The class as a list row. */
 function toListItem(row: ClassRow): ClassListItem {
   return {
@@ -187,25 +213,6 @@ export function createSupabaseClassService({
     return row
   }
 
-  /** The summary timeline: each stage, whether it was reached, and when. */
-  function timelineOf(row: ClassRow, jobCreatedTimes: string[]): SummaryStep[] {
-    const stage = stageOf(row)
-    // How far the summary has got; nothing, without one.
-    const reachedRank = stage === null ? -1 : STAGES.indexOf(stage)
-    // When each stage began, where it is recorded.
-    const times: Record<SummaryStatus, string | null> = {
-      collecting: iso(row.starts_at),
-      processing: jobCreatedTimes[0] ?? null,
-      in_review: row.in_review_since === null ? null : iso(row.in_review_since),
-      published: row.published_at === null ? null : iso(row.published_at),
-    }
-    return STAGES.map((name, rank) => ({
-      stage: name,
-      at: rank <= reachedRank ? times[name] : null,
-      reached: rank <= reachedRank,
-    }))
-  }
-
   /** The details page for the class in `row`. */
   async function toDetails(row: ClassRow): Promise<ClassDetails> {
     // The class's AI jobs, oldest first.
@@ -252,7 +259,7 @@ export function createSupabaseClassService({
       const sort: ClassSort = filter.sort ?? '-date'
       const descending = sort.startsWith('-')
       const field = descending ? sort.slice(1) : sort
-      const column = field === 'title' ? 'title' : field === 'course' ? 'course_code' : 'starts_at'
+      const column = SORT_COLUMNS[field] ?? 'starts_at'
       const start = (page - 1) * PAGE_SIZE
       let query = listQuery(filter, CLASS_COLUMNS, false).order(column, { ascending: !descending })
       if (column !== 'course_code') query = query.order('course_code')

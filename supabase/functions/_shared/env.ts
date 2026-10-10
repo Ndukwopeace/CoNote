@@ -27,6 +27,14 @@ const NAMES = [
   'APP_URL_ADMIN',
 ] as const
 
+/** `value` without the slashes at its end. Walks back from the end, so it runs in linear time. */
+function withoutTrailingSlashes(value: string): string {
+  // Where the last character that is not a slash ends.
+  let end = value.length
+  while (end > 0 && value[end - 1] === '/') end -= 1
+  return value.slice(0, end)
+}
+
 /**
  * Reads the settings with `get`. Throws naming the ones that are missing, so a function with a
  * missing setting fails loudly at start-up instead of sending a broken link.
@@ -42,7 +50,7 @@ export function readEnv(get: (name: string) => string | undefined): FunctionEnv 
   // Looks up a value that was just checked to exist.
   const at = (name: (typeof NAMES)[number]) => values.find(([key]) => key === name)?.[1] ?? ''
   // An address without a trailing slash, so paths can be added to it.
-  const trimmed = (name: (typeof NAMES)[number]) => at(name).replace(/\/+$/, '')
+  const trimmed = (name: (typeof NAMES)[number]) => withoutTrailingSlashes(at(name))
   return {
     url: at('SUPABASE_URL'),
     anonKey: at('SUPABASE_ANON_KEY'),

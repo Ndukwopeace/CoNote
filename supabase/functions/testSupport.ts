@@ -38,10 +38,12 @@ export const NOW = new Date('2026-10-08T12:00:00.000Z')
 
 /** A request to a function, as the console sends it. */
 export function post(body: unknown, token: string | null = 'good-token', method = 'POST'): Request {
+  // A string is sent as it is (so a test can send broken JSON); anything else as JSON.
+  const text = typeof body === 'string' ? body : JSON.stringify(body)
   return new Request('https://project.supabase.co/functions/v1/x', {
     method,
     headers: token === null ? {} : { Authorization: `Bearer ${token}` },
-    body: method === 'POST' ? (typeof body === 'string' ? body : JSON.stringify(body)) : null,
+    body: method === 'POST' ? text : null,
   })
 }
 
@@ -106,7 +108,7 @@ function actionOf(query: RecordedQuery): string {
  */
 export function route(
   routes: Record<string, TableAnswer>,
-  caller: TableAnswer = { data: profile(), error: null },
+  caller?: TableAnswer,
 ): (query: RecordedQuery) => TableAnswer {
   return (query) => {
     // The caller's profile is the read that filters on the administrator's own ID.
@@ -114,7 +116,8 @@ export function route(
       query.table === 'profiles' &&
       query.calls.some((call) => call[0] === 'eq' && call[1] === 'id' && call[2] === ADMIN_ID)
     ) {
-      return caller
+      // An active administrator unless the test says otherwise.
+      return caller ?? { data: profile(), error: null }
     }
     return routes[`${query.table}:${actionOf(query)}`] ?? { data: [], error: null }
   }
