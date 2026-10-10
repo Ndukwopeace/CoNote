@@ -1,7 +1,7 @@
 /**
  * The Supabase implementation (milestone B2), built service by service. Services that are not
  * connected yet fail with a clear message instead of showing demo data (admin REQUIREMENTS
- * section 23, "nothing fake"). Sign-in (B2.5) and courses (B2.6a) are built; the rest follow.
+ * section 23, "nothing fake"). Sign-in (B2.5), courses (B2.6a) and classes (B2.6b) are built; the rest follow.
  */
 
 // The client, and the storage that honours "Remember me".
@@ -9,7 +9,8 @@ import { createSupabaseClient } from '@conote/supabase/client'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
 // Stands in for the services that are not built yet.
 import { notBuilt } from '@conote/supabase/notBuilt'
-// The course service.
+// The class and course services.
+import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
 // The staff sign-in service, shared with the teacher portal.
 import { createSupabaseStaffAuthService } from '@conote/portal/supabase-auth'
@@ -19,14 +20,7 @@ import { ADMIN_ROUTES } from '@/lib/routes'
 import { ADMIN_STORAGE_PREFIX } from '@/lib/storage'
 
 // The shape the real implementation returns.
-import type {
-  AlertService,
-  AnalyticsService,
-  ClassService,
-  HealthService,
-  Services,
-  UserService,
-} from '../types'
+import type { AlertService, AnalyticsService, HealthService, Services, UserService } from '../types'
 
 /** The checked settings the Supabase services need. */
 interface SupabaseSettings {
@@ -77,6 +71,7 @@ export function createSupabaseServices({
     users: notBuilt<UserService>('Users'),
     // Courses, their students and the students' requests to join.
     courses: createSupabaseCourseService({ client }),
-    classes: notBuilt<ClassService>('Classes'),
+    // Classes, with their summary stage and AI job history.
+    classes: createSupabaseClassService({ client }),
   }
 }

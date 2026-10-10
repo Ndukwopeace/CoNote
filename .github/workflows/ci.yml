@@ -209,6 +209,7 @@ jobs:
         run: npx vitest run --project student --project portal apps/student/src/services/supabase packages/portal/src/supabase
 
       # The admin console's contracts come last: loading each contract's small platform first
-      # empties the stack's accounts and courses, which the suites above rely on.
+      # empties the stack's accounts and courses, which the suites above rely on. The files run one
+      # after another for the same reason.
       - name: Run admin Supabase contract tests
-        run: npx vitest run --project admin apps/admin/src/services/supabase
+        run: npx vitest run --project admin --no-file-parallelism apps/admin/src/services/supabase
