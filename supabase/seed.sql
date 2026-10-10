@@ -46,6 +46,13 @@ insert into public.courses (id, code, title, department, teacher_id, status) val
   ('20000000-0000-0000-0000-000000000002', 'SWE 311', 'Software Engineering', 'Computing', '10000000-0000-0000-0000-000000000003', 'ongoing'),
   ('20000000-0000-0000-0000-000000000003', 'PHY 101', 'Physics', 'Physics', null, 'upcoming');
 
+-- Three more, so the join dialog has every standing to show: CHM 110 is open and nobody is in it,
+-- CSC 090 is completed, and ENG 099 is archived (neither takes requests).
+insert into public.courses (id, code, title, department, teacher_id, status, archived_at) values
+  ('20000000-0000-0000-0000-000000000004', 'CHM 110', 'Chemistry I', 'Chemistry', '10000000-0000-0000-0000-000000000003', 'ongoing', null),
+  ('20000000-0000-0000-0000-000000000005', 'CSC 090', 'Introduction to Computing', 'Computing', '10000000-0000-0000-0000-000000000003', 'completed', null),
+  ('20000000-0000-0000-0000-000000000006', 'ENG 099', 'Technical Writing', 'English', '10000000-0000-0000-0000-000000000002', 'ongoing', now());
+
 -- The demo student is in both ongoing courses; Ada is in MTH 202 only.
 insert into public.enrollments (course_id, student_id) values
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000004'),

@@ -25,8 +25,21 @@ export const FIXTURE = {
   enrolled: 'mine-1',
 } as const
 
+/** The courses an implementation's fixture holds: the IDs behind each standing. */
+export interface EnrolmentFixture {
+  open: string
+  upcoming: string
+  completed: string
+  archived: string
+  enrolled: string
+  // Other courses the student is in and that are in use; they are listed as enrolled too.
+  alsoEnrolled?: readonly string[]
+}
+
 /** What an implementation's test file passes in. */
 interface EnrolmentContractOptions {
+  /** The course IDs the fixture uses; defaults to the demo's. */
+  fixture?: EnrolmentFixture
   /** A fresh service over the fixture, and the admin's side of a request. */
   create: () => {
     service: EnrolmentService
@@ -36,7 +49,12 @@ interface EnrolmentContractOptions {
 }
 
 /** Behaviour every implementation of the enrolment service shares. */
-export function runEnrolmentServiceContract(name: string, { create }: EnrolmentContractOptions) {
+export function runEnrolmentServiceContract(
+  name: string,
+  { create, fixture = FIXTURE }: EnrolmentContractOptions,
+) {
+  // Other enrolled courses, if the fixture has any.
+  const alsoEnrolled = fixture.alsoEnrolled ?? []
   describe(`Enrolment service contract: ${name}`, () => {
     // Proves the list holds courses in use only, with the student's standing in each.
     it('lists courses in use with the student’s standing', async () => {
@@ -45,13 +63,16 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
       const courses = await service.listJoinableCourses()
 
       expect(courses.map((course) => course.id).sort((a, b) => a.localeCompare(b))).toEqual(
-        [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort((a, b) => a.localeCompare(b)),
+        [fixture.enrolled, ...alsoEnrolled, fixture.open, fixture.upcoming].sort((a, b) =>
+          a.localeCompare(b),
+        ),
       )
       const standing = Object.fromEntries(courses.map((course) => [course.id, course.membership]))
       expect(standing).toEqual({
-        [FIXTURE.open]: 'none',
-        [FIXTURE.upcoming]: 'none',
-        [FIXTURE.enrolled]: 'enrolled',
+        [fixture.open]: 'none',
+        [fixture.upcoming]: 'none',
+        [fixture.enrolled]: 'enrolled',
+        ...Object.fromEntries(alsoEnrolled.map((id) => [id, 'enrolled'])),
       })
       // Every row says who teaches it, and none offers a request to cancel yet.
       for (const course of courses) {
@@ -64,13 +85,13 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     it('searches by code or title', async () => {
       const { service } = create()
       const all = await service.listJoinableCourses()
-      const sample = all.find((course) => course.id === FIXTURE.open)
+      const sample = all.find((course) => course.id === fixture.open)
 
       const byCode = await service.listJoinableCourses(` ${(sample?.code ?? '').toLowerCase()} `)
       const byTitle = await service.listJoinableCourses((sample?.title ?? '').toUpperCase())
 
-      expect(byCode.map((course) => course.id)).toContain(FIXTURE.open)
-      expect(byTitle.map((course) => course.id)).toContain(FIXTURE.open)
+      expect(byCode.map((course) => course.id)).toContain(fixture.open)
+      expect(byTitle.map((course) => course.id)).toContain(fixture.open)
       await expect(service.listJoinableCourses('zzz-no-such-course')).resolves.toEqual([])
       await expect(service.listJoinableCourses('   ')).resolves.toHaveLength(all.length)
     })
@@ -79,27 +100,27 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     it('records a request as pending without enrolling', async () => {
       const { service } = create()
 
-      const request = await service.requestToJoin(FIXTURE.open)
+      const request = await service.requestToJoin(fixture.open)
 
-      expect(request).toMatchObject({ courseId: FIXTURE.open, status: 'pending' })
+      expect(request).toMatchObject({ courseId: fixture.open, status: 'pending' })
       await expect(service.listMyJoinRequests()).resolves.toEqual([request])
-      const row = (await service.listJoinableCourses()).find((c) => c.id === FIXTURE.open)
+      const row = (await service.listJoinableCourses()).find((c) => c.id === fixture.open)
       expect(row).toMatchObject({ membership: 'pending', requestId: request.id })
     })
 
     // Proves a second request for the same course, or one for a course the student is in, is refused.
     it.each([
-      ['a course with a request waiting', FIXTURE.open],
-      ['a course the student is already in', FIXTURE.enrolled],
+      ['a course with a request waiting', fixture.open],
+      ['a course the student is already in', fixture.enrolled],
     ])('refuses a request for %s', async (_label, courseId) => {
       const { service } = create()
-      if (courseId === FIXTURE.open) await service.requestToJoin(courseId)
+      if (courseId === fixture.open) await service.requestToJoin(courseId)
 
       await expect(service.requestToJoin(courseId)).rejects.toMatchObject({ kind: 'conflict' })
     })
 
     // Proves archived, completed and unknown courses all answer the same way.
-    it.each([FIXTURE.archived, FIXTURE.completed, 'no-such-course'])(
+    it.each([fixture.archived, fixture.completed, 'no-such-course'])(
       'says a request for %s is not open',
       async (courseId) => {
         const { service } = create()
@@ -114,14 +135,14 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     // Proves cancelling withdraws a pending request, and the student can ask again afterwards.
     it('cancels a pending request, and allows asking again', async () => {
       const { service } = create()
-      const request = await service.requestToJoin(FIXTURE.open)
+      const request = await service.requestToJoin(fixture.open)
 
       await service.cancelJoinRequest(request.id)
 
       await expect(service.listMyJoinRequests()).resolves.toEqual([])
-      const row = (await service.listJoinableCourses()).find((c) => c.id === FIXTURE.open)
+      const row = (await service.listJoinableCourses()).find((c) => c.id === fixture.open)
       expect(row).toMatchObject({ membership: 'none', requestId: null })
-      await expect(service.requestToJoin(FIXTURE.open)).resolves.toMatchObject({
+      await expect(service.requestToJoin(fixture.open)).resolves.toMatchObject({
         status: 'pending',
       })
     })
@@ -138,12 +159,12 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     // Proves approval enrols the student: the course reads "enrolled" and the request leaves the list.
     it('shows a course as joined once an admin approves', async () => {
       const { service, decide } = create()
-      const request = await service.requestToJoin(FIXTURE.open)
+      const request = await service.requestToJoin(fixture.open)
 
       await decide(request.id, 'approved')
 
       await expect(service.listMyJoinRequests()).resolves.toEqual([])
-      const row = (await service.listJoinableCourses()).find((c) => c.id === FIXTURE.open)
+      const row = (await service.listJoinableCourses()).find((c) => c.id === fixture.open)
       expect(row).toMatchObject({ membership: 'enrolled', requestId: null })
       // A decided request can't be withdrawn.
       await expect(service.cancelJoinRequest(request.id)).rejects.toMatchObject({
@@ -154,20 +175,20 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     // Proves a declined request stays visible as declined, can't be cancelled, and can be sent again.
     it('keeps a declined request visible and lets the student ask again', async () => {
       const { service, decide } = create()
-      const request = await service.requestToJoin(FIXTURE.open)
+      const request = await service.requestToJoin(fixture.open)
 
       await decide(request.id, 'declined')
 
       await expect(service.listMyJoinRequests()).resolves.toEqual([
         { ...request, status: 'declined' },
       ])
-      const row = (await service.listJoinableCourses()).find((c) => c.id === FIXTURE.open)
+      const row = (await service.listJoinableCourses()).find((c) => c.id === fixture.open)
       expect(row).toMatchObject({ membership: 'declined', requestId: null })
       await expect(service.cancelJoinRequest(request.id)).rejects.toMatchObject({
         kind: 'conflict',
       })
       // A new request replaces the declined one in the list.
-      const again = await service.requestToJoin(FIXTURE.open)
+      const again = await service.requestToJoin(fixture.open)
       expect(again.id).not.toBe(request.id)
       await expect(service.listMyJoinRequests()).resolves.toEqual([again])
     })
@@ -175,8 +196,8 @@ export function runEnrolmentServiceContract(name: string, { create }: EnrolmentC
     // Proves requests are listed newest first.
     it('lists requests newest first', async () => {
       const { service } = create()
-      const first = await service.requestToJoin(FIXTURE.open)
-      const second = await service.requestToJoin(FIXTURE.upcoming)
+      const first = await service.requestToJoin(fixture.open)
+      const second = await service.requestToJoin(fixture.upcoming)
 
       const requests = await service.listMyJoinRequests()
 

@@ -35,7 +35,10 @@ select tests.denied('insert into public.enrollment_requests (course_id, student_
 select tests.denied('insert into public.enrollment_requests (course_id, student_id) values (' || quote_literal(:c4) || ', ' || quote_literal(:s2) || ')', 'completed course takes no requests');
 select tests.denied('insert into public.enrollment_requests (course_id, student_id) values (' || quote_literal(:c1) || ', ' || quote_literal(:s1) || ')', 'cannot ask on behalf of another student');
 select tests.denied('insert into public.enrollment_requests (course_id, student_id, status) values (' || quote_literal(:c1) || ', ' || quote_literal(:s2) || ', ''approved'')', 'cannot create an already-approved request');
-select tests.rows('select * from public.enrollment_requests', 1, 'student reads only their own requests');
+-- The browser names only the course; the student is whoever is signed in (a column default).
+select tests.affects('insert into public.enrollment_requests (course_id) values (' || quote_literal(:c1) || ')', 1, 'a request needs no student ID from the browser');
+select tests.is((select student_id from public.enrollment_requests where course_id = :c1), :s2::uuid, 'the default student is the signed-in one');
+select tests.rows('select * from public.enrollment_requests', 2, 'student reads only their own requests');
 select tests.reset();
 -- Student 1 is already in C1, so cannot ask for it.
 select tests.login(:s1);
@@ -50,7 +53,7 @@ select tests.reset();
 -- A student cancels their own pending request, but cannot approve it.
 select tests.login(:s2);
 select tests.denied('update public.enrollment_requests set status = ''approved''', 'student cannot approve their own request');
-select tests.affects('update public.enrollment_requests set status = ''cancelled''', 1, 'student cancels a pending request');
+select tests.affects('update public.enrollment_requests set status = ''cancelled''', 2, 'student cancels their pending requests');
 select tests.affects('update public.enrollment_requests set status = ''cancelled''', 0, 'a cancelled request cannot change again');
 -- After cancelling, asking again is allowed.
 select tests.affects('insert into public.enrollment_requests (course_id, student_id) values (' || quote_literal(:c2) || ', ' || quote_literal(:s2) || ')', 1, 'a cancelled request can be sent again');
@@ -64,7 +67,7 @@ select tests.login(:t1);
 select tests.fails_with('select public.decide_enrollment_request(gen_random_uuid(), ''approved'')', '42501', 'teacher cannot decide a request');
 select tests.reset();
 select tests.login(:admin);
-select tests.rows('select * from public.enrollment_requests', 2, 'admin reads every request');
+select tests.rows('select * from public.enrollment_requests', 3, 'admin reads every request');
 select tests.fails_with('select public.decide_enrollment_request(gen_random_uuid(), ''approved'')', 'P0002', 'unknown request is not found');
 select tests.fails_with('select public.decide_enrollment_request((select id from public.enrollment_requests where status = ''pending''), ''maybe'')', '22023', 'unknown decision is refused');
 select public.decide_enrollment_request((select id from public.enrollment_requests where status = 'pending'), 'approved');
@@ -114,8 +117,8 @@ select tests.reset();
 
 -- ===== Audit log =====
 select tests.login(:admin);
-select tests.rows('select * from public.audit_logs where action = ''enrollment_requests.insert''', 2, 'requests are audited');
-select tests.rows('select * from public.audit_logs where action = ''enrollment_requests.update''', 2, 'cancellations and decisions are audited');
+select tests.rows('select * from public.audit_logs where action = ''enrollment_requests.insert''', 3, 'requests are audited');
+select tests.rows('select * from public.audit_logs where action = ''enrollment_requests.update''', 3, 'cancellations and decisions are audited');
 select tests.rows('select * from public.audit_logs where action = ''enrollments.insert''', 2, 'enrolments are audited');
 select tests.rows('select * from public.audit_logs where action = ''summaries.update''', 1, 'a summary status change is audited');
 select tests.rows('select * from public.audit_logs where metadata::text ilike ''%secret%'' or metadata::text ilike ''%edited%''', 0, 'audit entries never hold content');

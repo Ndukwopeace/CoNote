@@ -213,8 +213,9 @@ export function createSupabaseAuthService({
       const { data, error } = await client.auth.signInWithPassword({ email, password })
       if (error) throw fromSupabaseError(error)
       const session = await loadSession(data.user.id)
-      // Tell the app now, as the demo does, instead of waiting for Supabase's own report.
-      emit(session)
+      // Tell the app now, as the demo does, instead of waiting for Supabase's own report. If that
+      // report was handled first it has already told them, and they are not told twice.
+      if (announcedUserId !== session.user.id) emit(session)
       return session
     },
 
@@ -241,7 +242,8 @@ export function createSupabaseAuthService({
       // Email confirmation is on (D76): the account exists but cannot sign in yet.
       if (!data.session) return { status: 'confirm_email' }
       const session = await loadSession(data.session.user.id)
-      emit(session)
+      // Not announced twice if Supabase's own report was handled first (see signIn).
+      if (announcedUserId !== session.user.id) emit(session)
       return { status: 'signed_in', session }
     },
 

@@ -70,9 +70,11 @@ export function createFakeSupabase() {
   // The profile query ends with this answer; tests replace it.
   // `hold`, when set, keeps the profile query waiting until the promise settles, so a test can
   // sign out while a read is still in flight.
-  const profile: { answer: Answer; hold: Promise<void> | null } = {
+  // `holds` keeps the next profile reads waiting, one promise per read, in the order they start.
+  const profile: { answer: Answer; hold: Promise<void> | null; holds: Promise<void>[] } = {
     answer: { data: profileRow(), error: null },
     hold: null,
+    holds: [],
   }
 
   const auth = {
@@ -108,7 +110,8 @@ export function createFakeSupabase() {
     select: () => query,
     eq: () => query,
     // Wait for the hold (if any), then answer.
-    single: () => (profile.hold ?? Promise.resolve()).then(() => profile.answer),
+    single: () =>
+      (profile.holds.shift() ?? profile.hold ?? Promise.resolve()).then(() => profile.answer),
   }
   const client = { auth, from: () => query } as unknown as SupabaseClient
 
