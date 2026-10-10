@@ -254,6 +254,26 @@ describe('onAuthChange', () => {
     expect(listener.mock.calls.every(([session]) => session === null)).toBe(true)
   })
 
+  // SECURITY: proves a "signed in" report whose profile read is still running when the student
+  // signs out cannot bring the student back once the read finishes.
+  it('does not revive a session whose profile read outlives a sign-out', async () => {
+    const { service, emit, profile, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: supabaseSession() }, error: null })
+    service.onAuthChange(listener)
+    // Hold the profile read, then let Supabase report a sign-in from another tab.
+    let release: () => void = () => undefined
+    profile.hold = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    emit('SIGNED_IN', supabaseSession())
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    // The student signs out while the read waits, then the read finishes.
+    await service.signOut()
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(listener.mock.calls.every(([session]) => session === null)).toBe(true)
+  })
+
   // Proves events that are not changes of who is signed in are ignored.
   it('ignores the initial report and token refreshes', async () => {
     const { service, emit } = setup()

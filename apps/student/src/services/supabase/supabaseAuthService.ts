@@ -72,11 +72,16 @@ export function createSupabaseAuthService({
   // service makes itself, and sometimes late; comparing with this keeps each change announced once
   // and stops a late "signed in" report from reviving a student who has just signed out.
   let announcedUserId: string | null = null
+  // Counts announcements. A report that was being checked while an announcement happened (a
+  // sign-out, say) is out of date and must not announce anything when its check ends.
+  let announcements = 0
 
   /** Tells every listener about the new session, or null after sign-out. */
   function emit(session: Session | null) {
     // Remember who was announced, so the same change is not announced twice.
     announcedUserId = session?.user.id ?? null
+    // Anything still being checked is now out of date.
+    announcements += 1
     // Tell each listener in turn.
     for (const listener of listeners) listener(session)
   }
@@ -112,12 +117,20 @@ export function createSupabaseAuthService({
     }
     // Already announced by signIn or signUp: nothing changed.
     if (session.user.id === announcedUserId) return
+    // Note the count now, to notice an announcement made while the checks below run.
+    const seen = announcements
     try {
       // SECURITY: the report may be late. Only announce a sign-in if the session still exists.
       const current = await client.auth.getSession()
       if (!current.data.session) return
-      emit(await loadSession(session.user.id))
+      const loaded = await loadSession(session.user.id)
+      // SECURITY: a sign-out (or another change) happened during the checks; this report is
+      // stale and must not bring the student back.
+      if (announcements !== seen) return
+      emit(loaded)
     } catch {
+      // A stale report says nothing about who is signed in now.
+      if (announcements !== seen) return
       // A profile that cannot be read or may not sign in counts as signed out.
       emit(null)
     }

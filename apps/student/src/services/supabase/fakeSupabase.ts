@@ -68,7 +68,12 @@ export function createFakeSupabase() {
   let callback: ((event: AuthChangeEvent, session: SupabaseSession | null) => void) | null = null
   const unsubscribe = vi.fn()
   // The profile query ends with this answer; tests replace it.
-  const profile: { answer: Answer } = { answer: { data: profileRow(), error: null } }
+  // `hold`, when set, keeps the profile query waiting until the promise settles, so a test can
+  // sign out while a read is still in flight.
+  const profile: { answer: Answer; hold: Promise<void> | null } = {
+    answer: { data: profileRow(), error: null },
+    hold: null,
+  }
 
   const auth = {
     getSession: vi.fn<() => Promise<Answer>>(() =>
@@ -102,7 +107,8 @@ export function createFakeSupabase() {
   const query = {
     select: () => query,
     eq: () => query,
-    single: () => Promise.resolve(profile.answer),
+    // Wait for the hold (if any), then answer.
+    single: () => (profile.hold ?? Promise.resolve()).then(() => profile.answer),
   }
   const client = { auth, from: () => query } as unknown as SupabaseClient
 
