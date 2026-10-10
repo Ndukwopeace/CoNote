@@ -95,24 +95,44 @@ describe.skipIf(!URL || !ANON_KEY || !SERVICE_KEY)('Supabase staff auth service'
   // Built when the suite starts, because a skipped suite still runs this body once.
   let server: SupabaseClient
 
+  /**
+   * Creates an account through the server, then sets its role and status on the profile row.
+   * (The profile trigger runs when the account row is inserted, before Supabase Auth applies
+   * `app_metadata`, so the role cannot be passed in at creation.)
+   */
+  async function createStaff(
+    email: string,
+    values: { role: 'admin'; status: 'active' | 'suspended'; fullName: string },
+  ): Promise<string> {
+    const created = await server.auth.admin.createUser({
+      email,
+      password: ADMIN.password,
+      email_confirm: true,
+      user_metadata: { full_name: values.fullName },
+    })
+    const id = created.data.user?.id
+    if (!id) throw new Error(`Could not create ${email}: ${created.error?.message ?? 'unknown'}`)
+    // SECURITY: only the server key can change a role or status; the browser's grants cannot.
+    const promoted = await server
+      .from('profiles')
+      .update({ role: values.role, status: values.status })
+      .eq('id', id)
+    if (promoted.error) throw new Error(`Could not set the role of ${email}`)
+    return id
+  }
+
   beforeAll(async () => {
     server = serverClient()
-    // SECURITY: the role and status come from app_metadata, which only the server can set.
-    const admin = await server.auth.admin.createUser({
-      email: ADMIN.email,
-      password: ADMIN.password,
-      email_confirm: true,
-      user_metadata: { full_name: ADMIN.fullName },
-      app_metadata: { role: 'admin' },
+    ids.admin = await createStaff(ADMIN.email, {
+      role: 'admin',
+      status: 'active',
+      fullName: ADMIN.fullName,
     })
-    ids.admin = admin.data.user?.id
-    const suspended = await server.auth.admin.createUser({
-      email: SUSPENDED_EMAIL,
-      password: ADMIN.password,
-      email_confirm: true,
-      app_metadata: { role: 'admin', status: 'suspended' },
+    ids.suspended = await createStaff(SUSPENDED_EMAIL, {
+      role: 'admin',
+      status: 'suspended',
+      fullName: 'Suspended Admin',
     })
-    ids.suspended = suspended.data.user?.id
   })
 
   afterAll(async () => {
