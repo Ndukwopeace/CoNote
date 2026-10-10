@@ -23,6 +23,7 @@
     "test": "vitest",
     "size": "npm run size --workspaces --if-present",
     "e2e": "npm run e2e --workspaces --if-present",
+    "test:db": "bash supabase/tests/run.sh",
     "prepare": "husky || true"
   },
   "lint-staged": {

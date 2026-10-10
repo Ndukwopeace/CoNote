@@ -342,6 +342,8 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 - Email and password sign-up and sign-in as the student portal already offers them (D73: sign-up is left as built; D76: it stays open to anyone, with email confirmation switched on). Public sign-up is enabled in Supabase, and a new account is a `student`; teachers and admins are invited. The `enrollment_requests` table and its Row Level Security (a student reads and cancels only their own; admins read and decide) come with the tables above.
 - Audit triggers, a seed script that mirrors the demo data, and secrets in Supabase and GitHub Actions secrets (never in the repository).
 
+**As built (D78):** `supabase/migrations` (schema, Row Level Security, functions and audit), `supabase/seed.sql`, `supabase/config.toml` and `supabase/tests`; run the tests with `npm run test:db` (CI job "Database security tests"). Still to do by hand: create the development and production Supabase projects, apply the migrations (`supabase db push`), switch on email confirmation, and store the keys as secrets. The Edge Functions are B2.
+
 **Done when:** the automated security checks in admin REQUIREMENTS section 25 pass against the database: a student or teacher gets 403 from admin functions, a teacher can't update another teacher's course, a student can't update a summary, and an admin can't read `notes.content_html`.
 
 ### B2 — Real data for admin and student
