@@ -38,6 +38,7 @@ export default defineConfig({
         // Test double and thin wiring of the Supabase SDK, covered by the integration run in CI.
         '**/fakeSupabase.ts',
         '**/fakeTables.ts',
+        '**/integrationSupport.ts',
         'packages/supabase/src/client.ts',
       ],
       // CI fails if line or branch coverage drops below 80%.

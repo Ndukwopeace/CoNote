@@ -18,6 +18,8 @@ import { createSupabaseAuthService } from './supabaseAuthService'
 import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
 import { createSupabaseEnrolmentService } from './supabaseEnrolmentService'
+import { createSupabaseNoteService } from './supabaseNoteService'
+import { createSupabaseSummaryService } from './supabaseSummaryService'
 // Stands in for the rest.
 import { notBuilt } from './notBuilt'
 
@@ -62,9 +64,10 @@ export function createSupabaseServices({
     courses: createSupabaseCourseService({ client }),
     classes: createSupabaseClassService({ client }),
     enrolment: createSupabaseEnrolmentService({ client }),
+    // Notes and published summaries.
+    notes: createSupabaseNoteService({ client }),
+    summaries: createSupabaseSummaryService({ client }),
     // Not connected yet.
-    notes: notBuilt('Notes'),
-    summaries: notBuilt('Summaries'),
     notifications: notBuilt('Notifications'),
     ai: notBuilt('Ask AI'),
     profile: notBuilt('Your profile'),

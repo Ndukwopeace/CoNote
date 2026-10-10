@@ -14,6 +14,7 @@ select tests.seed();
 \set k2 '''00000000-0000-0000-0000-00000000d002'''
 \set k3 '''00000000-0000-0000-0000-00000000d003'''
 \set sm_draft '''00000000-0000-0000-0000-00000000f002'''
+\set sm_pub '''00000000-0000-0000-0000-00000000f001'''
 
 -- ===== Sign-up: a browser can never choose its role =====
 insert into auth.users (id, email, raw_user_meta_data)
@@ -110,6 +111,15 @@ select tests.affects('insert into public.notes (student_id, course_id, class_id)
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c2) || ', ' || quote_literal(:k2) || ')', 'cannot write a note in a course not joined');
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s2) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 'cannot write a note as another student');
 select tests.fails_with('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k2) || ')', '23503', 'a note''s class must belong to its course');
+-- The browser names no author: the signed-in student is the default.
+select tests.affects('insert into public.notes (course_id, class_id) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 1, 'a note needs no student ID from the browser');
+select tests.rows('select * from public.notes where student_id = ' || quote_literal(:s1) || ' and title is null', 2, 'the default author is the signed-in student');
+-- Size limits hold even for a request that skips the app.
+select tests.fails_with('insert into public.notes (course_id, class_id, content_html) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', repeat(''x'', 200001))', '23514', 'a huge note is refused');
+select tests.fails_with('insert into public.notes (course_id, class_id, tags) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', array_fill(''t''::text, array[11]))', '23514', 'too many tags are refused');
+select tests.fails_with('insert into public.notes (course_id, class_id, title) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', repeat(''t'', 121))', '23514', 'a long title is refused');
+-- A view is recorded for the signed-in student, without sending an ID.
+select tests.affects('insert into public.summary_views (summary_id) values (' || quote_literal(:sm_pub) || ')', 1, 'a view needs no student ID from the browser');
 select tests.reset();
 select tests.login(:s2);
 select tests.affects('delete from public.notes', 0, 'a student cannot delete another student''s notes');
