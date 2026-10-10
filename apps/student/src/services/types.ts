@@ -26,6 +26,7 @@ import type {
   Session,
   SignInInput,
   SignUpInput,
+  SignUpResult,
 } from '@/types/auth'
 
 /** Everything the app can ask of an authentication backend (mock today, Supabase later). */
@@ -34,8 +35,11 @@ export interface AuthService {
   getSession(): Promise<Session | null>
   /** Signs in with email and password; rejects with a validation AppError on bad input. */
   signIn(input: SignInInput): Promise<Session>
-  /** Creates a student account and signs it in. */
-  signUp(input: SignUpInput): Promise<Session>
+  /**
+   * Creates a student account. Signs the student in, or reports that they must confirm their
+   * email first (D76).
+   */
+  signUp(input: SignUpInput): Promise<SignUpResult>
   /** Signs in through Google (decision D38). */
   signInWithProvider(provider: OAuthProvider): Promise<Session>
   /** Ends the session. */

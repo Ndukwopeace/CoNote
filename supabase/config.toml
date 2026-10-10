@@ -6,7 +6,7 @@ project_id = "conote"
 
 [db]
 # Matches the hosted projects' Postgres major version.
-major_version = 16
+major_version = 17
 
 [db.seed]
 # Loads supabase/seed.sql after the migrations on `supabase db reset`.
@@ -20,7 +20,7 @@ enable_signup = true
 # The browser origins that may receive auth redirects (password reset links). Add each app's
 # deployed address in the hosted project's dashboard.
 site_url = "http://localhost:4173"
-additional_redirect_urls = ["http://localhost:4174", "http://localhost:4175"]
+additional_redirect_urls = ["http://localhost:4173/**", "http://localhost:4174/**", "http://localhost:4175/**"]
 # A signed-in session lasts one hour before it is refreshed.
 jwt_expiry = 3600
 # Refresh tokens rotate, so a stolen one stops working once the real owner refreshes.
@@ -35,3 +35,14 @@ password_requirements = "letters_digits"
 enable_signup = true
 # Sign-up needs a working email address, which blocks throwaway and mistyped accounts (D76).
 enable_confirmations = true
+
+# Sending limits for the local test stack only; the hosted project has its own in the dashboard.
+# The contract tests send a few emails in one run.
+[auth.rate_limit]
+email_sent = 20
+
+# The reset email carries a token hash instead of Supabase's default link, so it works in any
+# browser and a mail scanner opening it cannot use it up (see the template for the details).
+[auth.email.template.recovery]
+subject = "Reset your CoNote password"
+content_path = "./supabase/templates/recovery.html"

@@ -8,21 +8,26 @@ import { assertNever } from '@conote/core/assertNever'
 import type { AppEnv } from '@/lib/env'
 // The demo implementation.
 import { createMockServices } from '@/services/mock'
-// The Supabase implementation (placeholder until the backend stage).
-import { createSupabaseServices } from '@/services/supabase'
 // The shape both implementations return.
 import type { Services } from '@/services/types'
 
-/** The factory that picks the data source. The only file allowed to import implementations. */
-export function createServices(env: AppEnv): Services {
+/**
+ * The factory that picks the data source. The only file allowed to import implementations.
+ * Asynchronous because the Supabase code is loaded only when that data source is chosen, so the
+ * demo does not download a library it never uses.
+ */
+export async function createServices(env: AppEnv): Promise<Services> {
   // Choose by the configured data source.
   switch (env.dataSource) {
     // Demo data in the browser.
     case 'mock':
       return createMockServices()
     // The real backend.
-    case 'supabase':
-      return createSupabaseServices()
+    case 'supabase': {
+      // Loaded on demand: the Supabase library is large.
+      const { createSupabaseServices } = await import('@/services/supabase')
+      return createSupabaseServices(env)
+    }
     // Unreachable today; fails the build if a new data source is added without a case.
     default:
       return assertNever(env)

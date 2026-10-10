@@ -34,4 +34,18 @@ create extension if not exists pgcrypto schema extensions;
 alter table auth.users
   add column instance_id uuid, add column aud text, add column role text,
   add column encrypted_password text, add column email_confirmed_at timestamptz,
-  add column created_at timestamptz, add column updated_at timestamptz;
+  add column created_at timestamptz, add column updated_at timestamptz,
+  add column confirmation_token text, add column recovery_token text,
+  add column email_change_token_new text, add column email_change text,
+  add column email_change_token_current text, add column reauthentication_token text,
+  add column phone_change text, add column phone_change_token text;
+-- The identities table the seed fills in, with the columns the seed uses.
+create table auth.identities (
+  provider_id text not null,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  identity_data jsonb not null,
+  provider text not null,
+  last_sign_in_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz
+);

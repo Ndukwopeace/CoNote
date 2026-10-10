@@ -6,7 +6,8 @@
 // zod checks stored data and email formats.
 import { z } from 'zod'
 
-// The same name and password rules the forms use (FR-AUTH-3).
+// The same name and password rules the forms use (FR-AUTH-3), and the checks every service runs.
+import { assertEmail, assertRule } from '@/lib/authRules'
 import { fullNameSchema, newPasswordSchema } from '@/lib/authSchemas'
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
@@ -75,24 +76,6 @@ const sessionSchema = z.object({
   }),
 })
 
-// Rule for a well-formed email address.
-const emailSchema = z.email()
-
-/**
- * Throws a validation error carrying the first rule `value` breaks, so the student sees the
- * same message the form would have shown.
- */
-function assertRule(schema: z.ZodType, value: unknown) {
-  // Check without throwing zod's own error type.
-  const result = schema.safeParse(value)
-  // Passed: nothing to do.
-  if (result.success) return
-  // The first broken rule's message, or a generic one if zod gave none.
-  const message = result.error.issues[0]?.message ?? 'Check this field and try again.'
-  // The app's own error type, with a message that is safe to show.
-  throw new AppError('validation', message)
-}
-
 /** What the factory needs: two storage areas (injected so tests can use their own) and a delay. */
 interface MockAuthOptions {
   // Long-lived storage; holds only the remember marker.
@@ -121,15 +104,6 @@ function readSession(store: Storage): Session | null {
   } catch {
     // Text that isn't JSON: treat as signed out.
     return null
-  }
-}
-
-/** Throws a student-friendly validation error unless `email` is well-formed. */
-function assertEmail(email: string) {
-  // Check the format.
-  if (!emailSchema.safeParse(email).success) {
-    // The message is shown on the form as-is.
-    throw new AppError('validation', 'Enter a valid email address.')
   }
 }
 
@@ -218,7 +192,7 @@ export function createMockAuthService({
       // step (D76).
       startNewStudent(localStore)
       // New accounts are remembered, as most sign-up flows do.
-      return store(demoSession(email, fullName.trim()), true)
+      return { status: 'signed_in', session: store(demoSession(email, fullName.trim()), true) }
     },
 
     async signInWithProvider() {

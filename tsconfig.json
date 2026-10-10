@@ -12,6 +12,7 @@
     { "path": "./packages/portal" },
     { "path": "./packages/domain" },
     { "path": "./packages/core" },
+    { "path": "./packages/supabase" },
     { "path": "./packages/testing" },
     { "path": "./tsconfig.node.json" }
   ]

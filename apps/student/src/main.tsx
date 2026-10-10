@@ -42,11 +42,15 @@ installPromptStore.start(window)
 // One router for the whole app.
 const router = createBrowserRouter(routes)
 
+// The services for the configured data source. Loaded before rendering, so no page ever sees a
+// half-built set.
+const services = await createServices(env)
+
 // Render the app.
 createRoot(container).render(
   <StrictMode>
     {/* Services for the configured data source, and a fresh query cache. */}
-    <AppProviders services={createServices(env)} queryClient={createQueryClient()}>
+    <AppProviders services={services} queryClient={createQueryClient()}>
       {/* The pages. */}
       <RouterProvider router={router} />
     </AppProviders>

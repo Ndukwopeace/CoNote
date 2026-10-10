@@ -164,14 +164,19 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       const auth = create()
 
       // Act: sign up.
-      const session = await auth.signUp({
+      const result = await auth.signUp({
         fullName: 'Ada Obi',
         email: 'ada@example.com',
         password: 'password1',
       })
 
-      // Assert: the name is kept and the role is student.
-      expect(session.user).toMatchObject({ fullName: 'Ada Obi', role: 'student' })
+      // Assert: either the student is signed in, with the name kept and the role student, or the
+      // backend asks them to confirm their email first (D76). Both are correct.
+      if (result.status === 'signed_in') {
+        expect(result.session.user).toMatchObject({ fullName: 'Ada Obi', role: 'student' })
+      } else {
+        expect(result.status).toBe('confirm_email')
+      }
     })
   })
 }

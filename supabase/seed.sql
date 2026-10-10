@@ -4,19 +4,31 @@
 
 -- Logins. The sign-up trigger gives each a profile; staff are promoted below. The password is the
 -- apps' demo password; Supabase stores only its hash.
+-- The token columns are set to empty text, not left NULL: Supabase Auth cannot read a user whose
+-- token columns are NULL and answers every sign-in with "Database error querying schema".
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-                        raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+                        raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                        confirmation_token, recovery_token, email_change_token_new, email_change,
+                        email_change_token_current, reauthentication_token, phone_change,
+                        phone_change_token)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', email,
        extensions.crypt('password1', extensions.gen_salt('bf')), now(),
-       '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('full_name', full_name), now(), now()
+       '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('full_name', full_name), now(), now(),
+       '', '', '', '', '', '', '', ''
 from (values
   ('10000000-0000-0000-0000-000000000001'::uuid, 'admin@conote.example', 'Amara Okafor'),
   ('10000000-0000-0000-0000-000000000002'::uuid, 'teacher@conote.example', 'Sarah Mbarga'),
   ('10000000-0000-0000-0000-000000000003'::uuid, 'smith@conote.example', 'Dr. Smith'),
   ('10000000-0000-0000-0000-000000000004'::uuid, 'student@conote.example', 'Victory Eze'),
   ('10000000-0000-0000-0000-000000000005'::uuid, 'ada@conote.example', 'Ada Obi'),
-  ('10000000-0000-0000-0000-000000000006'::uuid, 'tunde@conote.example', 'Tunde Bello')
+  ('10000000-0000-0000-0000-000000000006'::uuid, 'tunde@conote.example', 'Tunde Bello'),
+  ('10000000-0000-0000-0000-000000000007'::uuid, 'suspended@conote.example', 'Sam Suspended')
 ) as demo (id, email, full_name);
+
+-- The email identity each login needs to sign in with a password.
+insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select id::text, id, jsonb_build_object('sub', id::text, 'email', email, 'email_verified', true), 'email', now(), now(), now()
+from auth.users;
 
 -- Roles and numbers, set by the server (here, the seed) and never by a browser.
 update public.profiles set role = 'admin', staff_number = 'S-0001' where email = 'admin@conote.example';
@@ -25,6 +37,8 @@ update public.profiles set role = 'teacher', staff_number = 'S-0003', department
 update public.profiles set student_number = 'U2023/5001', department = 'Computer Science' where email = 'student@conote.example';
 update public.profiles set student_number = 'U2023/5002' where email = 'ada@conote.example';
 update public.profiles set student_number = 'U2023/5003' where email = 'tunde@conote.example';
+-- A suspended student, for the sign-in tests: the right password, but the account may not sign in.
+update public.profiles set status = 'suspended' where email = 'suspended@conote.example';
 
 -- Courses: Sarah teaches MTH 202, Dr. Smith teaches SWE 311, PHY 101 has no teacher yet.
 insert into public.courses (id, code, title, department, teacher_id, status) values
