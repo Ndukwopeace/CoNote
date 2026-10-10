@@ -254,6 +254,35 @@ describe('onAuthChange', () => {
     expect(listener.mock.calls.every(([session]) => session === null)).toBe(true)
   })
 
+  // Proves a sign-in is announced once even when Supabase's own report is handled while the
+  // service is still reading the profile (the report would otherwise announce it first).
+  it('announces a sign-in once when the report arrives mid-sign-in', async () => {
+    const { service, emit, profile, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: supabaseSession() }, error: null })
+    service.onAuthChange(listener)
+    // The first profile read (signIn's) waits; the second (the report's) answers at once, so the
+    // report finishes first, as it can with a real network.
+    let release: () => void = () => undefined
+    profile.holds.push(
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    )
+    const signingIn = service.signIn({
+      email: 'student@conote.example',
+      password: 'password1',
+      remember: false,
+    })
+    // Let signIn start its read before the report arrives.
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    emit('SIGNED_IN', supabaseSession())
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    release()
+    await signingIn
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
   // SECURITY: proves a "signed in" report whose profile read is still running when the student
   // signs out cannot bring the student back once the read finishes.
   it('does not revive a session whose profile read outlives a sign-out', async () => {
