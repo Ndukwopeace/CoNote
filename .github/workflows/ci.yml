@@ -138,7 +138,7 @@ jobs:
       # A throwaway Postgres, thrown away with the machine. The password is a placeholder for this
       # container only; it holds no real data and is not reachable from outside the runner.
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
         ports:

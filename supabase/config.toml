@@ -6,7 +6,7 @@ project_id = "conote"
 
 [db]
 # Matches the hosted projects' Postgres major version.
-major_version = 16
+major_version = 17
 
 [db.seed]
 # Loads supabase/seed.sql after the migrations on `supabase db reset`.
