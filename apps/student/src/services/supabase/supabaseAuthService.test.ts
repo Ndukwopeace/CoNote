@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Session } from '@/types/auth'
 
 // The fake client and the data it uses.
-import { createFakeSupabase, profileRow, supabaseSession } from './fakeSupabase'
+import { createFakeSupabase, profileRow, supabaseSession } from '@conote/testing/fakeSupabase'
 
 // The service under test.
 import { createSupabaseAuthService } from './supabaseAuthService'

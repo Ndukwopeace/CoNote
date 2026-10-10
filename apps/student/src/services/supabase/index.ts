@@ -23,7 +23,7 @@ import { createSupabaseNotificationService } from './supabaseNotificationService
 import { createSupabaseProfileService } from './supabaseProfileService'
 import { createSupabaseSummaryService } from './supabaseSummaryService'
 // Stands in for the rest.
-import { notBuilt } from './notBuilt'
+import { notBuilt } from '@conote/supabase/notBuilt'
 
 /** The checked settings the Supabase services need. */
 interface SupabaseSettings {

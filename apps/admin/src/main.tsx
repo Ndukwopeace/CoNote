@@ -35,11 +35,15 @@ if (!container) throw new Error('Missing #root element in index.html')
 // The browser router over the route table.
 const router = createBrowserRouter(routes)
 
+// The services for the configured data source. Loaded before rendering, so no page ever sees a
+// half-built set.
+const services = await createServices(env)
+
 // Render the console.
 createRoot(container).render(
   <StrictMode>
     {/* Services for the configured data source, and a fresh query cache. */}
-    <AppProviders services={createServices(env)} queryClient={createQueryClient()}>
+    <AppProviders services={services} queryClient={createQueryClient()}>
       {/* The pages. */}
       <RouterProvider router={router} />
     </AppProviders>

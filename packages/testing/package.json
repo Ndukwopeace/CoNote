@@ -5,5 +5,9 @@
   "type": "module",
   "exports": {
     "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@conote/supabase": "0.1.0",
+    "@supabase/supabase-js": "^2.117.3"
   }
 }
