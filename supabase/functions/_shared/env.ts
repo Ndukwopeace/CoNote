@@ -74,3 +74,38 @@ const RESET_PATHS = {
 export function resetAddress(env: FunctionEnv, role: keyof typeof RESET_PATHS): string {
   return `${env.appUrls[role]}${RESET_PATHS[role]}`
 }
+
+/** What the summary pipeline needs beyond the common settings. */
+export interface PipelineEnv {
+  // SECURITY: the language model's key. It stays in this runtime and is sent only to the model's
+  // own address; it is never written to a response, a log or the database.
+  groqApiKey: string
+  // The model to ask. Changing the secret changes the model, with no new deploy.
+  groqModel: string
+  // SECURITY: the secret the scheduler sends. Only a caller that knows it can start a run, so the
+  // public key alone cannot make the function spend the model's allowance.
+  pipelineToken: string
+}
+
+/** The model used when `GROQ_MODEL` is not set. */
+export const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile'
+
+/**
+ * Reads the pipeline's settings with `get`. Throws naming the ones that are missing, so a
+ * function without its key fails loudly at start-up instead of failing every job.
+ */
+export function readPipelineEnv(get: (name: string) => string | undefined): PipelineEnv {
+  // The two settings that must exist.
+  const groqApiKey = get('GROQ_API_KEY') ?? ''
+  const pipelineToken = get('PIPELINE_TOKEN') ?? ''
+  const missing = [
+    ...(groqApiKey === '' ? ['GROQ_API_KEY'] : []),
+    ...(pipelineToken === '' ? ['PIPELINE_TOKEN'] : []),
+  ]
+  if (missing.length > 0) {
+    throw new Error(`Missing settings: ${missing.join(', ')}`)
+  }
+  // The model is optional; blank means the default.
+  const groqModel = (get('GROQ_MODEL') ?? '').trim()
+  return { groqApiKey, groqModel: groqModel === '' ? DEFAULT_GROQ_MODEL : groqModel, pipelineToken }
+}
