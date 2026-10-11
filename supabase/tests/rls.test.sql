@@ -43,7 +43,7 @@ select tests.reset();
 select tests.login(:s1);
 select tests.rows('select * from public.summaries', 1, 'student sees only the published summary');
 select tests.is((select overview from public.summaries), 'Public text', 'student reads published text');
-select tests.affects('update public.summaries set overview = ''hacked''', 0, 'student cannot update a summary');
+select tests.denied('update public.summaries set overview = ''hacked''', 'student cannot update a summary');
 select tests.denied('update public.summaries set status = ''published''', 'student cannot change a summary status');
 select tests.reset();
 -- Student 2 is in no course, so sees none.
@@ -58,9 +58,9 @@ select tests.reset();
 -- A teacher edits only a draft in their own course.
 select tests.login(:t1);
 select tests.rows('select * from public.summaries', 2, 'teacher sees their own course summaries');
-select tests.affects('update public.summaries set overview = ''edited'' where id = ' || quote_literal(:sm_draft), 1, 'teacher edits own draft');
-select tests.affects('update public.summaries set overview = ''x'' where id = ' || quote_literal(:sm_other), 0, 'teacher cannot edit another course''s draft');
-select tests.affects('update public.summaries set overview = ''x'' where id = ' || quote_literal(:sm_pub), 0, 'teacher cannot edit a published summary');
+select tests.denied('update public.summaries set overview = ''edited'' where id = ' || quote_literal(:sm_draft), 'teacher cannot edit a draft directly (only through save_summary_draft)');
+select tests.denied('update public.summaries set overview = ''x'' where id = ' || quote_literal(:sm_other), 'teacher cannot edit another course''s draft');
+select tests.denied('update public.summaries set overview = ''x'' where id = ' || quote_literal(:sm_pub), 'teacher cannot edit a published summary');
 select tests.denied('update public.summaries set status = ''published'' where id = ' || quote_literal(:sm_draft), 'teacher cannot set status directly');
 select tests.reset();
 

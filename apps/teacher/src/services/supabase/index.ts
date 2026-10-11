@@ -1,13 +1,10 @@
 /**
  * The Supabase implementation (milestone B3): the teacher portal on the shared database. Sign-in
- * and the teacher's courses (B3.1) are connected; reviewing and publishing (B3.2) is not, and
- * would fail with a clear message instead of showing demo data (teacher REQUIREMENTS, "nothing
- * fake").
+ * and the teacher's courses (B3.1), and reviewing and publishing (B3.2).
  */
 
 // The client, and the storage that honours "Remember me".
 import { createSupabaseClient } from '@conote/supabase/client'
-import { notBuilt } from '@conote/supabase/notBuilt'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
 // The staff sign-in service, shared with the admin console.
 import { createSupabaseStaffAuthService } from '@conote/portal/supabase-auth'
@@ -17,8 +14,10 @@ import { TEACHER_ROUTES } from '@/lib/routes'
 import { TEACHER_STORAGE_PREFIX } from '@/lib/storage'
 
 // The shape the real implementation returns.
-import type { ReviewService, Services } from '../types'
+import type { Services } from '../types'
 
+// Reviewing and publishing summaries.
+import { createSupabaseReviewService } from './supabaseReviewService'
 // The teacher's courses and classes.
 import { createSupabaseTeachingService } from './supabaseTeachingService'
 
@@ -66,7 +65,7 @@ export function createSupabaseServices({
     }),
     // The teacher's courses, and the classes of each.
     teaching: createSupabaseTeachingService({ client }),
-    // Not connected yet (B3.2).
-    review: notBuilt<ReviewService>('Reviewing summaries'),
+    // The summaries waiting for review, and saving and publishing a draft.
+    review: createSupabaseReviewService({ client }),
   }
 }

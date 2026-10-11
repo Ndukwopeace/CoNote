@@ -40,7 +40,7 @@ import type { CourseService } from '../types'
 // Search text, times and names.
 import { compareText, iso, safeSearch } from './queryText'
 // Errors from the database, with the code and message the rules above rely on.
-import { databaseCode, databaseMessage } from './databaseErrors'
+import { databaseCode, databaseMessage } from '@conote/supabase/databaseErrors'
 
 /** How many courses a page holds. */
 const PAGE_SIZE = 20

@@ -62,6 +62,21 @@ describe('mock Review service', () => {
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
+  // Proves the demo stamps the publishing time from its clock (the database uses its own).
+  it('publishes at the time its clock gives', async () => {
+    const now = new Date('2026-10-12T10:00:00.000Z')
+    const service = createMockReviewService({
+      data: reviewable(),
+      actorId: () => 't1',
+      now: () => now,
+      latencyMs: 0,
+    })
+    const draft = { overview: 'Final.', keyConcepts: [], confusionAreas: [], keyTopics: [] }
+    await expect(service.approveAndPublish('s1', draft, 1)).resolves.toMatchObject({
+      publishedAt: now.toISOString(),
+    })
+  })
+
   // Proves the demo waits like a network call, so loading states show in the app.
   it('answers only after the simulated delay', async () => {
     // Arrange: a 300 ms delay on a fake clock.
