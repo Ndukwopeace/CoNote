@@ -8,3 +8,8 @@ declare const Deno: {
     get: (name: string) => string | undefined
   }
 }
+
+// Supabase's edge runtime. `waitUntil` keeps a function running after it has answered.
+declare const EdgeRuntime: {
+  waitUntil: (work: Promise<unknown>) => void
+}

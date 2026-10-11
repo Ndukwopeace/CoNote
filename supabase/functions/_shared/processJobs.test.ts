@@ -57,15 +57,18 @@ interface Setup {
   fail?: TableAnswer
   finish?: TableAnswer
   queue?: TableAnswer
+  claim?: TableAnswer
   fetchImpl?: () => Promise<Response>
 }
 
 /** A handler over fakes, and the handles to check what happened. */
-function build({ claims = [[JOB], []], notes, fail, finish, queue, fetchImpl }: Setup = {}) {
+function build({ claims = [[JOB], []], notes, fail, finish, queue, claim, fetchImpl }: Setup = {}) {
   const remaining = [...claims]
   const answer = (query: RecordedQuery): TableAnswer => {
     if (query.table === 'rpc:queue_summary_jobs') return queue ?? { data: 1, error: null }
-    if (query.table === 'rpc:claim_ai_job') return { data: remaining.shift() ?? [], error: null }
+    if (query.table === 'rpc:claim_ai_job') {
+      return claim ?? { data: remaining.shift() ?? [], error: null }
+    }
     if (query.table === 'rpc:finish_ai_job') return finish ?? { data: null, error: null }
     if (query.table === 'rpc:fail_ai_job') return fail ?? { data: 'failed', error: null }
     return (
@@ -78,15 +81,23 @@ function build({ claims = [[JOB], []], notes, fail, finish, queue, fetchImpl }: 
   const tables = createFakeTables(answer)
   const fetchMock = vi.fn<typeof fetch>(fetchImpl ?? (() => Promise.resolve(modelAnswer(DRAFT))))
   let n = 0
+  // The work the handler hands to the runtime to finish after it has answered.
+  const background = vi.fn<(work: Promise<unknown>) => void>()
   const handler = processJobsHandler({
     clients: { service: tables.client },
     env: PIPELINE,
     now: () => NOW,
     fetch: fetchMock,
     newId: () => `item-${String((n += 1))}`,
+    background,
   })
   const calls = (name: string) => tables.queries.filter((query) => query.table === `rpc:${name}`)
-  return { handler, fetchMock, queries: tables.queries, calls }
+  /** Calls the handler and waits for the background run it started; returns what the run did. */
+  async function runToEnd(token: string | null = 'run-token'): Promise<unknown> {
+    await handler(run(token))
+    return background.mock.calls[0]?.[0]
+  }
+  return { handler, fetchMock, queries: tables.queries, calls, background, runToEnd }
 }
 
 /** The arguments of the first call to the function `name`. */
@@ -100,11 +111,12 @@ describe('who may start a run', () => {
   it.each([[null], ['wrong'], ['run-toke'], ['run-token-and-more']])(
     'refuses the token %s',
     async (token) => {
-      const { handler, queries, fetchMock } = build()
+      const { handler, queries, fetchMock, background } = build()
       const response = await handler(run(token))
       expect(response.status).toBe(401)
       expect(queries).toHaveLength(0)
       expect(fetchMock).not.toHaveBeenCalled()
+      expect(background).not.toHaveBeenCalled()
     },
   )
 
@@ -118,10 +130,9 @@ describe('who may start a run', () => {
 describe('a run', () => {
   // Proves the happy path: queue, claim, read notes, ask the model, store the draft.
   it('writes a draft for a queued job', async () => {
-    const { handler, calls, fetchMock } = build()
-    const response = await handler(run())
-    expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({
+    const { calls, fetchMock, runToEnd } = build()
+    await expect(runToEnd()).resolves.toEqual({
+      ok: true,
       queued: 1,
       succeeded: 1,
       retried: 0,
@@ -138,11 +149,24 @@ describe('a run', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  // Proves the handler answers "accepted" at once and hands the run to the runtime, so the
+  // scheduler's short timeout cannot cut a run off.
+  it('answers at once and finishes the work in the background', async () => {
+    const { handler, background, fetchMock } = build()
+    const response = await handler(run())
+    expect(response.status).toBe(202)
+    await expect(response.json()).resolves.toEqual({ accepted: true })
+    expect(background).toHaveBeenCalledTimes(1)
+    // The work was handed over as a promise; waiting for it completes the job.
+    await background.mock.calls[0]?.[0]
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   // PRIVACY: proves what is sent to the model and where: the key to the model's own address, the
   // notes' text and titles, and no student ID.
   it('sends only the notes text and titles to the model', async () => {
-    const { handler, fetchMock, queries } = build()
-    await handler(run())
+    const { runToEnd, fetchMock, queries } = build()
+    await runToEnd()
     const [url, init] = fetchMock.mock.calls[0] ?? []
     expect(url).toBe('https://api.groq.com/openai/v1/chat/completions')
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer groq-key')
@@ -163,8 +187,9 @@ describe('a run', () => {
 
   // Proves a run with nothing to do ends quietly, and the number queued is reported.
   it('ends when there is no job', async () => {
-    const { handler, fetchMock } = build({ claims: [[]], queue: { data: 0, error: null } })
-    await expect((await handler(run())).json()).resolves.toEqual({
+    const { runToEnd, fetchMock } = build({ claims: [[]], queue: { data: 0, error: null } })
+    await expect(runToEnd()).resolves.toEqual({
+      ok: true,
       queued: 0,
       succeeded: 0,
       retried: 0,
@@ -175,38 +200,36 @@ describe('a run', () => {
 
   // Proves one run takes on at most three jobs, so it ends inside the platform's time limit.
   it('takes at most three jobs per run', async () => {
-    const { handler, calls } = build({ claims: [[JOB], [JOB], [JOB], [JOB], []] })
-    const body = (await (await handler(run())).json()) as { succeeded: number }
-    expect(body.succeeded).toBe(3)
+    const { runToEnd, calls } = build({ claims: [[JOB], [JOB], [JOB], [JOB], []] })
+    await expect(runToEnd()).resolves.toMatchObject({ ok: true, succeeded: 3 })
     expect(calls('claim_ai_job')).toHaveLength(3)
   })
 
-  // Proves a failure to queue or claim stops the run with an error, not a silent success.
-  it('stops with an error when the database refuses', async () => {
-    const queueDown = build({ queue: { data: null, error: { code: 'XX000', message: 'x' } } })
-    expect((await queueDown.handler(run())).status).toBe(502)
-    const claimDown = processJobsHandler({
-      clients: {
-        service: createFakeTables((query) =>
-          query.table === 'rpc:claim_ai_job'
-            ? { data: null, error: { code: 'XX000', message: 'x' } }
-            : { data: 0, error: null },
-        ).client,
-      },
-      env: PIPELINE,
-      now: () => NOW,
-      fetch: vi.fn<typeof fetch>(),
-      newId: () => 'x',
+  // Proves a failure to queue or claim ends the run with a reason, not a silent success.
+  it('ends with a reason when the database refuses', async () => {
+    const refusal = { data: null, error: { code: 'XX000', message: 'x' } }
+    await expect(build({ queue: refusal }).runToEnd()).resolves.toEqual({
+      ok: false,
+      reason: 'Jobs could not be queued.',
     })
-    expect((await claimDown(run())).status).toBe(502)
+    await expect(build({ claim: refusal }).runToEnd()).resolves.toEqual({
+      ok: false,
+      reason: 'A job could not be claimed.',
+    })
+    await expect(
+      build({ claim: { data: [{ nope: 1 }], error: null } }).runToEnd(),
+    ).resolves.toEqual({
+      ok: false,
+      reason: 'A job could not be read.',
+    })
   })
 })
 
 describe('failures', () => {
   /** The failure recorded for a run set up with `setup`. */
   async function recorded(setup: Setup) {
-    const { handler, calls } = build(setup)
-    const body = (await (await handler(run())).json()) as Record<string, number>
+    const { runToEnd, calls } = build(setup)
+    const body = await runToEnd()
     return { args: argsOf(calls('fail_ai_job')), body, calls }
   }
 
@@ -246,10 +269,10 @@ describe('failures', () => {
 
   // Proves a class whose notes have no text fails without asking the model.
   it('fails a class with no usable notes without calling the model', async () => {
-    const { handler, calls, fetchMock } = build({
+    const { runToEnd, calls, fetchMock } = build({
       notes: { data: [{ title: null, content_html: '<p></p>' }], error: null },
     })
-    await handler(run())
+    await runToEnd()
     expect(argsOf(calls('fail_ai_job'))).toMatchObject({ p_code: 'no_notes' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -268,12 +291,12 @@ describe('failures', () => {
 
   // Proves any other error is recorded with a message that says nothing about the cause.
   it('records an unexpected error without its details', async () => {
-    const { handler, calls } = build({
+    const { runToEnd, calls } = build({
       fetchImpl: () => {
         throw new TypeError('secret detail')
       },
     })
-    await handler(run())
+    await runToEnd()
     const args = argsOf(calls('fail_ai_job'))
     expect(args.p_code).toBe('model_unreachable')
     expect(JSON.stringify(args)).not.toContain('secret detail')
