@@ -360,6 +360,8 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 
 ### B3 — Summary pipeline, and the teacher portal on real data
 
+**Progress (D88):** B3.1 is built: the teacher portal signs in on Supabase and shows My courses and each course's classes from the database, with the teaching contract run against the local stack. Reviewing (B3.2) and the summary pipeline (B3.3) are still to do.
+
 - When a class ends, a job is queued; a server-side worker or Edge Function calls the language model (the key stays in Supabase secrets) and writes a draft summary in `in_review`.
 - Failures are recorded as failed jobs, with a limit on retries.
 - The teacher portal switches to Supabase for the review flow and publishing.

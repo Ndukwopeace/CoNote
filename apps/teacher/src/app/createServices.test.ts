@@ -11,18 +11,31 @@ import { createServices } from './createServices'
 describe('createServices', () => {
   // Proves demo mode gets working demo services.
   it('builds the demo services in mock mode', async () => {
-    const services = createServices({ dataSource: 'mock' })
+    const services = await createServices({ dataSource: 'mock' })
     await expect(services.auth.getSession()).resolves.toBeNull()
   })
 
-  // Proves Supabase mode fails at once with instructions, until the backend stage builds it.
-  it('refuses to start in Supabase mode for now', () => {
-    expect(() =>
-      createServices({
-        dataSource: 'supabase',
-        supabaseUrl: 'https://example.supabase.co',
-        supabaseAnonKey: 'anon',
-      }),
-    ).toThrow(/not built yet/)
+  // Proves Supabase mode builds every service, and sign-in is answered from storage.
+  it('builds every service in Supabase mode', async () => {
+    const services = await createServices({
+      dataSource: 'supabase',
+      supabaseUrl: 'https://example.supabase.co',
+      supabaseAnonKey: 'anon',
+    })
+    // Nobody is signed in on a fresh browser; this is answered from storage, with no network.
+    await expect(services.auth.getSession()).resolves.toBeNull()
+    // Every service exists.
+    expect(Object.keys(services).sort()).toEqual(['auth', 'review', 'teaching'])
+  })
+
+  // Proves the review service, which is not connected until B3.2, fails loudly instead of showing
+  // demo data.
+  it('refuses to review summaries until that part is connected', async () => {
+    const services = await createServices({
+      dataSource: 'supabase',
+      supabaseUrl: 'https://example.supabase.co',
+      supabaseAnonKey: 'anon',
+    })
+    await expect(services.review.listReviewQueue()).rejects.toThrow(/not connected/)
   })
 })
