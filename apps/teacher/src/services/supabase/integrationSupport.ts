@@ -75,6 +75,14 @@ export class Harness extends StackHarness<PlatformData> {
     super(SETTINGS, options)
   }
 
+  /**
+   * A client signed in as the account `short`. A contract may act as a teacher it never lists
+   * (the courses only name "t1"); the stand-in account `load` made is found the same way.
+   */
+  override clientFor(short: string, data: PlatformData) {
+    return super.clientFor(short, withStubs(data))
+  }
+
   /** Makes the stack hold exactly `source`'s accounts, courses and what hangs off them. */
   protected async load(source: PlatformData) {
     const data = withStubs(source)
