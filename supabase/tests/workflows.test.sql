@@ -90,7 +90,7 @@ select tests.fails_with('select public.publish_summary(' || quote_literal(:sm_dr
 select tests.reset();
 select tests.login(:t1);
 select tests.is((select version from public.summaries where id = :sm_draft), 1, 'draft starts at version 1');
-update public.summaries set overview = 'edited' where id = :sm_draft;
+select public.save_summary_draft(:sm_draft, 1, 'edited', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb);
 select tests.is((select version from public.summaries where id = :sm_draft), 2, 'an edit bumps the version');
 select tests.fails_with('select public.publish_summary(' || quote_literal(:sm_draft) || ', 1)', '40001', 'a stale version is refused');
 select public.publish_summary(:sm_draft, 2);

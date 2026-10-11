@@ -281,10 +281,11 @@ export function describeReviewServiceContract(name: string, create: ReviewServic
         const published = await service.approveAndPublish('s1', { ...DRAFT, overview: 'Final.' }, 1)
         expect(published).toMatchObject({
           status: 'published',
-          publishedAt: NOW.toISOString(),
           reviewedBy: 'Sarah Mbarga',
           version: 2,
         })
+        // The time is set by the server's clock, not the caller's, so only its form is checked.
+        expect(new Date(published.publishedAt ?? '').toISOString()).toBe(published.publishedAt)
         expect(published.draft.overview).toBe('Final.')
         await expect(service.listReviewQueue()).resolves.toEqual([])
       })

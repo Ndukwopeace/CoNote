@@ -27,15 +27,4 @@ describe('createServices', () => {
     // Every service exists.
     expect(Object.keys(services).sort()).toEqual(['auth', 'review', 'teaching'])
   })
-
-  // Proves the review service, which is not connected until B3.2, fails loudly instead of showing
-  // demo data.
-  it('refuses to review summaries until that part is connected', async () => {
-    const services = await createServices({
-      dataSource: 'supabase',
-      supabaseUrl: 'https://example.supabase.co',
-      supabaseAnonKey: 'anon',
-    })
-    await expect(services.review.listReviewQueue()).rejects.toThrow(/not connected/)
-  })
 })
