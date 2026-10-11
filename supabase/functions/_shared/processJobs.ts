@@ -55,7 +55,14 @@ export interface PipelineDeps {
   fetch: typeof fetch
   // Makes the IDs of draft items.
   newId: () => string
+  // Keeps `work` running after the response has been sent (the runtime's `waitUntil`).
+  background: (work: Promise<unknown>) => void
 }
+
+/** What a run did: how many jobs it queued and how each of the ones it took on ended. */
+export type RunResult =
+  | { ok: true; queued: number; succeeded: number; retried: number; failed: number }
+  | { ok: false; reason: string }
 
 // SECURITY: what the database sends back is checked, not trusted, like everything else here.
 const claimedSchema = z.array(
@@ -187,17 +194,16 @@ export function processJobsHandler(deps: PipelineDeps) {
     return answer.data === 'queued'
   }
 
-  return async (request: Request): Promise<Response> => {
-    if (request.method !== 'POST') return refuse('validation', 'Use POST.')
-    // SECURITY: only the scheduler, which knows the token, may start a run.
-    const token = bearerToken(request)
-    if (token === null || !sameSecret(token, deps.env.pipelineToken)) {
-      return refuse('unauthorized', 'Not allowed.')
-    }
+  /**
+   * One run: queues jobs for the classes that have ended, then works through up to three. It
+   * never throws: a failure to queue or claim ends the run with a reason, and the scheduler's
+   * next call tries again.
+   */
+  async function run(): Promise<RunResult> {
     const started = deps.now().getTime()
     // 1. Queue a job for every class that has ended.
     const queued = await service.rpc('queue_summary_jobs', { p_now: deps.now().toISOString() })
-    if (queued.error) return refuse('unknown', 'Jobs could not be queued.')
+    if (queued.error) return { ok: false, reason: 'Jobs could not be queued.' }
     // 2. Work through the queue.
     let succeeded = 0
     let retried = 0
@@ -208,9 +214,9 @@ export function processJobsHandler(deps: PipelineDeps) {
         p_now: deps.now().toISOString(),
         p_max_attempts: MAX_ATTEMPTS,
       })
-      if (claimed.error) return refuse('unknown', 'A job could not be claimed.')
+      if (claimed.error) return { ok: false, reason: 'A job could not be claimed.' }
       const jobs = claimedSchema.safeParse(claimed.data ?? [])
-      if (!jobs.success) return refuse('unknown', 'A job could not be read.')
+      if (!jobs.success) return { ok: false, reason: 'A job could not be read.' }
       const job = jobs.data[0]
       // Nothing left to do.
       if (job === undefined) break
@@ -228,6 +234,20 @@ export function processJobsHandler(deps: PipelineDeps) {
       }
     }
     const count = countSchema.safeParse(queued.data)
-    return json({ queued: count.success ? count.data : 0, succeeded, retried, failed })
+    return { ok: true, queued: count.success ? count.data : 0, succeeded, retried, failed }
+  }
+
+  return (request: Request): Promise<Response> => {
+    if (request.method !== 'POST') return Promise.resolve(refuse('validation', 'Use POST.'))
+    // SECURITY: only the scheduler, which knows the token, may start a run.
+    const token = bearerToken(request)
+    if (token === null || !sameSecret(token, deps.env.pipelineToken)) {
+      return Promise.resolve(refuse('unauthorized', 'Not allowed.'))
+    }
+    // The scheduler gives up after a few seconds, and a run waits on the language model for much
+    // longer. The work continues in the background and the answer goes back at once; what the
+    // run did is on the jobs themselves.
+    deps.background(run())
+    return Promise.resolve(json({ accepted: true }, 202))
   }
 }

@@ -21,5 +21,9 @@ Deno.serve(
     now: () => new Date(),
     fetch,
     newId: () => crypto.randomUUID(),
+    // The runtime keeps the function alive until this finishes, even after the response is sent.
+    background: (work) => {
+      EdgeRuntime.waitUntil(work)
+    },
   }),
 )
