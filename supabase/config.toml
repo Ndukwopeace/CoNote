@@ -46,3 +46,8 @@ email_sent = 20
 [auth.email.template.recovery]
 subject = "Reset your CoNote password"
 content_path = "./supabase/templates/recovery.html"
+
+# The summary pipeline's worker checks its own secret token instead of a sign-in token: the
+# scheduler that calls it is not a signed-in person (D90).
+[functions.process-ai-jobs]
+verify_jwt = false

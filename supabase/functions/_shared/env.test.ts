@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The unit under test.
-import { readEnv, resetAddress } from './env.ts'
+import { DEFAULT_GROQ_MODEL, readEnv, readPipelineEnv, resetAddress } from './env.ts'
 
 /** A full set of settings. */
 const FULL: Record<string, string> = {
@@ -51,5 +51,34 @@ describe('resetAddress', () => {
     expect(resetAddress(env, 'student')).toBe('https://app.example/reset-password')
     expect(resetAddress(env, 'teacher')).toBe('https://teacher.example/teacher/reset-password')
     expect(resetAddress(env, 'admin')).toBe('https://admin.example/admin/reset-password')
+  })
+})
+
+describe('readPipelineEnv', () => {
+  // Proves the key and token are read and the model defaults.
+  it('reads the settings and defaults the model', () => {
+    expect(readPipelineEnv((name) => ({ GROQ_API_KEY: 'k', PIPELINE_TOKEN: 't' })[name])).toEqual({
+      groqApiKey: 'k',
+      groqModel: DEFAULT_GROQ_MODEL,
+      pipelineToken: 't',
+    })
+  })
+
+  // Proves a model from the environment is used, trimmed, and a blank one means the default.
+  it('uses a model from the environment', () => {
+    const get = (model: string) => (name: string) =>
+      ({ GROQ_API_KEY: 'k', PIPELINE_TOKEN: 't', GROQ_MODEL: model })[name]
+    expect(readPipelineEnv(get(' llama-x ')).groqModel).toBe('llama-x')
+    expect(readPipelineEnv(get('  ')).groqModel).toBe(DEFAULT_GROQ_MODEL)
+  })
+
+  // Proves every missing setting is named, so a bad deploy says what to fix.
+  it('names the missing settings', () => {
+    expect(() => readPipelineEnv(() => undefined)).toThrow(
+      'Missing settings: GROQ_API_KEY, PIPELINE_TOKEN',
+    )
+    expect(() => readPipelineEnv((name) => (name === 'GROQ_API_KEY' ? 'k' : undefined))).toThrow(
+      'Missing settings: PIPELINE_TOKEN',
+    )
   })
 })
