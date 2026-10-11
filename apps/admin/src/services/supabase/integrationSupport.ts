@@ -1,109 +1,33 @@
 /**
- * What the admin real-backend tests share: reading their settings, loading a contract's small
- * platform into a local Supabase stack, and translating between the contract's short IDs ("c1",
- * "t1") and the UUIDs the database uses. Used only by tests that run against the throwaway local
- * stack (the last step of the "Supabase contract tests" job); never import it from app code.
+ * What the admin real-backend tests share: reading their settings and loading a contract's small
+ * platform into a local Supabase stack. The ID translation, the signed-in clients and the local-only
+ * check are shared with the other apps (`@conote/testing/integrationSupport`). Used only by tests
+ * that run against the throwaway local stack (the last step of the "Supabase contract tests" job);
+ * never import it from app code.
  *
  * SECURITY: loading a platform first EMPTIES the stack's accounts and courses, so the harness
  * refuses to run against anything but a local address.
  */
 
-// The SDK, to talk to the stack as the server and as the administrator.
+// The shared harness: settings, ID translation and signed-in clients.
 import {
-  createClient,
-  type SupabaseClient,
-  type SupabaseClientOptions,
-} from '@supabase/supabase-js'
+  StackHarness,
+  ok,
+  readStackSettings,
+  type HarnessOptions,
+} from '@conote/testing/integrationSupport'
 
 // The records a contract builds, and the builders for the stand-ins it may need.
-import {
-  classRecord,
-  courseRecord,
-  userRecord,
-  type PlatformData,
-  type UserRecord,
-} from '../platformData'
+import { classRecord, courseRecord, userRecord, type PlatformData } from '../platformData'
 
-/** A setting from the environment, or undefined when it is missing or empty. */
-function setting(name: string): string | undefined {
-  // Vitest exposes only VITE_-prefixed variables to tests.
-  const value: unknown = import.meta.env[name]
-  return typeof value === 'string' && value !== '' ? value : undefined
-}
-
-// The stack to test against.
-export const URL = setting('VITE_SUPABASE_TEST_URL')
-export const ANON_KEY = setting('VITE_SUPABASE_TEST_ANON_KEY')
-export const SERVICE_KEY = setting('VITE_SUPABASE_TEST_SERVICE_KEY')
+// The stack to test against, from the environment.
+const SETTINGS = readStackSettings(import.meta.env)
+export const URL = SETTINGS.url
+export const ANON_KEY = SETTINGS.anonKey
+export const SERVICE_KEY = SETTINGS.serviceKey
 
 /** True when every setting the suites need is present; otherwise they are skipped. */
-export const CONFIGURED = Boolean(URL && ANON_KEY && SERVICE_KEY)
-
-// The password every account the harness creates gets.
-const PASSWORD = `Harness-${Math.random().toString(36).slice(2, 10)}-2026`
-
-/** Storage that lives only in memory, so tests never touch the browser's. */
-function memoryStorage() {
-  const items = new Map<string, string>()
-  return {
-    getItem: (key: string) => items.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      items.set(key, value)
-    },
-    removeItem: (key: string) => {
-      items.delete(key)
-    },
-  }
-}
-
-/** True for a plain object, so its fields can be walked. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** The short IDs a contract uses, and the UUIDs the database knows them by. */
-class IdMap {
-  private readonly toUuid = new Map<string, string>()
-  private readonly toShort = new Map<string, string>()
-
-  /** The UUID for `short`, made the first time it is asked for. */
-  uuid(short: string): string {
-    let id = this.toUuid.get(short)
-    if (id === undefined) {
-      id = crypto.randomUUID()
-      this.set(short, id)
-    }
-    return id
-  }
-
-  /** Records that `short` is the database's `id`. */
-  set(short: string, id: string) {
-    this.toUuid.set(short, id)
-    this.toShort.set(id, short)
-  }
-
-  /** `value` with every known short ID replaced by its UUID, however deep. */
-  down<T>(value: T): T {
-    return this.walk(value, this.toUuid) as T
-  }
-
-  /** `value` with every known UUID replaced by its short ID, however deep. */
-  up<T>(value: T): T {
-    return this.walk(value, this.toShort) as T
-  }
-
-  /** Copies `value`, swapping each string found in `table`. */
-  private walk(value: unknown, table: Map<string, string>): unknown {
-    if (typeof value === 'string') return table.get(value) ?? value
-    if (Array.isArray(value)) return value.map((item) => this.walk(item, table))
-    if (isRecord(value)) {
-      return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, this.walk(item, table)]),
-      )
-    }
-    return value
-  }
-}
+export const CONFIGURED = SETTINGS.configured
 
 /** The administrator the dashboard contracts act as, for platforms that have none of their own. */
 export const HARNESS_ADMIN = userRecord({
@@ -178,81 +102,14 @@ function withStubs(data: PlatformData): PlatformData {
   }
 }
 
-/** A client with the server key, which bypasses Row Level Security. */
-function serverClient(): SupabaseClient {
-  const options: SupabaseClientOptions<'public'> = { auth: { persistSession: false } }
-  const client = createClient(URL ?? '', SERVICE_KEY ?? '', options)
-  return client
-}
-
-/** Throws unless a refused write to Supabase was none. */
-function ok(result: { error: { message: string } | null }, what: string) {
-  if (result.error) throw new Error(`${what}: ${result.error.message}`)
-}
-
-/** Loads contract platforms into the stack and builds clients for them. */
-/** How a harness treats the accounts between one load and the next. */
-export interface HarnessOptions {
-  // True: every load starts from no accounts at all, with new IDs, so what one test did to an
-  // account (and what the audit log recorded about it) cannot reach the next. False: the accounts
-  // are made once and reused, which is much faster.
-  freshAccounts?: boolean
-}
-
-export class Harness {
-  ids = new IdMap()
-  private readonly server = serverClient()
-  // Administrators already signed in, by short ID.
-  private readonly clients = new Map<string, SupabaseClient>()
-  private wiped = false
-  private readonly freshAccounts: boolean
-
-  constructor({ freshAccounts = false }: HarnessOptions = {}) {
-    this.freshAccounts = freshAccounts
-  }
-
-  /** Empties the stack's accounts and courses: once, or before every load when accounts are fresh. */
-  private async wipe() {
-    if (this.wiped && !this.freshAccounts) return
-    if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(URL ?? '')) {
-      throw new Error('The admin harness empties the database; it runs only against a local stack.')
-    }
-    // Every course (classes, enrolments, requests, resources and summaries go with them).
-    ok(
-      await this.server.from('courses').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
-      'wipe courses',
-    )
-    // Every account (their profiles go with them).
-    const listed = await this.server.auth.admin.listUsers({ perPage: 1000 })
-    await Promise.all(listed.data.users.map((user) => this.server.auth.admin.deleteUser(user.id)))
-    // New accounts get new IDs, and nobody is signed in.
-    if (this.freshAccounts) {
-      this.ids = new IdMap()
-      this.clients.clear()
-    }
-    this.wiped = true
-  }
-
-  /** Creates the accounts of `users` that do not exist yet. */
-  private async ensureUsers(users: UserRecord[]) {
-    await Promise.all(
-      users
-        .filter((user) => this.ids.down(user.id) === user.id)
-        .map(async (user) => {
-          const created = await this.server.auth.admin.createUser({
-            email: user.email,
-            password: PASSWORD,
-            email_confirm: true,
-          })
-          const id = created.data.user?.id
-          if (!id) throw new Error(`Could not create ${user.email}`)
-          this.ids.set(user.id, id)
-        }),
-    )
+/** Loads the admin contracts' platforms into the stack and builds clients for them. */
+export class Harness extends StackHarness<PlatformData> {
+  constructor(options: HarnessOptions = {}) {
+    super(SETTINGS, options)
   }
 
   /** Makes the stack hold exactly `source`'s accounts, courses and what hangs off them. */
-  async load(source: PlatformData) {
+  protected async load(source: PlatformData) {
     const data = withStubs(source)
     await this.wipe()
     // The activity and failure logs start empty, and the settings are the platform's.
@@ -511,62 +368,5 @@ export class Harness {
         'insert security events',
       )
     }
-  }
-
-  /** A client signed in as the account `short`, or one with no session when it is empty. */
-  async clientFor(short: string, data: PlatformData): Promise<SupabaseClient> {
-    const options: SupabaseClientOptions<'public'> = {
-      auth: { storage: memoryStorage(), storageKey: `harness-${short}`, autoRefreshToken: false },
-    }
-    if (short === '') {
-      const anonymous = createClient(URL ?? '', ANON_KEY ?? '', options)
-      return anonymous
-    }
-    const cached = this.clients.get(short)
-    if (cached) return cached
-    const user = data.users.find((candidate) => candidate.id === short)
-    if (!user) throw new Error(`The platform has no account ${short}`)
-    const client = createClient(URL ?? '', ANON_KEY ?? '', options)
-    const signedIn = await client.auth.signInWithPassword({ email: user.email, password: PASSWORD })
-    if (signedIn.error) throw new Error(`Could not sign in as ${user.email}`)
-    this.clients.set(short, client)
-    return client
-  }
-
-  /**
-   * Wraps a service so a contract can keep using its short IDs: arguments go down to UUIDs and
-   * answers come back up to short IDs. The platform is loaded, and the service built, on the first
-   * call, not when the wrapper is made: a contract may change `data` right after asking for the
-   * service, and a service that is never called must not touch the database.
-   */
-  wrap<S extends object>(
-    data: PlatformData,
-    actorId: string,
-    build: (client: SupabaseClient) => S,
-  ): S {
-    // Made on first use, then shared by every call.
-    let ready: Promise<S> | undefined
-    const start = () => {
-      ready ??= (async () => {
-        await this.load(data)
-        return build(await this.clientFor(actorId, data))
-      })()
-      return ready
-    }
-    return new Proxy({} as S, {
-      get: (_target, name) => {
-        if (typeof name !== 'string') return undefined
-        return async (...args: unknown[]) => {
-          const service = (await start()) as Record<string, unknown>
-          const method = service[name]
-          if (typeof method !== 'function') throw new Error(`${name} is not a service method`)
-          const result: unknown = await (method as (...a: unknown[]) => Promise<unknown>).apply(
-            service,
-            this.ids.down(args),
-          )
-          return this.ids.up(result)
-        }
-      },
-    })
   }
 }

@@ -32,6 +32,10 @@ import { env } from '@/lib/env'
 const container = document.getElementById('root')
 if (!container) throw new Error('Missing #root element in index.html')
 
+// The services for the configured data source. Loaded before rendering, so no page ever sees a
+// half-built set.
+const services = await createServices(env)
+
 // The browser router over the route table.
 const router = createBrowserRouter(routes)
 
@@ -39,7 +43,7 @@ const router = createBrowserRouter(routes)
 createRoot(container).render(
   <StrictMode>
     {/* Services for the configured data source, and a fresh query cache. */}
-    <AppProviders services={createServices(env)} queryClient={createQueryClient()}>
+    <AppProviders services={services} queryClient={createQueryClient()}>
       {/* The pages. */}
       <RouterProvider router={router} />
     </AppProviders>
