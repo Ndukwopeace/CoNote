@@ -96,7 +96,12 @@ export class Harness extends StackHarness<PlatformData> {
       ),
       'profiles',
     )
-    // Start the courses from nothing, then add the contract's.
+    // Start the courses from nothing, then add the contract's. (The shared wipe runs once; the
+    // courses of the previous test must go before each load.)
+    ok(
+      await this.server.from('courses').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      'courses',
+    )
     if (data.courses.length > 0) {
       ok(
         await this.server.from('courses').insert(
