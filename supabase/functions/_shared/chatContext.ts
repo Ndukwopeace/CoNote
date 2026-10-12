@@ -86,6 +86,45 @@ function summaryText(input: MaterialInput, summary: PublishedSummary): string {
   return lines.join('\n')
 }
 
+/** The heading of the approved summaries, and of the student's own notes. */
+const SUMMARY_HEADER = 'APPROVED SUMMARIES (written and approved by the teachers):'
+const NOTE_HEADER = "THE STUDENT'S OWN NOTES (written by the student; they may contain mistakes):"
+
+/** What one part costs in the block: its length and the blank line after it. */
+function cost(part: string): number {
+  return part.length + 2
+}
+
+/** Takes `candidates` in order while they fit in `room`; stops at the first that does not. */
+function takeThatFit(candidates: string[], room: number): { taken: string[]; room: number } {
+  const taken: string[] = []
+  let left = room
+  for (const part of candidates) {
+    if (cost(part) > left) break
+    taken.push(part)
+    left -= cost(part)
+  }
+  return { taken, room: left }
+}
+
+/** Where a note belongs, from its class when that is known: "MTH 202 class 4: Basis". */
+function notePlace(input: MaterialInput, note: OwnNote): string {
+  const cls = input.classes.find((candidate) => candidate.id === note.classId)
+  if (!cls) return 'a class'
+  const course = input.courses.find((candidate) => candidate.id === cls.courseId)
+  const prefix = course ? `${course.code} ` : ''
+  return `${prefix}class ${String(cls.number)}: ${cls.title}`
+}
+
+/** One note as plain text with its place and title, or nothing when it has no text. */
+function noteText(input: MaterialInput, note: OwnNote): string | undefined {
+  const text = htmlToText(note.contentHtml).slice(0, NOTE_LIMIT)
+  if (text === '') return undefined
+  const title = (note.title ?? '').trim().slice(0, 100)
+  const titleSuffix = title === '' ? '' : ` ${title}`
+  return `[${notePlace(input, note)}]${titleSuffix}\n${text}`
+}
+
 /**
  * The material as one block of text, and whether there is none at all. Approved summaries come
  * first and are kept before the student's notes when the budget runs out.
@@ -94,49 +133,24 @@ export function materialBlock(
   input: MaterialInput,
   budget = MATERIAL_BUDGET,
 ): { text: string; empty: boolean } {
-  const parts: string[] = []
-  let room = budget
-  // Approved summaries.
-  const summaryHeader = 'APPROVED SUMMARIES (written and approved by the teachers):'
-  const summaryParts: string[] = []
-  // The header's own cost is reserved before any summary is added.
-  room -= summaryHeader.length + 2
-  for (const summary of input.summaries) {
-    const part = summaryText(input, summary)
-    if (part.length + 2 > room) break
-    summaryParts.push(part)
-    room -= part.length + 2
-  }
-  if (summaryParts.length > 0) {
-    parts.push(summaryHeader, ...summaryParts)
-  } else {
-    // No summary: the header's reserved room goes back to the notes.
-    room += summaryHeader.length + 2
-  }
-
-  // The student's own notes, as plain text.
-  const noteHeader = "THE STUDENT'S OWN NOTES (written by the student; they may contain mistakes):"
-  const noteParts: string[] = []
-  room -= noteHeader.length + 2
-  for (const note of input.notes) {
-    const text = htmlToText(note.contentHtml).slice(0, NOTE_LIMIT)
-    if (text === '') continue
-    const title = (note.title ?? '').trim().slice(0, 100)
-    // Where the note belongs, from its class when that is known.
-    const cls = input.classes.find((candidate) => candidate.id === note.classId)
-    const course = cls
-      ? input.courses.find((candidate) => candidate.id === cls.courseId)
-      : undefined
-    const place = cls
-      ? `${course ? `${course.code} ` : ''}class ${String(cls.number)}: ${cls.title}`
-      : 'a class'
-    const part = `[${place}]${title === '' ? '' : ` ${title}`}\n${text}`
-    if (part.length + 2 > room) break
-    noteParts.push(part)
-    room -= part.length + 2
-  }
-  if (noteParts.length > 0) parts.push(noteHeader, ...noteParts)
-  return { text: parts.join('\n\n'), empty: summaryParts.length === 0 && noteParts.length === 0 }
+  // The approved summaries first, with the heading's own cost reserved.
+  const summaries = takeThatFit(
+    input.summaries.map((summary) => summaryText(input, summary)),
+    budget - cost(SUMMARY_HEADER),
+  )
+  // With no summary the heading is not shown, so its reserved room goes back to the notes.
+  const roomForNotes = summaries.taken.length > 0 ? summaries.room : budget
+  // The student's own notes, as plain text, those without text left out.
+  const noteTexts = input.notes.map((note) => noteText(input, note))
+  const notes = takeThatFit(
+    noteTexts.filter((text): text is string => text !== undefined),
+    roomForNotes - cost(NOTE_HEADER),
+  )
+  const parts = [
+    ...(summaries.taken.length > 0 ? [SUMMARY_HEADER, ...summaries.taken] : []),
+    ...(notes.taken.length > 0 ? [NOTE_HEADER, ...notes.taken] : []),
+  ]
+  return { text: parts.join('\n\n'), empty: parts.length === 0 }
 }
 
 /** The instructions, the material and the recent conversation, as the messages the model receives. */
