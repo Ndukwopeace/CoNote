@@ -258,6 +258,26 @@ describe('failures', () => {
     expect(body).toMatchObject({ succeeded: 0, failed: 1 })
   })
 
+  // Proves an error the model explains is recorded with its status and its own words, so an
+  // administrator can see why (a retired model, a bad request) without reading the function's logs.
+  it("records the model's status and explanation for an error it describes", async () => {
+    const { args } = await recorded({
+      fetchImpl: () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: { code: 'model_decommissioned', message: 'The model has been retired.' },
+            }),
+            { status: 400 },
+          ),
+        ),
+    })
+    expect(args).toMatchObject({ p_code: 'model_error' })
+    expect(String(args.p_message)).toContain('400')
+    expect(String(args.p_message)).toContain('model_decommissioned')
+    expect(String(args.p_message)).toContain('The model has been retired.')
+  })
+
   // Proves a job the database will try again is counted as retried, not failed.
   it('counts a job that goes back in the queue as retried', async () => {
     const { body } = await recorded({
