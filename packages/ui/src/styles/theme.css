@@ -104,3 +104,19 @@
     }
   }
 }
+
+/*
+ * Form fields on touch screens. iOS Safari zooms the whole page when a field whose text is
+ * smaller than 16px gets focus, and it does not zoom back out. The fix is not to forbid zooming
+ * (that would stop people who need to enlarge the page), but to keep field text at 16px where a
+ * finger is the pointer. This rule is outside every layer on purpose: unlayered styles beat
+ * Tailwind's utilities such as `text-sm`, so it holds for every field, including ones added later.
+ * Check boxes and radio buttons have no text, so they are left out. Desktop keeps its smaller text.
+ */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
