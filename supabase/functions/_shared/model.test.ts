@@ -96,9 +96,30 @@ describe('askModel', () => {
       maxTokens: 10,
     }).catch((error: unknown) => error)
     expect(failure).toBeInstanceOf(PipelineError)
-    expect(failure).toMatchObject({ code: 'model_error' })
+    expect(failure).toMatchObject({ code: 'model_rejected' })
     expect((failure as Error).message).toContain('404')
     expect((failure as Error).message).toContain('model_not_found: No such model.')
+  })
+
+  // Proves an answer that says the request itself is wrong (a bad setting, a model that does not
+  // exist) is told apart from a failure on the model's side: the first cannot be fixed by waiting,
+  // so it has its own code and is never retried; the second can, so it keeps the general one.
+  it.each([
+    [400, 'model_rejected'],
+    [404, 'model_rejected'],
+    [413, 'model_rejected'],
+    [422, 'model_rejected'],
+    [500, 'model_error'],
+    [502, 'model_error'],
+    [503, 'model_error'],
+  ])('tells a %i answer apart as %s', async (status, code) => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response('{}', { status })))
+    await expect(
+      askModel({ ...SETTINGS, fetch: fetchMock }, [], {
+        json: false,
+        maxTokens: 10,
+      }),
+    ).rejects.toMatchObject({ code })
   })
 
   // Proves a dropped connection and an answer with no text are told apart from a refusal.

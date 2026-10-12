@@ -75,8 +75,12 @@ export async function askModel(
     const said = [detail?.code, detail?.message]
       .filter((part) => typeof part === 'string')
       .join(': ')
+    // A 400, 404, 413 or 422 says the request itself is wrong (a bad setting, a model that does
+    // not exist, an input too large). Asking again would be refused the same way, so it has its
+    // own code and the job is not retried. Anything else (a fault on the model's side) may pass.
+    const permanent = [400, 404, 413, 422].includes(response.status)
     throw new PipelineError(
-      'model_error',
+      permanent ? 'model_rejected' : 'model_error',
       `The language model returned an error (${String(response.status)})${said ? `: ${said}` : '.'}`,
     )
   }
