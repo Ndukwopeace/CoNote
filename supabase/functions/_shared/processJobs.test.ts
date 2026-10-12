@@ -272,7 +272,8 @@ describe('failures', () => {
           ),
         ),
     })
-    expect(args).toMatchObject({ p_code: 'model_error' })
+    // A 400 means the request itself is wrong, which waiting cannot fix: its own code.
+    expect(args).toMatchObject({ p_code: 'model_rejected' })
     expect(String(args.p_message)).toContain('400')
     expect(String(args.p_message)).toContain('model_decommissioned')
     expect(String(args.p_message)).toContain('The model has been retired.')

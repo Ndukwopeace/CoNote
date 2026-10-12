@@ -132,7 +132,7 @@ export function notesBlock(notes: NoteInput[], budget = NOTES_BUDGET) {
 
 /** One message in the model's chat format. */
 export interface ChatMessage {
-  role: 'system' | 'user'
+  role: 'system' | 'user' | 'assistant'
   content: string
 }
 

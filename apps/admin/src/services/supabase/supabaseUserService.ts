@@ -38,7 +38,7 @@ import type {
 import type { UserService } from '../types'
 
 // Calling the Edge Functions.
-import { invokeThrough, unwrap, type InvokeFunction } from './functionCall'
+import { invokeThrough, unwrap, type InvokeFunction } from '@conote/supabase/functionCall'
 // Errors from the database, with the code the rules below rely on.
 import { databaseCode } from '@conote/supabase/databaseErrors'
 // Search text, times and names.

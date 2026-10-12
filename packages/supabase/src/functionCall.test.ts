@@ -75,6 +75,17 @@ describe('unwrap', () => {
     },
   )
 
+  // Proves a daily-limit refusal becomes a validation error carrying the function's own words,
+  // which a screen shows as it is (there is no separate "rate limited" kind to handle).
+  it('turns a rate_limited refusal into a validation error with its message', () => {
+    expect(() =>
+      unwrap({
+        status: 429,
+        body: { error: { kind: 'rate_limited', message: 'Daily limit reached.' } },
+      }),
+    ).toThrow(expect.objectContaining({ kind: 'validation', message: 'Daily limit reached.' }))
+  })
+
   // SECURITY: proves an answer of the wrong shape never becomes a message on a screen.
   it('turns an unexpected answer into a generic unknown error', () => {
     expect(() =>

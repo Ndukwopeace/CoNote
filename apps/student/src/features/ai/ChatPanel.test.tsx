@@ -89,7 +89,7 @@ describe('ChatPanel', () => {
   // Proves the typing indicator while waiting (FR-AI-5).
   it('shows a typing indicator while waiting', async () => {
     // Arrange: an AI that never answers.
-    const { user } = renderChat({ askAi: () => new Promise(() => undefined) })
+    const { user } = renderChat({ isPreview: true, askAi: () => new Promise(() => undefined) })
 
     // Act.
     await user.type(input(), 'Hello{Enter}')
@@ -104,6 +104,7 @@ describe('ChatPanel', () => {
     // Arrange: fails once, then answers.
     let calls = 0
     const { user } = renderChat({
+      isPreview: true,
       askAi: () => {
         calls += 1
         return calls === 1
@@ -129,6 +130,7 @@ describe('ChatPanel', () => {
   it('shows replies as plain text', async () => {
     // Arrange.
     const { user, container } = renderChat({
+      isPreview: true,
       askAi: () => Promise.resolve('<img src=x onerror="alert(1)">'),
     })
 

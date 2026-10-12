@@ -21,6 +21,8 @@ import { formatUnreadCount } from '@/lib/unreadBadge'
 // The "Preview" label.
 import { PreviewBadge } from '@/components/common/PreviewBadge'
 // The shared list of destinations.
+// Whether the AI is a demo, so Ask AI carries the Preview label (FR-AI-9).
+import { useServices } from '@/services/useServices'
 import { NAV_ITEMS } from './navItems'
 // A link that works inside TooltipTrigger (see SidebarLink for why).
 import { SidebarLink } from '@conote/ui/common/SidebarLink'
@@ -36,6 +38,8 @@ export function Sidebar({
 }: Readonly<{ fullName: string; unreadCount?: number }>) {
   // The badge text ("3", "9+"), or null when nothing is unread.
   const badge = formatUnreadCount(unreadCount)
+  // A destination marked as a preview shows the label only while its service is the demo one.
+  const { ai } = useServices()
 
   return (
     // Fixed to the left edge. Hidden on phones; 64 px wide from 768 px; 240 px from 1024 px.
@@ -81,7 +85,7 @@ export function Sidebar({
                     {/* Preview destinations. Desktop: a pill after the label. Rail: no room for
                         the word, so a small amber dot, with the word kept for screen readers so
                         the link's name is the same at both widths. */}
-                    {preview && (
+                    {preview && ai.isPreview && (
                       <>
                         <PreviewBadge className="hidden lg:ml-auto lg:inline-flex" />
                         <span
@@ -104,7 +108,7 @@ export function Sidebar({
                 </TooltipTrigger>
                 {/* Tooltip text to the right; not needed on desktop, where labels show. */}
                 <TooltipContent side="right" className="lg:hidden">
-                  {preview ? `${label} (Preview)` : label}
+                  {preview && ai.isPreview ? `${label} (Preview)` : label}
                 </TooltipContent>
               </Tooltip>
             </li>

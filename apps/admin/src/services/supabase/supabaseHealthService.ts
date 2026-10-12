@@ -18,7 +18,7 @@ import { HEALTH_COMPONENTS } from '@/types/dashboard'
 import type { HealthService } from '../types'
 
 // Calling the Edge Functions.
-import { invokeThrough, unwrap, type InvokeFunction } from './functionCall'
+import { invokeThrough, unwrap, type InvokeFunction } from '@conote/supabase/functionCall'
 
 // SECURITY: the report is checked on arrival: only known parts and known states get through.
 const reportSchema = z.object({

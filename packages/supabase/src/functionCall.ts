@@ -27,7 +27,15 @@ export type InvokeFunction = (
 // kind; anything else is an unknown failure with a generic message.
 const refusalSchema = z.object({
   error: z.object({
-    kind: z.enum(['unauthorized', 'forbidden', 'validation', 'not_found', 'conflict', 'unknown']),
+    kind: z.enum([
+      'unauthorized',
+      'forbidden',
+      'validation',
+      'not_found',
+      'conflict',
+      'rate_limited',
+      'unknown',
+    ]),
     message: z.string(),
   }),
 })
@@ -55,6 +63,11 @@ export function invokeThrough(client: SupabaseClient): InvokeFunction {
 export function unwrap(result: FunctionResult): unknown {
   if (result.status >= 200 && result.status < 300) return result.body
   const refusal = refusalSchema.safeParse(result.body)
-  if (refusal.success) throw new AppError(refusal.data.error.kind, refusal.data.error.message)
+  if (refusal.success) {
+    const { kind, message } = refusal.data.error
+    // A daily limit is explained in the function's own words, which a screen shows as written,
+    // exactly like a rejected input: so it is a validation error.
+    throw new AppError(kind === 'rate_limited' ? 'validation' : kind, message)
+  }
   throw toAppError(new Error(`Function failed with status ${String(result.status)}`))
 }

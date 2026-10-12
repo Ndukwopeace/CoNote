@@ -165,6 +165,11 @@ export interface NotificationService {
  * backend can answer from context and stream without the UI changing shape (FR-AI-7).
  */
 export interface AiService {
+  /**
+   * True while the replies are prepared examples (the demo), so the screens label Ask AI a
+   * "Preview" (FR-AI-9). A service backed by a real model sets it to false.
+   */
+  isPreview: boolean
   /** The assistant's reply to the last user message in `messages`. */
   askAi(context: AiContext, messages: AiMessage[]): Promise<string>
 }

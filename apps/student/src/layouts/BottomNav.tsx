@@ -10,11 +10,15 @@ import { cn } from '@conote/ui/utils'
 
 // The "Preview" label.
 import { PreviewBadge } from '@/components/common/PreviewBadge'
+// Whether the AI is a demo, so Ask AI carries the Preview label (FR-AI-9).
+import { useServices } from '@/services/useServices'
 // The shared list of destinations.
 import { NAV_ITEMS } from './navItems'
 
 /** Phone navigation (< 768 px): four destinations within thumb reach (decision D35). */
 export function BottomNav() {
+  // A destination marked as a preview shows the label only while its service is the demo one.
+  const { ai } = useServices()
   return (
     // A distinct name, so screen readers can tell it apart from the sidebar's navigation.
     // Fixed to the bottom. The safe-area padding keeps it clear of the iPhone home indicator at
@@ -57,7 +61,9 @@ export function BottomNav() {
                       The label is bolder on the current tab, the second non-colour cue. */}
                   <span className="flex items-center gap-1">
                     <span className={cn('font-medium', isActive && 'font-semibold')}>{label}</span>
-                    {preview && <PreviewBadge className="px-1 text-[9px] leading-3.5" />}
+                    {preview && ai.isPreview && (
+                      <PreviewBadge className="px-1 text-[9px] leading-3.5" />
+                    )}
                   </span>
                 </>
               )}

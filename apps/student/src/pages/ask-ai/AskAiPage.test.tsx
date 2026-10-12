@@ -42,6 +42,20 @@ describe('AskAiPage', () => {
     ).toBeInTheDocument()
   })
 
+  // Proves the page drops the Preview label, and its note, once a real AI answers (FR-AI-9).
+  it('does not label the page a preview when the AI is real', async () => {
+    renderWithRouter({
+      routes,
+      path: '/ask-ai',
+      session: makeSession(),
+      services: { ai: { isPreview: false, askAi: () => Promise.resolve('An answer.') } },
+    })
+
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Ask CoNote AI' })
+    expect(heading.parentElement).not.toHaveTextContent('Preview')
+    expect(screen.queryByText(/Preview: replies are examples/)).toBeNull()
+  })
+
   // Proves the default context and its prompts.
   it('starts on all courses', async () => {
     // Act.

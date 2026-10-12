@@ -17,7 +17,7 @@ import {
 } from '@conote/testing/fakeTables'
 
 // The service under test.
-import type { FunctionResult } from './functionCall'
+import type { FunctionResult } from '@conote/supabase/functionCall'
 import { createSupabaseUserService } from './supabaseUserService'
 
 // IDs the tests use.
