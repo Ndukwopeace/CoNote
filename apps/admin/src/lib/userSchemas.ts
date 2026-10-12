@@ -25,20 +25,13 @@ const optionalText = z.preprocess(
     .transform((value) => (value === '' ? null : value)),
 )
 
-/** Inviting someone: their role, name, email and (for students and teachers) department. */
-export const inviteUserSchema = z
-  .object({
-    role: z.enum(ROLES),
-    fullName,
-    // Trimmed and in lower case, so the same address can't be invited twice in different cases.
-    email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
-    department: z.string().trim().optional(),
-  })
-  // Students and teachers belong to a department; administrators don't.
-  .refine((values) => values.role === 'admin' || Boolean(values.department), {
-    message: 'Choose a department.',
-    path: ['department'],
-  })
+/** Inviting someone: their role, name and email. No one is asked for a department. */
+export const inviteUserSchema = z.object({
+  role: z.enum(ROLES),
+  fullName,
+  // Trimmed and in lower case, so the same address can't be invited twice in different cases.
+  email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
+})
 
 /** The invite form's values. */
 export type InviteUserValues = z.input<typeof inviteUserSchema>

@@ -20,7 +20,6 @@ describe('inviteUserSchema', () => {
     role: 'student',
     fullName: 'Ada Obi',
     email: 'ada@conote.example',
-    department: 'Computer Science',
   }
 
   // Proves a valid invitation passes, with the email trimmed and in lower case.
@@ -34,16 +33,13 @@ describe('inviteUserSchema', () => {
   it.each([
     [{ fullName: '  ' }, 'Enter a name.'],
     [{ email: 'not-an-email' }, 'Enter a valid email address.'],
-    [{ department: '' }, 'Choose a department.'],
   ])('refuses %j', (change, message) => {
     expect(firstError(inviteUserSchema, { ...valid, ...change })).toBe(message)
   })
 
-  // Proves administrators need no department.
-  it('lets administrators be invited without a department', () => {
-    expect(
-      firstError(inviteUserSchema, { ...valid, role: 'admin', department: '' }),
-    ).toBeUndefined()
+  // Proves nobody is asked for a department: every role is invited without one.
+  it.each(['student', 'teacher', 'admin'])('invites a %s without a department', (role) => {
+    expect(firstError(inviteUserSchema, { ...valid, role })).toBeUndefined()
   })
 })
 

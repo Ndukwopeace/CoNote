@@ -283,7 +283,7 @@ export function createMockUserService({
         email: values.email,
         studentNumber: null,
         staffNumber: null,
-        department: values.role === 'admin' ? null : (values.department ?? null),
+        department: null,
         level: null,
         phone: null,
         createdAt: now().toISOString(),

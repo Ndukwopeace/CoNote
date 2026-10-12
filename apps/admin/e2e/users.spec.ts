@@ -50,7 +50,6 @@ test('an invitation is listed as invited and kept after a reload', async ({ page
   await dialog.getByLabel('Role').selectOption('teacher')
   await dialog.getByLabel('Full name').fill('Ngozi Eze')
   await dialog.getByLabel('Email').fill('ngozi.eze@conote.example')
-  await dialog.getByLabel('Department').selectOption('English')
   await expectNoAxeViolations(page)
   await dialog.getByRole('button', { name: 'Send invitation' }).click()
   await expect(page.getByText('Invitation sent to ngozi.eze@conote.example.')).toBeVisible()

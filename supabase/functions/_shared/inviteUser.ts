@@ -13,19 +13,12 @@ import { resetAddress } from './env.ts'
 import { json, refuse } from './http.ts'
 
 /** The body: the same rules as the console's invite form. */
-const bodySchema = z
-  .object({
-    role: z.enum(['student', 'teacher', 'admin']),
-    fullName: z.string().trim().min(1, 'Enter a name.').max(100, 'Use at most 100 characters.'),
-    // Trimmed and in lower case, so the same address can't be invited twice in different cases.
-    email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
-    department: z.string().trim().max(100, 'Use at most 100 characters.').optional(),
-  })
-  // Students and teachers belong to a department; administrators don't.
-  .refine((values) => values.role === 'admin' || Boolean(values.department), {
-    message: 'Choose a department.',
-    path: ['department'],
-  })
+const bodySchema = z.object({
+  role: z.enum(['student', 'teacher', 'admin']),
+  fullName: z.string().trim().min(1, 'Enter a name.').max(100, 'Use at most 100 characters.'),
+  // Trimmed and in lower case, so the same address can't be invited twice in different cases.
+  email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
+})
 
 /** Builds the handler. */
 export function inviteUserHandler(deps: FunctionDeps) {
@@ -59,7 +52,6 @@ export function inviteUserHandler(deps: FunctionDeps) {
       .update({
         role: body.role,
         status: 'pending',
-        department: body.role === 'admin' ? null : (body.department ?? null),
         created_at: at,
       })
       .eq('id', userId)
