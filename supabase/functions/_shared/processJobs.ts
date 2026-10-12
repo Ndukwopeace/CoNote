@@ -130,7 +130,17 @@ async function askModel(deps: PipelineDeps, messages: ChatMessage[]): Promise<st
     throw new PipelineError('model_key', 'The language model refused the key.')
   }
   if (!response.ok) {
-    throw new PipelineError('model_error', 'The language model returned an error.')
+    // The model's own explanation, when it sent one in its usual shape. It describes the request
+    // (a retired model, a bad setting), never a note, so it is safe to keep on the job's record.
+    const failure: unknown = await response.json().catch(() => undefined)
+    const detail = (failure as { error?: { code?: unknown; message?: unknown } } | undefined)?.error
+    const said = [detail?.code, detail?.message]
+      .filter((part) => typeof part === 'string')
+      .join(': ')
+    throw new PipelineError(
+      'model_error',
+      `The language model returned an error (${String(response.status)})${said ? `: ${said}` : '.'}`,
+    )
   }
   // The text of the first choice.
   const body: unknown = await response.json().catch(() => undefined)
