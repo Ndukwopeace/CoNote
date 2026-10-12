@@ -108,6 +108,25 @@ describe('buildMessages', () => {
     expect(system?.content).toContain('keyConcepts')
     expect(user?.content).toBe('Course: Linear Algebra\nClass: Week 4\n\nNotes:\n\nNote 1:\nbasis')
   })
+
+  // Proves the model is told to check the notes: a wrong statement is never repeated as true, it
+  // goes to the confusion areas with the correct version, and a doubt is not turned into an error.
+  it('tells the model to check the notes and flag mistakes as confusion areas', () => {
+    const system = buildMessages('Linear Algebra', 'Week 4', 'Note 1:\nbasis')[0]?.content ?? ''
+    expect(system).toContain('Check every claim')
+    expect(system).toContain('never repeat it as true')
+    expect(system).toContain('confusionAreas')
+    expect(system).toContain('the correct statement')
+    expect(system).toContain('only when you are confident')
+  })
+
+  // Proves a thin set of notes is not stretched: no padding, no repeats.
+  it('asks for only as many concepts as the notes support', () => {
+    const system = buildMessages('Linear Algebra', 'Week 4', 'Note 1:\nbasis')[0]?.content ?? ''
+    expect(system).toContain('up to 8')
+    expect(system).toContain('Never repeat the same point')
+    expect(system).not.toContain('3 to 8')
+  })
 })
 
 describe('parseDraft', () => {
