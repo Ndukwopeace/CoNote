@@ -34,6 +34,17 @@ export function basedOnText(notes: number, students: number): string {
   return `Based on ${plural(notes, 'note', 'notes')} from ${plural(students, 'student', 'students')}`
 }
 
+/** "1 point flagged", "3 points flagged": what the queue row says about the AI's flags. */
+export function flaggedText(count: number): string {
+  return `${plural(count, 'point', 'points')} flagged`
+}
+
+/** The notice above a draft whose confusion areas the AI filled with claims it found wrong. */
+export function flaggedNotice(count: number): string {
+  // "it" for one point, "them" for several, so the sentence reads as written by a person.
+  return `The AI flagged ${plural(count, 'point', 'points')} in the students’ notes as possibly wrong. Check ${count === 1 ? 'it' : 'them'} under Common areas of confusion.`
+}
+
 /** "1 class", "7 classes". */
 export function classesText(count: number): string {
   return plural(count, 'class', 'classes')

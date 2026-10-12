@@ -64,6 +64,9 @@ describe('ReviewQueuePage', () => {
     expect(rows[0]).toHaveTextContent('MTH 202 · Class 4: Basis and dimension')
     expect(rows[0]).toHaveTextContent('Waiting 4 days')
     expect(rows[0]).toHaveTextContent('18 notes')
+    // The AI flagged one point as possibly wrong in the first; the second has none, so no flag.
+    expect(rows[0]).toHaveTextContent('1 point flagged')
+    expect(rows[1]).not.toHaveTextContent('flagged')
     expect(rows[1]).toHaveTextContent('Class 5: Linear maps')
     expect(rows[1]).toHaveTextContent('Waiting less than a day')
     expect(within(rows[0]!).getByRole('link', { name: 'Review MTH 202 class 4' })).toHaveAttribute(

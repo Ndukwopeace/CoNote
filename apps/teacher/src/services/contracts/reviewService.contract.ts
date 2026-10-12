@@ -99,6 +99,15 @@ export function describeReviewServiceContract(name: string, create: ReviewServic
               status: 'in_review',
               inReviewSince: '2026-10-10T09:00:00.000Z',
               notesAnalyzedCount: 7,
+              draft: {
+                overview: 'AI draft.',
+                keyConcepts: [],
+                confusionAreas: [
+                  { id: 'f1', issue: 'Rows equal columns', clarification: 'Columns equal rows.' },
+                  { id: 'f2', issue: 'A is B', clarification: 'A is not B.' },
+                ],
+                keyTopics: [],
+              },
             }),
             summaryRecord({
               id: 'sb',
@@ -135,7 +144,10 @@ export function describeReviewServiceContract(name: string, create: ReviewServic
           classNumber: 1,
           inReviewSince: '2026-10-10T09:00:00.000Z',
           notesAnalyzedCount: 7,
+          // Two points the AI flagged as wrong in the students' notes; the other has none.
+          flaggedCount: 2,
         })
+        expect(queue[0]).toMatchObject({ flaggedCount: 0 })
       })
 
       // Proves an empty queue is an empty list, and a signed-out caller is refused.

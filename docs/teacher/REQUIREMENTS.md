@@ -87,11 +87,12 @@ A header (code, title, status) and the course's classes, newest first. Each row 
 
 ## 8. Review queue (T2)
 
-Summaries in `in_review` for the teacher's courses, **longest wait first** (`in_review_since`, oldest at the top). Each row: course code, class title, how long it has waited, notes behind it. Empty: "Nothing is waiting for your review."
+Summaries in `in_review` for the teacher's courses, **longest wait first** (`in_review_since`, oldest at the top). Each row: course code, class title, how long it has waited, notes behind it, and "{n} points flagged" when the AI put claims in the draft's confusion areas (D93). Empty: "Nothing is waiting for your review."
 
 ## 9. Review summary (T2)
 
 - **Header:** back link, course code and title, class title, stage badge, "Based on {n} notes from {m} students" (D74).
+- **Flag notice (D93):** a draft in review whose confusion areas are not empty shows "The AI flagged {n} points in the students’ notes as possibly wrong. Check them under Common areas of confusion." under the header. A published summary and a draft with nothing flagged show none.
 - **The draft** has the student summary's four parts (student REQUIREMENTS FR-SUM-2): an overview, key concepts (title and explanation), common areas of confusion (point and clarification), and key topics (name and optional description). Every text field is editable. Parts can be added and removed (at most 30 of each). A blank required field blocks saving and names the field ("Enter the overview."). The overview and each part's title, explanation, point, clarification and name are required; a topic's description is the only optional field, and the lists themselves may be empty. Text is trimmed on save, and limited to 4000 characters for the overview, 200 for titles and names, and 2000 for explanations and descriptions.
 - **Save draft:** keeps the edits, status stays `in_review`, and says "Draft saved." Leaving the page by a link with unsaved edits asks first ("Leave without saving?", with Keep editing); closing the tab uses the browser's own prompt. Signing out is never held up.
 - **Approve & Publish:** asks first ("Publish this summary? Students in {course} will see it."), then publishes the **saved** draft, sets `reviewed_by` and `published_at`, and moves the status to `published`. Unsaved edits are saved first as part of the same action.

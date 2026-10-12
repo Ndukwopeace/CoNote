@@ -139,6 +139,8 @@ export function createMockReviewService({
           classTitle: found.cls.title,
           inReviewSince: summary.inReviewSince,
           notesAnalyzedCount: summary.notesAnalyzedCount,
+          // The draft's confusion areas are the points the AI flagged.
+          flaggedCount: summary.draft.confusionAreas.length,
         })
       }
       // The longest wait first.

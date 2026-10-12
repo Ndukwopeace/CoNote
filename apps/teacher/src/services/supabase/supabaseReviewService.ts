@@ -198,6 +198,8 @@ export function createSupabaseReviewService({ client }: SupabaseReviewOptions): 
                 classTitle: row.class_title,
                 inReviewSince: iso(row.in_review_since),
                 notesAnalyzedCount: row.notes_analyzed_count,
+                // The draft's confusion areas are the points the AI flagged.
+                flaggedCount: row.confusion_areas.length,
               },
             ],
       )
