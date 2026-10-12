@@ -122,6 +122,25 @@ describe('PortalLayout', () => {
     }
   })
 
+  // Proves the label comes off when a real AI replaces the canned replies (FR-AI-9): Ask AI is
+  // still in both navigations, with no Preview beside it.
+  it('does not mark Ask AI as a preview when the AI is real', async () => {
+    // Arrange: a signed-in student whose AI service is not a demo.
+    renderWithRouter({
+      routes,
+      path: '/dashboard',
+      session: makeSession({ fullName: 'Victory Okafor' }),
+      services: { ai: { isPreview: false, askAi: () => Promise.resolve('An answer.') } },
+    })
+
+    // Assert: both navigations keep the link and lose the label.
+    for (const name of ['Main navigation', 'Quick navigation']) {
+      const nav = await screen.findByRole('navigation', { name })
+      expect(within(nav).getByRole('link', { name: 'Ask AI' })).toBeInTheDocument()
+      expect(within(nav).queryByText('Preview')).toBeNull()
+    }
+  })
+
   // Proves the current tab is shown by more than colour (WCAG 1.4.1): a pill behind its icon
   // and a bolder label, as well as aria-current for screen readers.
   it('marks the current tab with a pill and a bold label, not colour alone', async () => {

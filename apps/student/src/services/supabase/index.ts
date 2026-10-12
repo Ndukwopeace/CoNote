@@ -14,6 +14,7 @@ import { storageKey } from '@/lib/storage'
 import type { Services } from '../types'
 
 // The services built so far.
+import { createSupabaseAiService } from './supabaseAiService'
 import { createSupabaseAuthService } from './supabaseAuthService'
 import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
@@ -22,8 +23,6 @@ import { createSupabaseNoteService } from './supabaseNoteService'
 import { createSupabaseNotificationService } from './supabaseNotificationService'
 import { createSupabaseProfileService } from './supabaseProfileService'
 import { createSupabaseSummaryService } from './supabaseSummaryService'
-// Stands in for the rest.
-import { notBuilt } from '@conote/supabase/notBuilt'
 
 /** The checked settings the Supabase services need. */
 interface SupabaseSettings {
@@ -76,7 +75,8 @@ export function createSupabaseServices({
       client,
       afterNameChange: () => auth.refreshUser(),
     }),
-    // Not connected yet.
-    ai: notBuilt('Ask AI'),
+    // Ask AI: the ask-ai Edge Function, which answers from the student's own notes and the
+    // approved summaries of their courses.
+    ai: createSupabaseAiService({ client }),
   }
 }

@@ -32,6 +32,8 @@ export function createMockAiService({
     (() => AI_DELAY_MS.min + Math.floor(random() * (AI_DELAY_MS.max - AI_DELAY_MS.min + 1)))
 
   return {
+    // The replies are prepared examples, so the screens label Ask AI a preview (FR-AI-9).
+    isPreview: true,
     askAi: async (_context, messages) => {
       // The question is the last message, and it must be the student's.
       const last = messages.at(-1)

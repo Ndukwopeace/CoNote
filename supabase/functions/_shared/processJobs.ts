@@ -17,21 +17,16 @@ import { z } from 'zod'
 import type { Clients } from './clients.ts'
 import type { PipelineEnv } from './env.ts'
 import { json, refuse } from './http.ts'
+// The call to the language model, shared with Ask AI.
+import { askModel } from './model.ts'
 // The pure parts: notes to text, the instructions, and the answer's checks.
 import {
   PipelineError,
   buildMessages,
   notesBlock,
   parseDraft,
-  type ChatMessage,
   type NoteInput,
 } from './summaryDraft.ts'
-
-/** The model's address. It speaks the same protocol as OpenAI's chat endpoint. */
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-
-/** How long to wait for the model before the attempt counts as failed. */
-const MODEL_TIMEOUT_MS = 45_000
 
 /** The most jobs one run takes on, so a run ends well inside the platform's time limit. */
 const MAX_JOBS_PER_RUN = 3
@@ -98,60 +93,6 @@ function sameSecret(a: string, b: string): boolean {
   return difference === 0
 }
 
-/** Asks the model for the draft's JSON text. Throws a `PipelineError` the job records. */
-async function askModel(deps: PipelineDeps, messages: ChatMessage[]): Promise<string> {
-  let response: Response
-  try {
-    response = await deps.fetch(GROQ_URL, {
-      method: 'POST',
-      headers: {
-        // SECURITY: the key goes only to the model's own address.
-        Authorization: `Bearer ${deps.env.groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: deps.env.groqModel,
-        messages,
-        temperature: 0.2,
-        max_tokens: 2500,
-        response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-    })
-  } catch {
-    // A network failure or the timeout: nothing was received.
-    throw new PipelineError('model_unreachable', 'The language model could not be reached.')
-  }
-  // Each refusal gets its own code, so an administrator can tell a bad key from a busy model.
-  if (response.status === 429) {
-    throw new PipelineError('model_busy', 'The language model is busy. It will be tried again.')
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new PipelineError('model_key', 'The language model refused the key.')
-  }
-  if (!response.ok) {
-    // The model's own explanation, when it sent one in its usual shape. It describes the request
-    // (a retired model, a bad setting), never a note, so it is safe to keep on the job's record.
-    const failure: unknown = await response.json().catch(() => undefined)
-    const detail = (failure as { error?: { code?: unknown; message?: unknown } } | undefined)?.error
-    const said = [detail?.code, detail?.message]
-      .filter((part) => typeof part === 'string')
-      .join(': ')
-    throw new PipelineError(
-      'model_error',
-      `The language model returned an error (${String(response.status)})${said ? `: ${said}` : '.'}`,
-    )
-  }
-  // The text of the first choice.
-  const body: unknown = await response.json().catch(() => undefined)
-  const choices = (body as { choices?: { message?: { content?: unknown } }[] } | undefined)?.choices
-  const content = choices?.[0]?.message?.content
-  if (typeof content !== 'string') {
-    throw new PipelineError('bad_output', 'The language model sent no text.')
-  }
-  return content
-}
-
 /** Builds the handler. */
 export function processJobsHandler(deps: PipelineDeps) {
   const { service } = deps.clients
@@ -175,9 +116,11 @@ export function processJobsHandler(deps: PipelineDeps) {
     if (notes.count === 0) {
       throw new PipelineError('no_notes', 'The class has no notes with text.')
     }
+    // The draft must be one JSON object, and long enough to hold it.
     const answer = await askModel(
-      deps,
+      { fetch: deps.fetch, apiKey: deps.env.groqApiKey, model: deps.env.groqModel },
       buildMessages(job.course_title, job.class_title, notes.text),
+      { json: true, maxTokens: 2500 },
     )
     const draft = parseDraft(answer, deps.newId)
     // The database checks the draft again, with the same rules the review form uses.

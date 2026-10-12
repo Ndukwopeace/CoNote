@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The unit under test.
-import { DEFAULT_GROQ_MODEL, readEnv, readPipelineEnv, resetAddress } from './env.ts'
+import { DEFAULT_GROQ_MODEL, readEnv, readModelEnv, readPipelineEnv, resetAddress } from './env.ts'
 
 /** A full set of settings. */
 const FULL: Record<string, string> = {
@@ -80,5 +80,23 @@ describe('readPipelineEnv', () => {
     expect(() => readPipelineEnv((name) => (name === 'GROQ_API_KEY' ? 'k' : undefined))).toThrow(
       'Missing settings: PIPELINE_TOKEN',
     )
+  })
+})
+
+describe('readModelEnv', () => {
+  // Proves a function that only asks the model needs the key, not the pipeline's run token.
+  it('reads the key and defaults the model, without a run token', () => {
+    expect(readModelEnv((name) => ({ GROQ_API_KEY: 'k' })[name])).toEqual({
+      groqApiKey: 'k',
+      groqModel: DEFAULT_GROQ_MODEL,
+    })
+  })
+
+  // Proves a model from the environment is used, and a missing key is named.
+  it('uses a model from the environment and names a missing key', () => {
+    expect(
+      readModelEnv((name) => ({ GROQ_API_KEY: 'k', GROQ_MODEL: ' openai/x ' })[name]).groqModel,
+    ).toBe('openai/x')
+    expect(() => readModelEnv(() => undefined)).toThrow('Missing settings: GROQ_API_KEY')
   })
 })

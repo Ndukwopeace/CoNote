@@ -22,6 +22,8 @@ import { ListSkeleton } from '@/components/common/Skeletons'
 import { ChatPanel } from '@/features/ai/ChatPanel'
 // Data hooks.
 import { useMyClasses } from '@/hooks/useClasses'
+// Whether the AI is a demo (FR-AI-9).
+import { useServices } from '@/services/useServices'
 import { useMyCourses } from '@/hooks/useCourses'
 // Context rules.
 import { contextFromParams, contextKey, contextSearch, parseContextKey } from '@/lib/aiContext'
@@ -33,6 +35,8 @@ export function AskAiPage() {
   // The courses and classes for the picker.
   const courses = useMyCourses()
   const classes = useMyClasses()
+  // The demo's replies are examples, so the page says so; a real AI needs no such label (FR-AI-9).
+  const { ai } = useServices()
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-4">
@@ -41,13 +45,15 @@ export function AskAiPage() {
       {/* Page heading. */}
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ask CoNote AI</h1>
-        {/* The replies are canned examples for now, so the page says so. */}
-        <PreviewBadge />
+        {/* The replies are canned examples in the demo, so the page says so. */}
+        {ai.isPreview && <PreviewBadge />}
       </div>
       {/* One line of honesty: what "Preview" means here. */}
-      <p className="-mt-2 text-sm text-muted-foreground">
-        Preview: replies are examples while the AI service is being built.
-      </p>
+      {ai.isPreview && (
+        <p className="-mt-2 text-sm text-muted-foreground">
+          Preview: replies are examples while the AI service is being built.
+        </p>
+      )}
       {/* The picker and chat once the lists load. */}
       <AskAiBody courses={courses} classes={classes} />
     </div>

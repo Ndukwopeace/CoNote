@@ -6,7 +6,13 @@
 
 /** The kinds of refusal a function gives. */
 export type ErrorKind =
-  'unauthorized' | 'forbidden' | 'validation' | 'not_found' | 'conflict' | 'unknown'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'validation'
+  | 'not_found'
+  | 'conflict'
+  | 'rate_limited'
+  | 'unknown'
 
 /** The HTTP status each kind is sent with. */
 const STATUS: Record<ErrorKind, number> = {
@@ -15,6 +21,7 @@ const STATUS: Record<ErrorKind, number> = {
   validation: 400,
   not_found: 404,
   conflict: 409,
+  rate_limited: 429,
   unknown: 502,
 }
 

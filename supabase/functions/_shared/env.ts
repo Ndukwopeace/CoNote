@@ -109,3 +109,23 @@ export function readPipelineEnv(get: (name: string) => string | undefined): Pipe
   const groqModel = (get('GROQ_MODEL') ?? '').trim()
   return { groqApiKey, groqModel: groqModel === '' ? DEFAULT_GROQ_MODEL : groqModel, pipelineToken }
 }
+
+/** What a function that only asks the model needs (Ask AI): the key and the model. */
+export interface ModelEnv {
+  // SECURITY: the language model's key, kept in this runtime and sent only to the model's address.
+  groqApiKey: string
+  // The model to ask.
+  groqModel: string
+}
+
+/**
+ * Reads the model's settings with `get`. Throws naming the missing key, so a function without it
+ * fails loudly at start-up. Unlike the pipeline, it needs no run token: no scheduler calls it.
+ */
+export function readModelEnv(get: (name: string) => string | undefined): ModelEnv {
+  const groqApiKey = get('GROQ_API_KEY') ?? ''
+  if (groqApiKey === '') throw new Error('Missing settings: GROQ_API_KEY')
+  // The model is optional; blank means the default.
+  const groqModel = (get('GROQ_MODEL') ?? '').trim()
+  return { groqApiKey, groqModel: groqModel === '' ? DEFAULT_GROQ_MODEL : groqModel }
+}

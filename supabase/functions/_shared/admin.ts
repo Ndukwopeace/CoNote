@@ -22,12 +22,15 @@ export interface FunctionDeps {
 }
 
 /** What the function body receives once the caller is checked. */
-export interface AdminContext<Body> {
-  // The administrator's account ID.
+export interface CallerContext<Body> {
+  // The caller's account ID.
   actorId: string
   // The validated body.
   body: Body
 }
+
+/** What an administrator's function receives. */
+export type AdminContext<Body> = CallerContext<Body>
 
 /** The bearer token in the request, or null. */
 function bearerToken(request: Request): string | null {
@@ -46,6 +49,19 @@ export function adminHandler<Body>(
   schema: ZodType<Body>,
   run: (context: AdminContext<Body>) => Promise<Response>,
 ): (request: Request) => Promise<Response> {
+  return roleHandler(deps, 'admin', schema, run)
+}
+
+/**
+ * The same steps for a function that belongs to one role: `role` is the only role that may call
+ * it, and only while their account is active. Anyone else gets 403 before `run` is reached.
+ */
+export function roleHandler<Body>(
+  deps: FunctionDeps,
+  role: 'admin' | 'student',
+  schema: ZodType<Body>,
+  run: (context: CallerContext<Body>) => Promise<Response>,
+): (request: Request) => Promise<Response> {
   return async (request) => {
     // A browser asks first whether it may call; answer yes.
     if (request.method === 'OPTIONS') return preflight()
@@ -57,15 +73,15 @@ export function adminHandler<Body>(
     const actorId = await deps.clients.callerId(token)
     if (actorId === null) return refuse('unauthorized', 'Sign in again to continue.')
     // 2. The caller's profile. SECURITY: the role and status come from the profiles table, which
-    // only an administrator can change, never from anything the request says, so a student or a
-    // teacher gets 403 here whatever they send.
+    // only an administrator can change, never from anything the request says, so anyone of
+    // another role gets 403 here whatever they send.
     const { data: profile, error } = await deps.clients.service
       .from('profiles')
       .select('role, status')
       .eq('id', actorId)
       .maybeSingle()
     if (error) return refuse('unknown', 'Something went wrong. Try again.')
-    if (profile?.role !== 'admin' || profile.status !== 'active') {
+    if (profile?.role !== role || profile.status !== 'active') {
       return refuse('forbidden', 'You do not have access to this.')
     }
     // 3. The body, checked before anything is done with it.

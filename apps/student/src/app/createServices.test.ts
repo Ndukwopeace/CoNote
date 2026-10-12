@@ -18,9 +18,9 @@ describe('createServices', () => {
     await expect(services.auth.getSession()).resolves.toBeNull()
   })
 
-  // Proves the Supabase data source builds, with the real auth service and clear errors for the
-  // parts not connected yet, instead of silently showing demo data.
-  it('builds the Supabase services, with unconnected ones failing clearly', async () => {
+  // Proves the Supabase data source builds with the real services, never silently showing demo
+  // data.
+  it('builds the Supabase services', async () => {
     // Act.
     const services = await createServices({
       dataSource: 'supabase',
@@ -30,10 +30,8 @@ describe('createServices', () => {
 
     // Assert: auth is the real service (no stored session, so signed out without a request)...
     await expect(services.auth.getSession()).resolves.toBeNull()
-    // ...and a service not built yet says so.
-    await expect(services.ai.askAi({ scope: 'all' }, [])).rejects.toMatchObject({
-      message: 'Ask AI is not connected to the database yet.',
-    })
+    // ...and Ask AI is the real service, not the labelled demo.
+    expect(services.ai.isPreview).toBe(false)
     // The demo-only actions are absent outside mock mode.
     expect(services.demo).toBeUndefined()
   })
