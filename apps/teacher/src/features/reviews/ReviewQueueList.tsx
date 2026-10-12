@@ -17,7 +17,7 @@ import { ErrorState } from '@conote/portal'
 // The queue.
 import { useReviewQueue } from '@/hooks/useReview'
 // Wording.
-import { notesText, waitedText } from '@/lib/format'
+import { flaggedText, notesText, waitedText } from '@/lib/format'
 // Where the review page is.
 import { routeTo } from '@/lib/routes'
 
@@ -58,6 +58,15 @@ export function ReviewQueueList() {
             </p>
             <p className="text-sm text-muted-foreground">
               {waitedText(item.inReviewSince, now)} · {notesText(item.notesAnalyzedCount)}
+              {/* Only drafts where the AI found a wrong claim carry the flag. */}
+              {item.flaggedCount > 0 && (
+                <>
+                  {' · '}
+                  <span className="font-medium text-amber-700 dark:text-amber-400">
+                    {flaggedText(item.flaggedCount)}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           {/* Opens the review; named by class so each link is distinct for screen readers. */}

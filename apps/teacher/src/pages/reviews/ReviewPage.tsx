@@ -27,7 +27,7 @@ import { PublishedDraft } from '@/features/reviews/PublishedDraft'
 // The summary.
 import { useReviewDetails } from '@/hooks/useReview'
 // Wording and rules.
-import { basedOnText } from '@/lib/format'
+import { basedOnText, flaggedNotice } from '@/lib/format'
 import { TEACHER_ROUTES, routeTo } from '@/lib/routes'
 import { isEditable, stageLabel } from '@/lib/summaryStage'
 
@@ -96,6 +96,16 @@ export function ReviewPage() {
           </p>
         )}
       </header>
+      {/* A draft in review whose confusion areas hold claims the AI found wrong says so, here
+          where the teacher reads, so a flagged mistake is not missed. */}
+      {isEditable(data.status) && data.draft.confusionAreas.length > 0 && (
+        <p
+          role="note"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+        >
+          {flaggedNotice(data.draft.confusionAreas.length)}
+        </p>
+      )}
       {/* The body for the stage. */}
       {isEditable(data.status) && <DraftEditor key={reloads} details={data} onReload={reload} />}
       {data.status === 'published' && <PublishedDraft details={data} />}

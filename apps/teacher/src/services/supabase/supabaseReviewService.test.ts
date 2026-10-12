@@ -100,11 +100,25 @@ describe('Supabase review service', () => {
           classTitle: 'Week 4',
           inReviewSince: '2026-10-07T12:00:00.000Z',
           notesAnalyzedCount: 18,
+          flaggedCount: 0,
         },
       ])
       const [query] = against(queries, 'teacher_reviews')
       expect(query && made(query, 'eq', 'status', 'in_review')).toBe(true)
       expect(query && made(query, 'order', 'in_review_since', { ascending: true })).toBe(true)
+    })
+
+    // Proves the number of points the AI flagged is the number of confusion areas in the draft.
+    it('counts the flagged points', async () => {
+      const flagged = [
+        { id: 'f1', issue: 'Rows equal columns', clarification: 'Columns equal rows.' },
+        { id: 'f2', issue: 'A is B', clarification: 'A is not B.' },
+      ]
+      const { service } = setup(() => ({
+        data: [reviewRow({ confusion_areas: flagged })],
+        error: null,
+      }))
+      await expect(service.listReviewQueue()).resolves.toMatchObject([{ flaggedCount: 2 }])
     })
 
     // Proves a row with no review time is left out rather than shown with a made-up one.

@@ -63,6 +63,30 @@ describe('ReviewPage', () => {
     )
   })
 
+  // Proves a draft with flagged points says so, where the teacher reads, and points to the section.
+  it('tells the teacher how many points the AI flagged', async () => {
+    renderReview()
+    expect(
+      await screen.findByText(
+        'The AI flagged 1 point in the students’ notes as possibly wrong. Check it under Common areas of confusion.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  // Proves a draft with nothing flagged shows no warning, and a published summary none either.
+  it('shows no flag notice when nothing is flagged or the summary is published', async () => {
+    const none = reviewPlatform()
+    none.summaries[0]!.draft.confusionAreas = []
+    const first = renderReview(none)
+    await overview()
+    expect(screen.queryByText(/The AI flagged/)).toBeNull()
+    first.unmount()
+
+    renderReview(reviewPlatform('published'))
+    await screen.findByText('Based on 18 notes from 14 students')
+    expect(screen.queryByText(/The AI flagged/)).toBeNull()
+  })
+
   // Proves saving keeps the edit, confirms it, and leaves the summary in review.
   it('saves an edit and keeps the stage', async () => {
     const { user, services } = renderReview()

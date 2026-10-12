@@ -47,6 +47,9 @@ export interface ReviewQueueItem {
   inReviewSince: string
   // How many notes it was written from.
   notesAnalyzedCount: number
+  // How many points the AI flagged as wrong in the notes (the draft's confusion areas), so the
+  // teacher can see which drafts need a closer look before opening them.
+  flaggedCount: number
 }
 
 /** A summary opened for review. */
