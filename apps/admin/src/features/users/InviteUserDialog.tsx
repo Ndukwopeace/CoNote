@@ -5,8 +5,8 @@
 
 // Connects the zod rules to the form.
 import { zodResolver } from '@hookform/resolvers/zod'
-// Form state, and following the role field.
-import { useForm, useWatch } from 'react-hook-form'
+// Form state.
+import { useForm } from 'react-hook-form'
 
 // The shared vocabulary.
 import type { Role } from '@conote/domain'
@@ -20,8 +20,8 @@ import { useToast } from '@conote/ui/toast'
 
 // The dialog around the form.
 import { FormDialog } from '@/components/common/FormDialog'
-// The invite, and the departments to choose from.
-import { useInviteUser, useUserFilterOptions } from '@/hooks/useUsers'
+// The invite.
+import { useInviteUser } from '@/hooks/useUsers'
 // Administrator-facing error wording.
 import { errorMessage } from '@/lib/errorMessages'
 // The form's rules.
@@ -36,23 +36,19 @@ interface InviteUserDialogProps {
 
 /** The form. */
 function InviteForm({ role, onDone }: Readonly<{ role: Role; onDone: () => void }>) {
-  // The invite, the department choices and the toast.
+  // The invite and the toast.
   const invite = useInviteUser()
-  const options = useUserFilterOptions()
   const toast = useToast()
   // Form state, starting with the tab's role.
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
   } = useForm<InviteUserValues>({
     resolver: zodResolver(inviteUserSchema),
     mode: 'onTouched',
-    defaultValues: { role, fullName: '', email: '', department: '' },
+    defaultValues: { role, fullName: '', email: '' },
   })
-  // Administrators have no department.
-  const needsDepartment = useWatch({ control, name: 'role' }) !== 'admin'
 
   /** Sends the invitation, confirms and closes. */
   function send(values: InviteUserValues) {
@@ -92,21 +88,6 @@ function InviteForm({ role, onDone }: Readonly<{ role: Role; onDone: () => void 
       <FormField id="invite-email" label="Email" error={errors.email?.message}>
         {(field) => <Input {...field} type="email" autoComplete="off" {...register('email')} />}
       </FormField>
-      {/* Department, for students and teachers. */}
-      {needsDepartment && (
-        <FormField id="invite-department" label="Department" error={errors.department?.message}>
-          {(field) => (
-            <NativeSelect {...field} {...register('department')}>
-              <option value="">Choose a department</option>
-              {options.data?.departments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </NativeSelect>
-          )}
-        </FormField>
-      )}
       {/* Send. */}
       <div className="flex justify-end">
         <Button type="submit" disabled={invite.isPending}>

@@ -271,7 +271,6 @@ describe('inviteUser', () => {
     role: 'teacher',
     fullName: ' Ngozi ',
     email: ' Ngozi@Conote.Example ',
-    department: 'English',
   } as const
 
   // Proves the form rules run before any call.
@@ -297,7 +296,6 @@ describe('inviteUser', () => {
       role: 'teacher',
       fullName: 'Ngozi',
       email: 'ngozi@conote.example',
-      department: 'English',
     })
     expect(invited).toMatchObject({ id: USER, status: 'pending' })
   })

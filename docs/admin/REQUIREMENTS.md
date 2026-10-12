@@ -371,7 +371,7 @@ This prompt assumes (a).
 - **Password reset links:** only active accounts can be sent one.
 - **Status history:** read from the audit log (`user.invited`, `user.status_changed`).
 - **Audit:** every change writes an audit entry: `user.invited`, `user.updated`, `user.status_changed` or `user.password_reset_sent`.
-- **Invite form:** role, name, email, and a department for students and teachers. An email already in use is refused.
+- **Invite form:** role, name and email (D91: no department). An email already in use is refused.
 - **Edit form:** the profile fields only. The email can't be changed here.
 - **Later milestones:**
   - "Assign to course" for teachers arrived with Courses (A5, D71).

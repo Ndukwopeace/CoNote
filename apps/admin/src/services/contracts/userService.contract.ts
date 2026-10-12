@@ -224,7 +224,6 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
         role: 'teacher',
         fullName: 'Ngozi Eze',
         email: ' Ngozi@Conote.Example ',
-        department: 'English',
       })
 
       // Assert: invited, listed, and in the history.
@@ -243,20 +242,10 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
     it('refuses a taken email and invalid input', async () => {
       const svc = service()
       await expect(
-        svc.inviteUser({
-          role: 'student',
-          fullName: 'X',
-          email: 'STUDENT01@conote.example',
-          department: 'English',
-        }),
+        svc.inviteUser({ role: 'student', fullName: 'X', email: 'STUDENT01@conote.example' }),
       ).rejects.toMatchObject({ kind: 'conflict' })
       await expect(
-        svc.inviteUser({
-          role: 'student',
-          fullName: '',
-          email: 'x@conote.example',
-          department: 'English',
-        }),
+        svc.inviteUser({ role: 'student', fullName: '', email: 'x@conote.example' }),
       ).rejects.toMatchObject({ kind: 'validation' })
     })
 

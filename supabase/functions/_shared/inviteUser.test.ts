@@ -14,7 +14,6 @@ const INVITE = {
   role: 'teacher',
   fullName: ' Ngozi Eze ',
   email: ' Ngozi@Conote.Example ',
-  department: 'English',
 }
 
 /** A handler over a platform where every step works, unless `routes` or `tweak` say otherwise. */
@@ -43,7 +42,6 @@ describe('invite-user', () => {
     expect(sentTo(queries, 'profiles', 'update')).toEqual({
       role: 'teacher',
       status: 'pending',
-      department: 'English',
       created_at: NOW.toISOString(),
     })
     // The email points at the teacher app.
@@ -61,11 +59,12 @@ describe('invite-user', () => {
     })
   })
 
-  // Proves an administrator has no department, and the email goes to the admin app.
-  it('invites an administrator without a department', async () => {
+  // Proves a department sent along is not stored, and an administrator's email goes to the admin
+  // app.
+  it('stores no department and sends an administrator to the admin app', async () => {
     const { handler, resetPasswordForEmail, queries } = build()
     await handler(post({ ...INVITE, role: 'admin', department: 'English' }))
-    expect(sentTo(queries, 'profiles', 'update')).toMatchObject({ role: 'admin', department: null })
+    expect(sentTo(queries, 'profiles', 'update')).not.toHaveProperty('department')
     expect(resetPasswordForEmail).toHaveBeenCalledWith('ngozi@conote.example', {
       redirectTo: 'https://admin.example/admin/reset-password',
     })
@@ -84,7 +83,6 @@ describe('invite-user', () => {
   it.each([
     [{ ...INVITE, fullName: ' ' }, 'Enter a name.'],
     [{ ...INVITE, email: 'nope' }, 'Enter a valid email address.'],
-    [{ ...INVITE, department: undefined }, 'Choose a department.'],
     [{ ...INVITE, role: 'owner' }, 'Invalid option: expected one of "student"|"teacher"|"admin"'],
   ])('refuses invalid input %#', async (body, message) => {
     const { handler, admin } = build()

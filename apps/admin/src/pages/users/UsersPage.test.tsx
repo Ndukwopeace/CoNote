@@ -231,7 +231,8 @@ describe('UsersPage', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Invite a user' })
     await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
     await user.type(within(dialog).getByLabelText('Email'), 'student01@conote.example')
-    await user.selectOptions(within(dialog).getByLabelText('Department'), 'Computer Science')
+    // Nobody is asked for a department.
+    expect(within(dialog).queryByLabelText('Department')).toBeNull()
     await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
 
     // Assert.
