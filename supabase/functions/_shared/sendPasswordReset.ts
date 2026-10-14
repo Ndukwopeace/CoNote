@@ -39,6 +39,14 @@ export function sendPasswordResetHandler(deps: FunctionDeps) {
     const sent = await anon.auth.resetPasswordForEmail(found.data.email as string, {
       redirectTo: resetAddress(deps.env, role),
     })
+    // Supabase sends one email per address a minute. Saying so lets the administrator wait and
+    // try again, instead of thinking the address or the mail service is broken.
+    if (sent.error?.code === 'over_email_send_rate_limit') {
+      return refuse(
+        'rate_limited',
+        'An email was sent to this address a moment ago. Wait a minute and try again.',
+      )
+    }
     if (sent.error) return refuse('unknown', 'The email could not be sent. Try again.')
     // 5. The audit entry: that a link was sent, not what it holds. An invited account's is the
     // invitation again, so the history reads that way.

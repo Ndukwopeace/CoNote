@@ -87,6 +87,25 @@ describe('send-password-reset', () => {
     expect(resetPasswordForEmail).not.toHaveBeenCalled()
   })
 
+  // Proves a second email to the same address inside Supabase's waiting period is explained,
+  // rather than reported as a failure to send: the administrator only has to wait.
+  it('says to wait when an email was sent a moment ago', async () => {
+    const tooSoon = build(STUDENT)
+    tooSoon.resetPasswordForEmail.mockResolvedValueOnce({
+      data: {},
+      error: { code: 'over_email_send_rate_limit' },
+    })
+    const response = await tooSoon.handler(post({ userId: OTHER_ID }))
+    expect(response.status).toBe(429)
+    await expect(bodyOf(response)).resolves.toMatchObject({
+      error: {
+        kind: 'rate_limited',
+        message: 'An email was sent to this address a moment ago. Wait a minute and try again.',
+      },
+    })
+    expect(sentTo(tooSoon.queries, 'audit_logs', 'insert')).toBeUndefined()
+  })
+
   // Proves bad input and unknown accounts are refused.
   it('refuses a bad ID and reports an unknown account', async () => {
     expect((await build(STUDENT).handler(post({ userId: 'nobody' }))).status).toBe(400)

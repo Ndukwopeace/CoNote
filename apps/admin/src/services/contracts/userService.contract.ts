@@ -17,6 +17,9 @@ import type { UserService } from '../types'
 /** Builds a service over `data`, with the clock at `now`, acting as administrator `actorId`. */
 export type CreateUserService = (data: PlatformData, now: Date, actorId: string) => UserService
 
+/** What a backend says when an email went to the same address a moment ago. */
+const TOO_SOON = 'An email was sent to this address a moment ago. Wait a minute and try again.'
+
 /** The contract's clock. */
 const NOW = new Date('2026-10-08T12:00:00.000Z')
 
@@ -318,7 +321,13 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
         fullName: 'Ngozi Eze',
         email: 'ngozi@conote.example',
       })
-      await expect(svc.sendPasswordReset(invited.id)).resolves.toBeUndefined()
+      // The invitation just sent counts: a real backend may ask to wait a minute before another
+      // email goes to the same address, in its own words. Anything else is a failure.
+      const outcome = await svc.sendPasswordReset(invited.id).then(
+        () => 'sent',
+        (error: unknown) => (error as Error).message,
+      )
+      expect(['sent', TOO_SOON]).toContain(outcome)
     })
 
     // Proves an invitation nobody accepted can be deleted, and the person is gone with it.
