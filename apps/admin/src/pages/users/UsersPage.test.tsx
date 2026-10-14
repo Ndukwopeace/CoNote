@@ -300,6 +300,35 @@ describe('UsersPage', () => {
     ).toBeInTheDocument()
   })
 
+  // Proves the confirmation does not wait for the list to reload: on the real backend a reload
+  // takes seconds, and until then the administrator would see nothing after pressing the button.
+  it('confirms a resent invitation while the list is still reloading', async () => {
+    // Arrange: the list loads once, and every reload after that never finishes.
+    const data = withInvitedStudent()
+    const real = createTestServices(data).users
+    let loads = 0
+    const slowReload: Partial<Services> = {
+      users: {
+        ...real,
+        listUsers: (filter) => {
+          loads += 1
+          return loads === 1 ? real.listUsers(filter) : new Promise(() => undefined)
+        },
+      },
+    }
+    const { user } = renderUsers('/admin/users', data, slowReload)
+    const rows = await tableRows()
+
+    // Act.
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Invited Ivy' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Resend invitation' }))
+
+    // Assert.
+    expect(
+      await screen.findByText('Invitation sent again to ivy@conote.example.'),
+    ).toBeInTheDocument()
+  })
+
   // Proves deleting an invitation asks first, then removes the person from the list.
   it('deletes an invitation after confirmation', async () => {
     // Arrange.

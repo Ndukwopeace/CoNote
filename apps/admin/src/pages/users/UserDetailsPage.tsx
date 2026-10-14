@@ -138,8 +138,17 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
             </Button>
           )}
           {actions.canSendReset && (
-            <Button type="button" variant="outline" onClick={actions.sendReset}>
-              {actions.isInvited ? 'Resend invitation' : 'Send password reset link'}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={actions.isSending}
+              onClick={actions.sendReset}
+            >
+              {actions.isSending
+                ? 'Sending…'
+                : actions.isInvited
+                  ? 'Resend invitation'
+                  : 'Send password reset link'}
             </Button>
           )}
           {actions.canDeleteInvitation && (
