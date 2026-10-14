@@ -15,6 +15,8 @@ export const ROUTES = {
   forgotPassword: '/forgot-password',
   // Set a new password from the email link.
   resetPassword: '/reset-password',
+  // Where Google sends the student back to finish signing in.
+  authCallback: '/auth/callback',
   // Terms of Service.
   terms: '/terms',
   // Privacy Policy.

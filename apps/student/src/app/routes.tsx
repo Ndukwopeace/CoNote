@@ -156,6 +156,14 @@ export const routes: RouteObject[] = [
                   Component: (await import('@/pages/auth/SignUpPage')).SignUpPage,
                 }),
               },
+              // Where Google sends the student back. Inside the signed-in redirect on purpose:
+              // once the code becomes a session, this group moves the student on to the dashboard.
+              {
+                path: 'auth/callback',
+                lazy: async () => ({
+                  Component: (await import('@/pages/auth/AuthCallbackPage')).AuthCallbackPage,
+                }),
+              },
             ],
           },
         ],

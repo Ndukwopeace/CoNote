@@ -77,6 +77,18 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       await expect(attempt).rejects.toMatchObject({ kind: 'validation' })
     })
 
+    // Proves a provider sign-in cannot be completed without a code from the provider, on every
+    // implementation (a real code can only come from Google, so the contract checks the refusal).
+    it('refuses to complete a provider sign-in without a code', async () => {
+      // Arrange: a fresh service.
+      const auth = create()
+
+      // Assert: a missing or empty code is a validation error, and nobody is signed in.
+      await expect(auth.completeProviderSignIn(null)).rejects.toMatchObject({ kind: 'validation' })
+      await expect(auth.completeProviderSignIn('')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(auth.getSession()).resolves.toBeNull()
+    })
+
     // Proves sign-out really ends the session (important on shared computers).
     it('clears the session on sign-out', async () => {
       // Arrange: signed in.

@@ -41,6 +41,8 @@ export interface SessionCoreOptions {
 
 // Shown when an account exists but may not sign in.
 const INACTIVE = 'This account is not active. Contact your administrator.'
+// Shown when Google's code cannot be turned into a session (used, expired or made up).
+export const OAUTH_NOT_FINISHED = 'Google sign-in did not finish. Please try again.'
 // Shown when a reset link cannot be used any more.
 export const LINK_EXPIRED = 'This reset link has expired. Request a new one.'
 
@@ -52,6 +54,11 @@ export interface SessionCore {
   signInWithPassword: (email: string, password: string, remember: boolean) => Promise<CoreSession>
   /** Announces a session Supabase created some other way (sign-up that returns a session). */
   adoptSession: (userId: string) => Promise<CoreSession>
+  /**
+   * Finishes a sign-in with a provider (Google): swaps the one-time `code` Google's redirect
+   * brought back for a session, then checks the profile like any other sign-in.
+   */
+  completeOAuth: (code: string) => Promise<CoreSession>
   /** Signs out everywhere on this computer, whatever the server says. */
   signOut: () => Promise<void>
   /** Sends the reset email; Supabase answers the same whether or not the account exists. */
@@ -241,6 +248,22 @@ export function createSessionCore({
     },
 
     adoptSession: announce,
+
+    async completeOAuth(code) {
+      // Swap the code for a session. The browser kept the matching secret from when the redirect
+      // began (PKCE), so a code that was copied somewhere else cannot be used.
+      const { data, error } = await client.auth.exchangeCodeForSession(code)
+      if (error) {
+        const mapped = fromSupabaseError(error)
+        // A dropped connection says nothing about the code, so the person can simply retry.
+        if (mapped.kind === 'network') throw mapped
+        // Used, expired and made-up codes are all refused the same way, in wording we choose.
+        throw new AppError('validation', OAUTH_NOT_FINISHED)
+      }
+      // SECURITY: the same checks as a password sign-in: an account that may not sign in
+      // (suspended, or invited and not yet accepted) is signed out again and refused.
+      return announce(data.user.id)
+    },
 
     async signOut() {
       try {
