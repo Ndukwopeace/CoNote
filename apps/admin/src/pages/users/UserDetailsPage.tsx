@@ -99,6 +99,14 @@ function Profile({ user }: Readonly<{ user: UserDetails }>) {
   )
 }
 
+/** The words on the link button: busy while the email goes out, else invitation or reset. */
+function sendLabel({ isSending, isInvited }: { isSending: boolean; isInvited: boolean }) {
+  // The email is on its way.
+  if (isSending) return 'Sending…'
+  // An invited person is sent the invitation again; anyone else a reset link.
+  return isInvited ? 'Resend invitation' : 'Send password reset link'
+}
+
 /** The loaded page. */
 function Details({ user }: Readonly<{ user: UserDetails }>) {
   // Where to go once the invitation is deleted: the page would otherwise show "not found".
@@ -138,8 +146,13 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
             </Button>
           )}
           {actions.canSendReset && (
-            <Button type="button" variant="outline" onClick={actions.sendReset}>
-              {actions.isInvited ? 'Resend invitation' : 'Send password reset link'}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={actions.isSending}
+              onClick={actions.sendReset}
+            >
+              {sendLabel(actions)}
             </Button>
           )}
           {actions.canDeleteInvitation && (

@@ -63,6 +63,20 @@ function useRefreshUsers() {
   }
 }
 
+/**
+ * The refresh for a change whose confirmation must not wait for it: it starts the reload and
+ * returns at once. A mutation's own `onSuccess` is awaited before the caller's, so returning the
+ * reload would hold back the "sent" toast (and a page's move away) for as long as the list takes
+ * to load, which on the real backend is seconds in which nothing seems to have happened.
+ */
+function useRefreshInBackground() {
+  // The awaited refresh, started and left to finish on its own.
+  const refresh = useRefreshUsers()
+  return () => {
+    void refresh()
+  }
+}
+
 /** Invites someone. */
 export function useInviteUser() {
   // The user service, and the refresh after a change.
@@ -90,7 +104,7 @@ export function useUpdateUser() {
 export function useSetUserStatus() {
   // The user service, and the refresh after a change.
   const { users } = useServices()
-  const refresh = useRefreshUsers()
+  const refresh = useRefreshInBackground()
   return useMutation({
     mutationFn: ({ userId, status }: { userId: string; status: AccountStatus }) =>
       appQuery(() => users.setUserStatus(userId, status)),
@@ -102,7 +116,7 @@ export function useSetUserStatus() {
 export function useDeleteInvitation() {
   // The user service, and the refresh after the change (the person leaves the lists).
   const { users } = useServices()
-  const refresh = useRefreshUsers()
+  const refresh = useRefreshInBackground()
   return useMutation({
     mutationFn: (userId: string) => appQuery(() => users.deleteInvitation(userId)),
     onSuccess: refresh,
@@ -113,7 +127,7 @@ export function useDeleteInvitation() {
 export function useSendPasswordReset() {
   // The user service, and the refresh after a change (the history shows it).
   const { users } = useServices()
-  const refresh = useRefreshUsers()
+  const refresh = useRefreshInBackground()
   return useMutation({
     mutationFn: (userId: string) => appQuery(() => users.sendPasswordReset(userId)),
     onSuccess: refresh,

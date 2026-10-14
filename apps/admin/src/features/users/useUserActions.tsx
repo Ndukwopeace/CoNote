@@ -93,6 +93,8 @@ export function useUserActions(user: UserListItem, { onDeleted }: UserActionOpti
     statusActions: isSelf ? [] : statusActions(user.status),
     // Whether a link can be sent: a reset link, or an invited person's invitation again.
     canSendReset: canSendPasswordReset(user.status),
+    // Whether a link is being sent, so a page can say so while the email goes out.
+    isSending: sendReset.isPending,
     // Whether the person is invited and has not accepted: the link is then "Resend invitation".
     isInvited: user.status === 'pending',
     // Whether the invitation can be deleted: never for one's own account (the service refuses it).
