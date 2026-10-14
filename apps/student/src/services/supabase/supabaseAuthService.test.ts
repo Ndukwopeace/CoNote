@@ -524,13 +524,69 @@ describe('updatePassword', () => {
 })
 
 describe('signInWithProvider', () => {
-  // Proves Google sign-in sends the browser away with the right return address.
+  // Proves Google sign-in sends the browser away with the right return address: the page that
+  // swaps Google's code for a session, not the dashboard (which would never read the code).
   it('starts the Google redirect', () => {
     const { service, auth } = setup()
     void service.signInWithProvider('google')
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'https://app.example/dashboard' },
+      options: { redirectTo: 'https://app.example/auth/callback' },
+    })
+  })
+})
+
+describe('completeProviderSignIn', () => {
+  // Proves a missing code never reaches Supabase.
+  it('refuses a missing code', async () => {
+    const { service, auth } = setup()
+    await expect(service.completeProviderSignIn(null)).rejects.toMatchObject({
+      kind: 'validation',
+    })
+    await expect(service.completeProviderSignIn('')).rejects.toMatchObject({ kind: 'validation' })
+    expect(auth.exchangeCodeForSession).not.toHaveBeenCalled()
+  })
+
+  // Proves Google's code is swapped for a session and the student comes from their profile.
+  it('swaps the code for a session and returns the student', async () => {
+    const { service, auth } = setup()
+    const session = await service.completeProviderSignIn('google-code')
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('google-code')
+    expect(session.user).toMatchObject({ role: 'student', fullName: 'Victory Eze' })
+  })
+
+  // Proves a code Supabase refuses (used, expired, made up) is explained, never shown raw.
+  it('explains a code that was refused', async () => {
+    const { service, auth } = setup()
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: {},
+      error: { name: 'AuthApiError', status: 400, code: 'flow_state_not_found', message: 'raw' },
+    })
+    await expect(service.completeProviderSignIn('old-code')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'Google sign-in did not finish. Please try again.',
+    })
+  })
+
+  // Proves a dropped connection is reported as one, so the page can offer another try.
+  it('reports a dropped connection', async () => {
+    const { service, auth } = setup()
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: {},
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'offline' },
+    })
+    await expect(service.completeProviderSignIn('code')).rejects.toMatchObject({
+      kind: 'network',
+    })
+  })
+
+  // SECURITY: proves a Google account that may not sign in (suspended, or invited and not yet
+  // accepted) is signed out again and refused, exactly like a password sign-in.
+  it.each(['inactive', 'suspended', 'pending'])('refuses a %s account', async (status) => {
+    const { service, profile } = setup()
+    profile.answer = { data: profileRow({ status }), error: null }
+    await expect(service.completeProviderSignIn('google-code')).rejects.toMatchObject({
+      kind: 'forbidden',
     })
   })
 })

@@ -97,11 +97,21 @@ export function createSupabaseAuthService({
       rememberStorage.setRemember(true)
       const { error } = await client.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${origin}${ROUTES.dashboard}` },
+        // The page that swaps the code Google sends back for a session. The dashboard would
+        // never read the code, so the student would land there signed out.
+        options: { redirectTo: `${origin}${ROUTES.authCallback}` },
       })
       if (error) throw fromSupabaseError(error)
       // The browser is leaving for the provider; the session arrives when it comes back.
       return new Promise<Session>(() => undefined)
+    },
+
+    async completeProviderSignIn(code) {
+      // A missing code can only mean the address was typed or cut short; nothing to send.
+      if (code === null || code === '') {
+        throw new AppError('validation', 'Google did not send a sign-in code. Please try again.')
+      }
+      return core.completeOAuth(code)
     },
 
     signOut: core.signOut,

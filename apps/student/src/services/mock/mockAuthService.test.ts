@@ -130,6 +130,19 @@ describe('mock AuthService', () => {
     expect(session.user.role).toBe('student')
   })
 
+  // Proves the demo finishes a provider sign-in from the code the page found in the address, and
+  // refuses a missing one the way a real backend would.
+  it('completes a provider sign-in from a code', async () => {
+    // Arrange.
+    const auth = createService()
+
+    // Act and assert: no code is refused; a code signs in the demo student.
+    await expect(auth.completeProviderSignIn(null)).rejects.toMatchObject({ kind: 'validation' })
+    const session = await auth.completeProviderSignIn('demo-code')
+    expect(session.user.role).toBe('student')
+    await expect(auth.getSession()).resolves.not.toBeNull()
+  })
+
   // SECURITY: proves the reset form gives the same answer for unknown accounts (no enumeration).
   it('answers a reset request the same way whether or not the account exists', async () => {
     // Act: one request for the signed-in demo address, one for an address nobody uses.

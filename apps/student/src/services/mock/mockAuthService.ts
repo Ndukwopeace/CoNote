@@ -202,6 +202,17 @@ export function createMockAuthService({
       return store(demoSession(DEMO_STUDENT.email), true)
     },
 
+    async completeProviderSignIn(code) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // A missing code is refused, as a real backend would refuse it.
+      if (code === null || code === '') {
+        throw new AppError('validation', 'Google did not send a sign-in code. Please try again.')
+      }
+      // No real provider in the demo: any code signs in the demo student.
+      return store(demoSession(DEMO_STUDENT.email), true)
+    },
+
     async signOut() {
       // Behave like a network call.
       await simulateLatency(latencyMs)

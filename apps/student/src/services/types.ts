@@ -42,6 +42,12 @@ export interface AuthService {
   signUp(input: SignUpInput): Promise<SignUpResult>
   /** Signs in through Google (decision D38). */
   signInWithProvider(provider: OAuthProvider): Promise<Session>
+  /**
+   * Finishes a Google sign-in on the page Google sends the student back to: swaps the code in
+   * the address for a session. Rejects with a validation error when the code is missing or was
+   * refused, and with forbidden for an account that may not sign in.
+   */
+  completeProviderSignIn(code: string | null): Promise<Session>
   /** Ends the session. */
   signOut(): Promise<void>
   /**
