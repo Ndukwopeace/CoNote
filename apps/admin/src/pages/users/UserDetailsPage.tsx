@@ -7,8 +7,8 @@
 import { ArrowLeft } from 'lucide-react'
 // Children type.
 import type { ReactNode } from 'react'
-// Client-side links and the ID in the address.
-import { Link, useParams } from 'react-router'
+// Client-side links, navigation after a delete, and the ID in the address.
+import { Link, useNavigate, useParams } from 'react-router'
 
 // Buttons, the tab title and loading blocks.
 import { Button } from '@conote/ui/button'
@@ -101,8 +101,14 @@ function Profile({ user }: Readonly<{ user: UserDetails }>) {
 
 /** The loaded page. */
 function Details({ user }: Readonly<{ user: UserDetails }>) {
+  // Where to go once the invitation is deleted: the page would otherwise show "not found".
+  const navigate = useNavigate()
   // What can be done to this account.
-  const actions = useUserActions(user)
+  const actions = useUserActions(user, {
+    onDeleted: () => {
+      void navigate(ADMIN_ROUTES.users)
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -133,7 +139,12 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
           )}
           {actions.canSendReset && (
             <Button type="button" variant="outline" onClick={actions.sendReset}>
-              Send password reset link
+              {actions.isInvited ? 'Resend invitation' : 'Send password reset link'}
+            </Button>
+          )}
+          {actions.canDeleteInvitation && (
+            <Button type="button" variant="destructive" onClick={actions.deleteInvitation}>
+              Delete invitation
             </Button>
           )}
           {actions.statusActions.map((action) => (

@@ -58,13 +58,31 @@ describe('send-password-reset', () => {
     })
   })
 
-  // Proves only active accounts get a link.
-  it.each(['suspended', 'inactive', 'pending'])('refuses a %s account', async (status) => {
+  // Proves an invited account is sent the link again, and the history says it was an invitation.
+  it('resends the invitation to an invited account', async () => {
+    const { handler, resetPasswordForEmail, queries } = build({
+      ...STUDENT,
+      role: 'admin',
+      status: 'pending',
+    })
+    const response = await handler(post({ userId: OTHER_ID }))
+    expect(response.status).toBe(200)
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('ada@conote.example', {
+      redirectTo: 'https://admin.example/admin/reset-password',
+    })
+    expect(sentTo(queries, 'audit_logs', 'insert')).toMatchObject({
+      action: 'user.invitation_resent',
+      entity_id: OTHER_ID,
+    })
+  })
+
+  // Proves only accounts that can sign in, or are waiting to, get a link.
+  it.each(['suspended', 'inactive'])('refuses a %s account', async (status) => {
     const { handler, resetPasswordForEmail } = build({ ...STUDENT, status })
     const response = await handler(post({ userId: OTHER_ID }))
     expect(response.status).toBe(400)
     await expect(bodyOf(response)).resolves.toMatchObject({
-      error: { message: 'Only active accounts can be sent a reset link.' },
+      error: { message: 'Only active or invited accounts can be sent a link.' },
     })
     expect(resetPasswordForEmail).not.toHaveBeenCalled()
   })

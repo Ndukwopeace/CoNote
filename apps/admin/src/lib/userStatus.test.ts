@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 // The units under test.
-import { canSendPasswordReset, statusActions, statusLabel } from './userStatus'
+import { canDeleteInvitation, canSendPasswordReset, statusActions, statusLabel } from './userStatus'
 
 describe('statusActions', () => {
   // Proves each status offers only the changes that make sense from it, in a fixed order.
@@ -36,10 +36,23 @@ describe('statusLabel', () => {
 })
 
 describe('canSendPasswordReset', () => {
-  // Proves only active accounts can be sent a reset link; the others can't sign in anyway.
-  it('allows active accounts only', () => {
+  // Proves a link can go to accounts that can sign in and to invited ones (the invitation again),
+  // not to a blocked account.
+  it('allows active and invited accounts only', () => {
     expect(canSendPasswordReset('active')).toBe(true)
-    expect(canSendPasswordReset('pending')).toBe(false)
+    expect(canSendPasswordReset('pending')).toBe(true)
+    expect(canSendPasswordReset('inactive')).toBe(false)
     expect(canSendPasswordReset('suspended')).toBe(false)
+  })
+})
+
+describe('canDeleteInvitation', () => {
+  // Proves only an invitation nobody accepted can be deleted; anyone else is deactivated, which
+  // keeps their notes and history.
+  it('allows invited accounts only', () => {
+    expect(canDeleteInvitation('pending')).toBe(true)
+    expect(canDeleteInvitation('active')).toBe(false)
+    expect(canDeleteInvitation('inactive')).toBe(false)
+    expect(canDeleteInvitation('suspended')).toBe(false)
   })
 })

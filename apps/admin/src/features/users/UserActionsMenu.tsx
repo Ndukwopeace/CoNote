@@ -1,5 +1,6 @@
 /**
- * The "…" menu on each row of the Users list: view, edit, status changes and the reset link.
+ * The "…" menu on each row of the Users list: view, edit, status changes, the reset link (or an
+ * invitation sent again) and deleting an invitation.
  */
 
 // The menu icon.
@@ -66,14 +67,20 @@ export function UserActionsMenu({ user }: Readonly<{ user: UserListItem }>) {
               {action.label}
             </DropdownMenuItem>
           ))}
-          {/* The reset link, for active accounts. */}
+          {/* The reset link for active accounts; for an invited person, the invitation again. */}
           {actions.canSendReset && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={actions.sendReset}>
-                Send password reset link
+                {actions.isInvited ? 'Resend invitation' : 'Send password reset link'}
               </DropdownMenuItem>
             </>
+          )}
+          {/* An invitation nobody accepted can be deleted. */}
+          {actions.canDeleteInvitation && (
+            <DropdownMenuItem onSelect={actions.deleteInvitation}>
+              Delete invitation
+            </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

@@ -321,7 +321,8 @@ Keep it to one chart on the dashboard; the rest belong on Analytics.
 **Actions:**
 - View, Edit
 - Activate, Deactivate, Suspend
-- Send password reset link
+- Send password reset link (Resend invitation for an invited person)
+- Delete invitation
 - Assign to course (teachers only)
 - Invite user (all tabs)
 
@@ -368,8 +369,9 @@ This prompt assumes (a).
     - pending → inactive (withdrawing the invitation)
   - Deactivating and suspending ask first. An administrator can't change their own status.
   - A deactivated or suspended account is refused at sign-in with "This account is not active. Contact your administrator." The backend also revokes its sessions.
-- **Password reset links:** only active accounts can be sent one.
-- **Status history:** read from the audit log (`user.invited`, `user.status_changed`).
+- **Password links:** an active account can be sent a reset link. An invited (`pending`) person gets the invitation again, as "Resend invitation", which is the same email and also replaces any earlier link. A deactivated or suspended account gets neither.
+- **Deleting an invitation:** "Delete invitation" removes an account nobody has accepted (`pending`) and its login, after asking. It is offered for no one else: a person who has signed in, or was blocked, keeps their notes and history and is deactivated instead. An administrator can't delete their own account. The address can be invited again afterwards.
+- **Status history:** read from the audit log (`user.invited`, `user.status_changed`). Resending (`user.invitation_resent`) and deleting (`user.invitation_deleted`, with the role only) an invitation are recorded too, but are not statuses.
 - **Audit:** every change writes an audit entry: `user.invited`, `user.updated`, `user.status_changed` or `user.password_reset_sent`.
 - **Invite form:** role, name and email (D91: no department). An email already in use is refused.
 - **Edit form:** the profile fields only. The email can't be changed here.
@@ -660,7 +662,7 @@ Same pattern as the student portal:
 | `NotificationService` | `list`, `unreadCount`, `markRead`, `markAllRead` |
 | `SettingsService` | `getSettings`, `updateSettings` |
 
-**Edge Functions** (backend stage): `invite-user`, `set-user-status`, `send-password-reset`, `retry-ai-job`, `health`, `update-settings`. Each one:
+**Edge Functions** (backend stage): `invite-user`, `set-user-status`, `send-password-reset`, `delete-invitation`, `retry-ai-job`, `health`, `update-settings`. Each one:
 1. verifies the caller's JWT
 2. loads their profile and checks `role = 'admin'` and `status = 'active'`
 3. validates input with zod

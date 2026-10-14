@@ -313,5 +313,12 @@ export function createSupabaseUserService({
       if (!isUuid(userId)) throw new AppError('not_found', 'User not found.')
       unwrap(await invoke('send-password-reset', { userId }))
     },
+
+    async deleteInvitation(userId) {
+      // SECURITY: an ID that is not a UUID never reaches the function.
+      if (!isUuid(userId)) throw new AppError('not_found', 'User not found.')
+      // The function holds the rules (an unaccepted invitation only, never your own account).
+      unwrap(await invoke('delete-invitation', { userId }))
+    },
   }
 }

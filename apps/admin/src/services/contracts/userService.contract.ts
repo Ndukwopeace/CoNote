@@ -307,11 +307,51 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
       })
     })
 
-    // Proves reset links go only to active accounts.
-    it('sends a reset link to active accounts only', async () => {
+    // Proves links go to accounts that can sign in, and to invited ones (the invitation again),
+    // never to a blocked account.
+    it('sends a link to active and invited accounts only', async () => {
       const svc = service()
       await expect(svc.sendPasswordReset('s01')).resolves.toBeUndefined()
       await expect(svc.sendPasswordReset('s03')).rejects.toMatchObject({ kind: 'validation' })
+      const invited = await svc.inviteUser({
+        role: 'teacher',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+      })
+      await expect(svc.sendPasswordReset(invited.id)).resolves.toBeUndefined()
+    })
+
+    // Proves an invitation nobody accepted can be deleted, and the person is gone with it.
+    it('deletes an invitation', async () => {
+      // Arrange.
+      const svc = service()
+      const invited = await svc.inviteUser({
+        role: 'student',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+      })
+
+      // Act.
+      await svc.deleteInvitation(invited.id)
+
+      // Assert: not found any more, and the address can be invited again.
+      await expect(svc.getUser(invited.id)).rejects.toMatchObject({ kind: 'not_found' })
+      await expect(
+        svc.inviteUser({ role: 'student', fullName: 'Ngozi Eze', email: 'ngozi@conote.example' }),
+      ).resolves.toMatchObject({ status: 'pending' })
+    })
+
+    // Proves only an unaccepted invitation can be deleted: anyone else keeps their notes and
+    // history, and an administrator can't delete themselves.
+    it('refuses to delete anyone but an unaccepted invitation', async () => {
+      const svc = service()
+      // Active, suspended, and the administrator's own account.
+      await expect(svc.deleteInvitation('s01')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('s03')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('a1')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('nobody')).rejects.toMatchObject({ kind: 'not_found' })
+      // Still there.
+      await expect(svc.getUser('s01')).resolves.toMatchObject({ id: 's01' })
     })
   })
 }

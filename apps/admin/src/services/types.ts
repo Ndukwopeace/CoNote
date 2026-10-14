@@ -87,8 +87,16 @@ export interface UserService {
    * any change to the administrator's own account.
    */
   setUserStatus(userId: string, status: AccountStatus): Promise<UserDetails>
-  /** Sends a password reset link to an active account. */
+  /**
+   * Sends a password link to an active account, or the invitation again to an invited one.
+   * Rejects for a blocked account.
+   */
   sendPasswordReset(userId: string): Promise<void>
+  /**
+   * Deletes an invitation nobody has accepted, along with the login. Rejects for any other
+   * account (who keeps their notes and history) and for the administrator's own.
+   */
+  deleteInvitation(userId: string): Promise<void>
 }
 
 /**
