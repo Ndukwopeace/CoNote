@@ -53,7 +53,15 @@ export function statusLabel(status: AccountStatus): string {
   return LABELS[status]
 }
 
-/** Only active accounts can be sent a reset link; the others can't sign in anyway. */
+/**
+ * Active accounts can be sent a reset link, and invited ones the invitation again (its link is how
+ * they choose a password). A blocked account can't sign in anyway.
+ */
 export function canSendPasswordReset(status: AccountStatus): boolean {
-  return status === 'active'
+  return status === 'active' || status === 'pending'
+}
+
+/** Only an invitation nobody has accepted can be deleted; everyone else is deactivated instead. */
+export function canDeleteInvitation(status: AccountStatus): boolean {
+  return status === 'pending'
 }

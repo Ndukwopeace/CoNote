@@ -58,15 +58,52 @@ describe('send-password-reset', () => {
     })
   })
 
-  // Proves only active accounts get a link.
-  it.each(['suspended', 'inactive', 'pending'])('refuses a %s account', async (status) => {
+  // Proves an invited account is sent the link again, and the history says it was an invitation.
+  it('resends the invitation to an invited account', async () => {
+    const { handler, resetPasswordForEmail, queries } = build({
+      ...STUDENT,
+      role: 'admin',
+      status: 'pending',
+    })
+    const response = await handler(post({ userId: OTHER_ID }))
+    expect(response.status).toBe(200)
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('ada@conote.example', {
+      redirectTo: 'https://admin.example/admin/reset-password',
+    })
+    expect(sentTo(queries, 'audit_logs', 'insert')).toMatchObject({
+      action: 'user.invitation_resent',
+      entity_id: OTHER_ID,
+    })
+  })
+
+  // Proves only accounts that can sign in, or are waiting to, get a link.
+  it.each(['suspended', 'inactive'])('refuses a %s account', async (status) => {
     const { handler, resetPasswordForEmail } = build({ ...STUDENT, status })
     const response = await handler(post({ userId: OTHER_ID }))
     expect(response.status).toBe(400)
     await expect(bodyOf(response)).resolves.toMatchObject({
-      error: { message: 'Only active accounts can be sent a reset link.' },
+      error: { message: 'Only active or invited accounts can be sent a link.' },
     })
     expect(resetPasswordForEmail).not.toHaveBeenCalled()
+  })
+
+  // Proves a second email to the same address inside Supabase's waiting period is explained,
+  // rather than reported as a failure to send: the administrator only has to wait.
+  it('says to wait when an email was sent a moment ago', async () => {
+    const tooSoon = build(STUDENT)
+    tooSoon.resetPasswordForEmail.mockResolvedValueOnce({
+      data: {},
+      error: { code: 'over_email_send_rate_limit' },
+    })
+    const response = await tooSoon.handler(post({ userId: OTHER_ID }))
+    expect(response.status).toBe(429)
+    await expect(bodyOf(response)).resolves.toMatchObject({
+      error: {
+        kind: 'rate_limited',
+        message: 'An email was sent to this address a moment ago. Wait a minute and try again.',
+      },
+    })
+    expect(sentTo(tooSoon.queries, 'audit_logs', 'insert')).toBeUndefined()
   })
 
   // Proves bad input and unknown accounts are refused.

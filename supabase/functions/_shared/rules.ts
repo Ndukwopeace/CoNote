@@ -20,7 +20,15 @@ export function canChangeStatus(from: AccountStatus, to: AccountStatus): boolean
   return ALLOWED[from].includes(to)
 }
 
-/** Whether an account in `status` may be sent a password link: only accounts that can sign in. */
+/**
+ * Whether an account in `status` may be sent a password link: accounts that can sign in, and
+ * invited accounts, whose link is how they choose a password (resending an invitation).
+ */
 export function canSendPasswordReset(status: AccountStatus): boolean {
-  return status === 'active'
+  return status === 'active' || status === 'pending'
+}
+
+/** Whether an account in `status` may be deleted: only an invitation nobody has accepted. */
+export function canDeleteInvitation(status: AccountStatus): boolean {
+  return status === 'pending'
 }

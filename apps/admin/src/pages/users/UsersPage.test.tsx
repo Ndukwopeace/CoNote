@@ -268,6 +268,71 @@ describe('UsersPage', () => {
     expect(within((await tableRows())[1]!).getByText('Suspended')).toBeInTheDocument()
   })
 
+  /** The platform with one invited student, who sorts first. */
+  function withInvitedStudent(): PlatformData {
+    const data = platform()
+    data.users.push(
+      userRecord({
+        id: 'p1',
+        role: 'student',
+        status: 'pending',
+        fullName: 'Invited Ivy',
+        email: 'ivy@conote.example',
+      }),
+    )
+    return data
+  }
+
+  // Proves an invited person's menu resends the invitation, instead of offering a reset link.
+  it('resends an invitation from the row menu', async () => {
+    // Arrange.
+    const { user } = renderUsers('/admin/users', withInvitedStudent())
+    const rows = await tableRows()
+
+    // Act.
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Invited Ivy' }))
+    expect(screen.queryByRole('menuitem', { name: 'Send password reset link' })).toBeNull()
+    await user.click(await screen.findByRole('menuitem', { name: 'Resend invitation' }))
+
+    // Assert.
+    expect(
+      await screen.findByText('Invitation sent again to ivy@conote.example.'),
+    ).toBeInTheDocument()
+  })
+
+  // Proves deleting an invitation asks first, then removes the person from the list.
+  it('deletes an invitation after confirmation', async () => {
+    // Arrange.
+    const { user } = renderUsers('/admin/users', withInvitedStudent())
+    const rows = await tableRows()
+
+    // Act.
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Invited Ivy' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete invitation' }))
+    const confirm = await screen.findByRole('alertdialog', {
+      name: 'Delete the invitation for Invited Ivy?',
+    })
+    await user.click(within(confirm).getByRole('button', { name: 'Delete invitation' }))
+
+    // Assert.
+    expect(
+      await screen.findByText('The invitation for Invited Ivy was deleted.'),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Actions for Invited Ivy' })).toBeNull()
+    })
+  })
+
+  // Proves a person who has signed in can't be deleted from the menu.
+  it('offers no delete for an active account', async () => {
+    const { user } = renderUsers()
+    const rows = await tableRows()
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Student 01' }))
+    await screen.findByRole('menuitem', { name: 'Edit' })
+    expect(screen.queryByRole('menuitem', { name: 'Delete invitation' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Resend invitation' })).toBeNull()
+  })
+
   // Proves a teacher can be given a course from their row, and the course shows the teacher.
   it('assigns a teacher to a course from the row menu', async () => {
     // Arrange: a platform with one course nobody teaches.
@@ -339,5 +404,6 @@ function renderUsersServices() {
     updateUser: unused,
     setUserStatus: unused,
     sendPasswordReset: unused,
+    deleteInvitation: unused,
   }
 }

@@ -381,7 +381,7 @@ describe('updateUser', () => {
   })
 })
 
-describe('setUserStatus and sendPasswordReset', () => {
+describe('setUserStatus, sendPasswordReset and deleteInvitation', () => {
   /** A service over an account. */
   function over(result?: FunctionResult) {
     return setup(
@@ -430,6 +430,26 @@ describe('setUserStatus and sendPasswordReset', () => {
       kind: 'not_found',
     })
     await expect(service.sendPasswordReset('nobody')).rejects.toMatchObject({ kind: 'not_found' })
+    await expect(service.deleteInvitation('nobody')).rejects.toMatchObject({ kind: 'not_found' })
     expect(invoke).not.toHaveBeenCalled()
+  })
+
+  // Proves deleting an invitation is one call to its function, and its refusals reach the screen.
+  it('deletes an invitation through the function', async () => {
+    const { service, invoke } = over()
+    await expect(service.deleteInvitation(USER)).resolves.toBeUndefined()
+    expect(invoke).toHaveBeenCalledWith('delete-invitation', { userId: USER })
+    const refused = over({
+      status: 400,
+      body: {
+        error: {
+          kind: 'validation',
+          message: 'Only an invitation that has not been accepted can be deleted.',
+        },
+      },
+    })
+    await expect(refused.service.deleteInvitation(USER)).rejects.toMatchObject({
+      kind: 'validation',
+    })
   })
 })

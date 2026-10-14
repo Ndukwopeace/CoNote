@@ -161,6 +161,47 @@ describe('UserDetailsPage', () => {
     ).toBeInTheDocument()
   })
 
+  // Proves an invited person's page offers the invitation again and deleting it, and deleting
+  // leaves the page for the list, where the person is gone.
+  it('resends and deletes an invitation from the details page', async () => {
+    // Arrange: an invited student.
+    const data = platform()
+    data.users.push(
+      userRecord({
+        id: 'p1',
+        role: 'student',
+        status: 'pending',
+        fullName: 'Invited Ivy',
+        email: 'ivy@conote.example',
+      }),
+    )
+    const { user } = renderWithRouter({
+      routes,
+      path: '/admin/users/p1',
+      session: makeSession('admin', { fullName: 'Amara Okafor' }),
+      platform: data,
+    })
+    await screen.findByRole('heading', { level: 1, name: 'Invited Ivy' })
+    expect(screen.queryByRole('button', { name: 'Send password reset link' })).toBeNull()
+
+    // Act: resend.
+    await user.click(screen.getByRole('button', { name: 'Resend invitation' }))
+    expect(
+      await screen.findByText('Invitation sent again to ivy@conote.example.'),
+    ).toBeInTheDocument()
+
+    // Act: delete, after confirming.
+    await user.click(screen.getByRole('button', { name: 'Delete invitation' }))
+    const confirm = await screen.findByRole('alertdialog', {
+      name: 'Delete the invitation for Invited Ivy?',
+    })
+    await user.click(within(confirm).getByRole('button', { name: 'Delete invitation' }))
+
+    // Assert: back on the list, without them.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Users' })).toBeInTheDocument()
+    expect(screen.queryByText('Invited Ivy')).toBeNull()
+  })
+
   // Proves administrators can't change their own status from their page.
   it('offers no status changes on your own account', async () => {
     // Act.

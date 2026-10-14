@@ -17,6 +17,9 @@ import type { UserService } from '../types'
 /** Builds a service over `data`, with the clock at `now`, acting as administrator `actorId`. */
 export type CreateUserService = (data: PlatformData, now: Date, actorId: string) => UserService
 
+/** What a backend says when an email went to the same address a moment ago. */
+const TOO_SOON = 'An email was sent to this address a moment ago. Wait a minute and try again.'
+
 /** The contract's clock. */
 const NOW = new Date('2026-10-08T12:00:00.000Z')
 
@@ -307,11 +310,57 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
       })
     })
 
-    // Proves reset links go only to active accounts.
-    it('sends a reset link to active accounts only', async () => {
+    // Proves links go to accounts that can sign in, and to invited ones (the invitation again),
+    // never to a blocked account.
+    it('sends a link to active and invited accounts only', async () => {
       const svc = service()
       await expect(svc.sendPasswordReset('s01')).resolves.toBeUndefined()
       await expect(svc.sendPasswordReset('s03')).rejects.toMatchObject({ kind: 'validation' })
+      const invited = await svc.inviteUser({
+        role: 'teacher',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+      })
+      // The invitation just sent counts: a real backend may ask to wait a minute before another
+      // email goes to the same address, in its own words. Anything else is a failure.
+      const outcome = await svc.sendPasswordReset(invited.id).then(
+        () => 'sent',
+        (error: unknown) => (error as Error).message,
+      )
+      expect(['sent', TOO_SOON]).toContain(outcome)
+    })
+
+    // Proves an invitation nobody accepted can be deleted, and the person is gone with it.
+    it('deletes an invitation', async () => {
+      // Arrange.
+      const svc = service()
+      const invited = await svc.inviteUser({
+        role: 'student',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+      })
+
+      // Act.
+      await svc.deleteInvitation(invited.id)
+
+      // Assert: not found any more, and the address can be invited again.
+      await expect(svc.getUser(invited.id)).rejects.toMatchObject({ kind: 'not_found' })
+      await expect(
+        svc.inviteUser({ role: 'student', fullName: 'Ngozi Eze', email: 'ngozi@conote.example' }),
+      ).resolves.toMatchObject({ status: 'pending' })
+    })
+
+    // Proves only an unaccepted invitation can be deleted: anyone else keeps their notes and
+    // history, and an administrator can't delete themselves.
+    it('refuses to delete anyone but an unaccepted invitation', async () => {
+      const svc = service()
+      // Active, suspended, and the administrator's own account.
+      await expect(svc.deleteInvitation('s01')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('s03')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('a1')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteInvitation('nobody')).rejects.toMatchObject({ kind: 'not_found' })
+      // Still there.
+      await expect(svc.getUser('s01')).resolves.toMatchObject({ id: 's01' })
     })
   })
 }

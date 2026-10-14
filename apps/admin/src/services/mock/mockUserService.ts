@@ -15,7 +15,7 @@ import type { ZodType } from 'zod'
 // The form rules, enforced here too.
 import { editUserSchema, inviteUserSchema } from '@/lib/userSchemas'
 // The status rules.
-import { canChangeStatus, canSendPasswordReset } from '@/lib/userStatus'
+import { canChangeStatus, canDeleteInvitation, canSendPasswordReset } from '@/lib/userStatus'
 // User shapes.
 import type {
   CourseRef,
@@ -334,12 +334,41 @@ export function createMockUserService({
       // Who is sending it, and to whom.
       const actor = requireActor()
       const user = find(userId)
-      // Only active accounts can sign in, so only they get a link.
+      // Only accounts that can sign in, or are invited, get a link; a blocked account does not.
       if (!canSendPasswordReset(user.status)) {
-        throw new AppError('validation', 'Only active accounts can be sent a reset link.')
+        throw new AppError('validation', 'Only active or invited accounts can be sent a link.')
       }
-      // The demo sends no email; it records that one would have been sent.
-      record(actor, 'user.password_reset_sent', user, {})
+      // The demo sends no email; it records that one would have been sent. For an invited account
+      // it is the invitation again.
+      const action =
+        user.status === 'pending' ? 'user.invitation_resent' : 'user.password_reset_sent'
+      record(actor, action, user, {})
+    },
+
+    async deleteInvitation(userId) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Who is deleting, and which account.
+      const actor = requireActor()
+      const user = find(userId)
+      // SECURITY: an administrator can't delete their own account and lose access.
+      if (user.id === actor) {
+        throw new AppError('validation', "You can't delete your own account.")
+      }
+      // SECURITY: only an unaccepted invitation can go, so nobody with notes or history is lost.
+      if (!canDeleteInvitation(user.status)) {
+        throw new AppError(
+          'validation',
+          'Only an invitation that has not been accepted can be deleted.',
+        )
+      }
+      // Record first, while the person is still known; the entry keeps the role, never the name.
+      record(actor, 'user.invitation_deleted', user, { role: user.role })
+      // Remove the account. An invitation has no enrolments or courses, but clear any anyway.
+      data.users.splice(data.users.indexOf(user), 1)
+      data.enrollments = data.enrollments.filter((enrollment) => enrollment.studentId !== user.id)
+      // Save the platform, as every change does.
+      onChange?.()
     },
   }
 }

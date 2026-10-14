@@ -1,6 +1,7 @@
 /**
  * What an administrator can do to one account (admin REQUIREMENTS section 11): change its status
- * (asking first before blocking it), send a reset link, and edit it. Shared by the list's row
+ * (asking first before blocking it), send a reset link (or an invitation again), delete an
+ * invitation nobody accepted, and edit it. Shared by the list's row
  * menu and the details page's buttons, so both behave the same.
  */
 
@@ -15,11 +16,12 @@ import { useToast } from '@conote/ui/toast'
 // The signed-in administrator.
 import { useAuth } from '@conote/portal'
 // The changes.
-import { useSendPasswordReset, useSetUserStatus } from '@/hooks/useUsers'
+import { useDeleteInvitation, useSendPasswordReset, useSetUserStatus } from '@/hooks/useUsers'
 // Administrator-facing error wording.
 import { errorMessage } from '@/lib/errorMessages'
 // Status rules and wording.
 import {
+  canDeleteInvitation,
   canSendPasswordReset,
   statusActions,
   statusLabel,
@@ -46,15 +48,24 @@ function confirmText(action: StatusAction, user: UserListItem) {
   return 'They’ll be signed out at once and can’t sign in until an administrator activates the account again. Their notes and courses are kept.'
 }
 
+/** What a screen can add to the actions. */
+interface UserActionOptions {
+  // Called once an invitation is deleted, so a page about that person can leave.
+  onDeleted?: () => void
+}
+
 /** The actions for `user`, and the dialogs they open (render `dialogs` once). */
-export function useUserActions(user: UserListItem) {
-  // The signed-in administrator, toasts and the two changes.
+export function useUserActions(user: UserListItem, { onDeleted }: UserActionOptions = {}) {
+  // The signed-in administrator, toasts and the changes.
   const { session } = useAuth()
   const toast = useToast()
   const setStatus = useSetUserStatus()
   const sendReset = useSendPasswordReset()
+  const deleteInvitation = useDeleteInvitation()
   // The change waiting for confirmation, and whether the edit form is open.
   const [pending, setPending] = useState<StatusAction | null>(null)
+  // Whether the delete confirmation is open.
+  const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [assigning, setAssigning] = useState(false)
 
@@ -80,18 +91,30 @@ export function useUserActions(user: UserListItem) {
     isSelf,
     // The status changes on offer; none on one's own account.
     statusActions: isSelf ? [] : statusActions(user.status),
-    // Whether a reset link can be sent.
+    // Whether a link can be sent: a reset link, or an invited person's invitation again.
     canSendReset: canSendPasswordReset(user.status),
+    // Whether the person is invited and has not accepted: the link is then "Resend invitation".
+    isInvited: user.status === 'pending',
+    // Whether the invitation can be deleted: never for one's own account (the service refuses it).
+    canDeleteInvitation: !isSelf && canDeleteInvitation(user.status),
+    // Asks before deleting an invitation.
+    deleteInvitation: () => {
+      setDeleting(true)
+    },
     // Starts a change: asks first when it blocks the account.
     changeStatus: (action: StatusAction) => {
       if (action.confirm) setPending(action)
       else apply(action)
     },
-    // Sends a reset link and says so.
+    // Sends a reset link, or the invitation again, and says so.
     sendReset: () => {
       sendReset.mutate(user.id, {
         onSuccess: () => {
-          toast.success(`Password reset link sent to ${user.email}.`)
+          toast.success(
+            user.status === 'pending'
+              ? `Invitation sent again to ${user.email}.`
+              : `Password reset link sent to ${user.email}.`,
+          )
         },
         onError: (error) => {
           toast.error(errorMessage(error))
@@ -123,6 +146,26 @@ export function useUserActions(user: UserListItem) {
             confirmLabel={pending.label}
             onConfirm={() => {
               apply(pending)
+            }}
+          />
+        )}
+        {deleting && (
+          <ConfirmDialog
+            open
+            onOpenChange={setDeleting}
+            title={`Delete the invitation for ${user.fullName}?`}
+            description="The account is removed, and the link in the email stops working. You can invite the same address again."
+            confirmLabel="Delete invitation"
+            onConfirm={() => {
+              deleteInvitation.mutate(user.id, {
+                onSuccess: () => {
+                  toast.success(`The invitation for ${user.fullName} was deleted.`)
+                  onDeleted?.()
+                },
+                onError: (error) => {
+                  toast.error(errorMessage(error))
+                },
+              })
             }}
           />
         )}
