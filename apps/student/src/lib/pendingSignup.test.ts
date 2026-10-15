@@ -32,7 +32,7 @@ describe('pending sign-up', () => {
   it('forgets it after the code has expired', () => {
     rememberPendingSignup('ada@example.com', NOW)
     expect(readPendingSignup(later(61))).toBeNull()
-    expect(window.localStorage.length).toBe(0)
+    expect(window.localStorage).toHaveLength(0)
   })
 
   // Proves nothing remembered reads as nothing, and clearing is safe to repeat.

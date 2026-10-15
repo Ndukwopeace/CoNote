@@ -97,11 +97,12 @@ export function VerifyCodeForm({ email, onChangeEmail }: Readonly<VerifyCodeForm
       {(check.error ?? resend.error) && (
         <FormMessage tone="error">{check.error ?? resend.error}</FormMessage>
       )}
-      {/* A new code was sent. Polite status so screen readers announce it. */}
+      {/* A new code was sent. <output> has the built-in "status" role, so screen readers announce
+          it politely. */}
       {resent && (
-        <p role="status" className="text-sm text-muted-foreground">
+        <output className="block text-sm text-muted-foreground">
           A new code is on its way to {email}.
-        </p>
+        </output>
       )}
       <form
         noValidate
