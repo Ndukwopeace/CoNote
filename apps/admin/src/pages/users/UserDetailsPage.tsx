@@ -155,6 +155,11 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
               {sendLabel(actions)}
             </Button>
           )}
+          {actions.canDeleteUser && (
+            <Button type="button" variant="destructive" onClick={actions.deleteUser}>
+              Delete user
+            </Button>
+          )}
           {actions.canDeleteInvitation && (
             <Button type="button" variant="destructive" onClick={actions.deleteInvitation}>
               Delete invitation

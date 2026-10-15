@@ -518,6 +518,30 @@ export function describeCourseServiceContract(name: string, create: CreateCourse
       await expect(svc.restoreCourse('c1')).rejects.toMatchObject({ kind: 'validation' })
     })
 
+    // Proves only an archived course can be deleted, and it is gone with its students.
+    it('deletes an archived course and refuses one in use', async () => {
+      const svc = service()
+      await expect(svc.deleteCourse('c1')).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'Archive this course before deleting it.',
+      })
+      await svc.deleteCourse('c3')
+      await expect(svc.getCourse('c3')).rejects.toMatchObject({ kind: 'not_found' })
+      expect(await codes(svc, { archived: true })).toEqual([])
+      // The course in use is untouched.
+      await expect(svc.getCourse('c1')).resolves.toMatchObject({ code: 'CSC 101' })
+    })
+
+    // Proves a deleted course frees its code, and an unknown course is not found.
+    it('lets a deleted course’s code be used again', async () => {
+      const svc = service()
+      await svc.deleteCourse('c3')
+      await expect(svc.createCourse(input({ code: 'OLD 100' }))).resolves.toMatchObject({
+        code: 'OLD 100',
+      })
+      await expect(svc.deleteCourse('nope')).rejects.toMatchObject({ kind: 'not_found' })
+    })
+
     // Proves an archived course refuses every change.
     it('refuses changes to an archived course', async () => {
       const svc = service()

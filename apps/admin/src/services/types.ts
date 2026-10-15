@@ -97,6 +97,12 @@ export interface UserService {
    * account (who keeps their notes and history) and for the administrator's own.
    */
   deleteInvitation(userId: string): Promise<void>
+  /**
+   * Deletes an account of any status for good: the login, and with it the person's notes,
+   * enrolments and requests. Courses they taught are left without a teacher. Rejects for the
+   * administrator's own account and with not_found for an unknown one.
+   */
+  deleteUser(userId: string): Promise<void>
 }
 
 /**
@@ -118,6 +124,11 @@ export interface CourseService {
   archiveCourse(courseId: string): Promise<CourseDetails>
   /** Puts an archived course back in use. */
   restoreCourse(courseId: string): Promise<CourseDetails>
+  /**
+   * Deletes an archived course for good, with its classes, summaries, students' notes,
+   * resources, enrolments and requests. A course in use is refused: it must be archived first.
+   */
+  deleteCourse(courseId: string): Promise<void>
   /** Gives the course a teacher (or changes it); the teacher must be active. */
   assignTeacher(courseId: string, teacherId: string): Promise<CourseDetails>
   /** Leaves the course without a teacher. */

@@ -320,5 +320,12 @@ export function createSupabaseUserService({
       // The function holds the rules (an unaccepted invitation only, never your own account).
       unwrap(await invoke('delete-invitation', { userId }))
     },
+
+    async deleteUser(userId) {
+      // SECURITY: an ID that is not a UUID never reaches the function.
+      if (!isUuid(userId)) throw new AppError('not_found', 'User not found.')
+      // The function holds the rules (never your own account) and removes the login for good.
+      unwrap(await invoke('delete-user', { userId }))
+    },
   }
 }

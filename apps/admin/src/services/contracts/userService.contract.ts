@@ -362,5 +362,32 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
       // Still there.
       await expect(svc.getUser('s01')).resolves.toMatchObject({ id: 's01' })
     })
+
+    // Proves an account of any status can be deleted for good, and its enrolments go with it.
+    it.each(['s01', 's03', 't1'])('deletes the account %s', async (id) => {
+      const svc = service()
+      await svc.deleteUser(id)
+      await expect(svc.getUser(id)).rejects.toMatchObject({ kind: 'not_found' })
+    })
+
+    // Proves a deleted student leaves their courses, and a deleted teacher leaves theirs without
+    // a teacher (the course itself stays).
+    it('removes a deleted account from its courses', async () => {
+      const svc = service()
+      await svc.deleteUser('s01')
+      await svc.deleteUser('t1')
+      const page = await svc.listUsers({ role: 'teacher' })
+      expect(page.items.map((user) => user.fullName)).toEqual(['Mrs. Okoro'])
+      const details = await svc.getUser('t2')
+      expect(details.courses.map((course) => course.code)).toEqual(['ENG 101'])
+    })
+
+    // Proves an administrator can't delete themselves, and an unknown account is not found.
+    it('refuses to delete the caller or an unknown account', async () => {
+      const svc = service()
+      await expect(svc.deleteUser('a1')).rejects.toMatchObject({ kind: 'validation' })
+      await expect(svc.deleteUser('nobody')).rejects.toMatchObject({ kind: 'not_found' })
+      await expect(svc.getUser('a1')).resolves.toMatchObject({ id: 'a1' })
+    })
   })
 }

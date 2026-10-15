@@ -1,6 +1,6 @@
 /**
  * What an administrator can do to one course (admin REQUIREMENTS section 12): edit it, archive it
- * (asking first) and restore it. Shared by the list's row menu and the details page's buttons, so
+ * (asking first), restore it and delete an archived one (after typing its code). Shared by the list's row menu and the details page's buttons, so
  * both behave the same.
  */
 
@@ -9,11 +9,13 @@ import { useState } from 'react'
 
 // The confirmation dialog.
 import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
+// The confirmation that asks for the code to be typed.
+import { TypeToConfirmDialog } from '@conote/ui/common/TypeToConfirmDialog'
 // Toasts.
 import { useToast } from '@conote/ui/toast'
 
 // The changes.
-import { useArchiveCourse, useRestoreCourse } from '@/hooks/useCourses'
+import { useArchiveCourse, useDeleteCourse, useRestoreCourse } from '@/hooks/useCourses'
 // Administrator-facing error wording.
 import { errorMessage } from '@/lib/errorMessages'
 
@@ -28,14 +30,22 @@ interface ActionCourse {
   archivedAt: string | null
 }
 
+/** What a screen can add to the actions. */
+interface CourseActionOptions {
+  // Called once the course is deleted, so a page about that course can leave.
+  onDeleted?: () => void
+}
+
 /** The actions for `course`, and the dialogs they open (render `dialogs` once). */
-export function useCourseActions(course: ActionCourse) {
+export function useCourseActions(course: ActionCourse, { onDeleted }: CourseActionOptions = {}) {
   // The two changes and the toasts that report them.
   const archive = useArchiveCourse()
   const restore = useRestoreCourse()
+  const remove = useDeleteCourse()
   const toast = useToast()
   // Whether the archive question or the edit form is open.
   const [confirmingArchive, setConfirmingArchive] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [editing, setEditing] = useState(false)
 
   return {
@@ -48,6 +58,10 @@ export function useCourseActions(course: ActionCourse) {
     // Asks before archiving.
     askArchive: () => {
       setConfirmingArchive(true)
+    },
+    // Asks for the code to be typed before deleting; only an archived course can be.
+    askDelete: () => {
+      setConfirmingDelete(true)
     },
     // Puts an archived course back in use, and says so.
     restore: () => {
@@ -75,6 +89,27 @@ export function useCourseActions(course: ActionCourse) {
               archive.mutate(course.id, {
                 onSuccess: () => {
                   toast.success(`${course.code} archived.`)
+                },
+                onError: (error) => {
+                  toast.error(errorMessage(error))
+                },
+              })
+            }}
+          />
+        )}
+        {confirmingDelete && (
+          <TypeToConfirmDialog
+            open
+            onOpenChange={setConfirmingDelete}
+            title={`Delete ${course.code} for good?`}
+            description="Its classes, summaries, students' notes, resources and enrolments are removed and can't be brought back."
+            expected={course.code}
+            confirmLabel="Delete course"
+            onConfirm={() => {
+              remove.mutate(course.id, {
+                onSuccess: () => {
+                  toast.success(`${course.code} was deleted.`)
+                  onDeleted?.()
                 },
                 onError: (error) => {
                   toast.error(errorMessage(error))

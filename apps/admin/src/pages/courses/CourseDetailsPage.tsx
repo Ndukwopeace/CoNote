@@ -1,12 +1,12 @@
 /**
  * One course (admin REQUIREMENTS section 12): Overview, Students, Classes and Resources tabs,
- * with edit, archive and restore. An archived course shows a notice and offers no other changes.
+ * with edit, archive, restore and delete. An archived course shows a notice and offers no other changes.
  */
 
 // The back arrow.
 import { ArrowLeft } from 'lucide-react'
 // Client-side links and the ID in the address.
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 
 // Buttons, the tab title, loading blocks and tabs.
 import { Button } from '@conote/ui/button'
@@ -47,7 +47,12 @@ function BackLink() {
 /** The loaded page. */
 function Details({ course }: Readonly<{ course: CourseDetails }>) {
   // What can be done to this course.
-  const actions = useCourseActions(course)
+  const navigate = useNavigate()
+  const actions = useCourseActions(course, {
+    onDeleted: () => {
+      void navigate(ADMIN_ROUTES.courses)
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -62,9 +67,14 @@ function Details({ course }: Readonly<{ course: CourseDetails }>) {
         </div>
         <div className="flex flex-wrap gap-2">
           {actions.isArchived ? (
-            <Button type="button" onClick={actions.restore}>
-              Restore
-            </Button>
+            <>
+              <Button type="button" onClick={actions.restore}>
+                Restore
+              </Button>
+              <Button type="button" variant="destructive" onClick={actions.askDelete}>
+                Delete
+              </Button>
+            </>
           ) : (
             <>
               <Button type="button" variant="outline" onClick={actions.edit}>

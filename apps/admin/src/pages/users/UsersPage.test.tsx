@@ -352,14 +352,45 @@ describe('UsersPage', () => {
     })
   })
 
-  // Proves a person who has signed in can't be deleted from the menu.
-  it('offers no delete for an active account', async () => {
+  // Proves a person who has signed in has no invitation to delete or resend.
+  it('offers no invitation actions for an active account', async () => {
     const { user } = renderUsers()
     const rows = await tableRows()
     await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Student 01' }))
     await screen.findByRole('menuitem', { name: 'Edit' })
     expect(screen.queryByRole('menuitem', { name: 'Delete invitation' })).toBeNull()
     expect(screen.queryByRole('menuitem', { name: 'Resend invitation' })).toBeNull()
+  })
+
+  // Proves deleting an account for good needs the person's name typed, then removes them.
+  it('deletes a user after their name is typed', async () => {
+    // Arrange.
+    const { user } = renderUsers()
+    const rows = await tableRows()
+
+    // Act.
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Student 01' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete user' }))
+    const confirm = await screen.findByRole('alertdialog', { name: 'Delete Student 01 for good?' })
+    const button = within(confirm).getByRole('button', { name: 'Delete user' })
+    expect(button).toBeDisabled()
+    await user.type(within(confirm).getByLabelText('Type Student 01 to confirm'), 'Student 01')
+    await user.click(button)
+
+    // Assert.
+    expect(await screen.findByText('Student 01 was deleted.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Actions for Student 01' })).toBeNull()
+    })
+  })
+
+  // Proves an invited person is deleted as an invitation, and one's own account is never offered.
+  it('offers no user delete for an invitation or the signed-in administrator', async () => {
+    const { user } = renderUsers('/admin/users', withInvitedStudent())
+    const rows = await tableRows()
+    await user.click(within(rows[1]!).getByRole('button', { name: 'Actions for Invited Ivy' }))
+    await screen.findByRole('menuitem', { name: 'Delete invitation' })
+    expect(screen.queryByRole('menuitem', { name: 'Delete user' })).toBeNull()
   })
 
   // Proves a teacher can be given a course from their row, and the course shows the teacher.
@@ -434,5 +465,6 @@ function renderUsersServices() {
     setUserStatus: unused,
     sendPasswordReset: unused,
     deleteInvitation: unused,
+    deleteUser: unused,
   }
 }

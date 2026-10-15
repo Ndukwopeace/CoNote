@@ -370,5 +370,31 @@ export function createMockUserService({
       // Save the platform, as every change does.
       onChange?.()
     },
+
+    async deleteUser(userId) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Who is deleting, and which account.
+      const actor = requireActor()
+      const user = find(userId)
+      // SECURITY: an administrator can't delete their own account and lose access.
+      if (user.id === actor) {
+        throw new AppError('validation', "You can't delete your own account.")
+      }
+      // Record first, while the person is still known; the entry keeps the role, never the name.
+      record(actor, 'user.deleted', user, { role: user.role })
+      // Remove the account and what hangs from it: enrolments and requests go with a student, and
+      // a teacher's courses are left without one.
+      data.users.splice(data.users.indexOf(user), 1)
+      data.enrollments = data.enrollments.filter((enrollment) => enrollment.studentId !== user.id)
+      data.enrollmentRequests = data.enrollmentRequests.filter(
+        (request) => request.studentId !== user.id,
+      )
+      for (const course of data.courses) {
+        if (course.teacherId === user.id) course.teacherId = null
+      }
+      // Save the platform, as every change does.
+      onChange?.()
+    },
   }
 }

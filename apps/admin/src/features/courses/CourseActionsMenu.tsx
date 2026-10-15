@@ -1,5 +1,5 @@
 /**
- * The "…" menu on each row of the Courses list: view, edit, and archive or restore.
+ * The "…" menu on each row of the Courses list: view, edit, archive, and restore or delete.
  */
 
 // The menu icon.
@@ -53,6 +53,7 @@ export function CourseActionsMenu({ course }: Readonly<{ course: CourseListItem 
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={actions.restore}>Restore</DropdownMenuItem>
+              <DropdownMenuItem onSelect={actions.askDelete}>Delete</DropdownMenuItem>
             </>
           ) : (
             <>
