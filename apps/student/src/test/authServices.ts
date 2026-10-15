@@ -28,6 +28,8 @@ export function hangingAuth(): AuthService {
     // Every request a form can make hangs.
     signIn: never,
     signUp: never,
+    verifySignUpCode: never,
+    resendSignUpCode: never,
     signInWithProvider: never,
     completeProviderSignIn: never,
     requestPasswordReset: never,
@@ -43,6 +45,8 @@ export function offlineAuth(): AuthService {
   return authWith({
     signIn: fail,
     signUp: fail,
+    verifySignUpCode: fail,
+    resendSignUpCode: fail,
     signInWithProvider: fail,
     completeProviderSignIn: fail,
     requestPasswordReset: fail,

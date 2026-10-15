@@ -36,10 +36,17 @@ export interface AuthService {
   /** Signs in with email and password; rejects with a validation AppError on bad input. */
   signIn(input: SignInInput): Promise<Session>
   /**
-   * Creates a student account. Signs the student in, or reports that they must confirm their
-   * email first (D76).
+   * Creates a student account. Signs the student in, or reports that they must type the code
+   * emailed to them first (D76, D99).
    */
   signUp(input: SignUpInput): Promise<SignUpResult>
+  /**
+   * Finishes a sign-up with the code that was emailed, and signs the student in. Rejects with a
+   * validation error for a malformed, wrong, used or expired code.
+   */
+  verifySignUpCode(email: string, code: string): Promise<Session>
+  /** Emails a new sign-up code. Rejects with a validation error when emails are being limited. */
+  resendSignUpCode(email: string): Promise<void>
   /** Signs in through Google (decision D38). */
   signInWithProvider(provider: OAuthProvider): Promise<Session>
   /**

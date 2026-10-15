@@ -29,7 +29,8 @@ const AUTH_CODES: Readonly<Record<string, Mapped>> = {
   invalid_credentials: { kind: 'validation', message: 'Email or password is incorrect.' },
   email_not_confirmed: {
     kind: 'validation',
-    message: 'Confirm your email address first. Check your inbox.',
+    message:
+      'Your email is not confirmed yet. Sign up again with the same email to get a new code.',
   },
   weak_password: { kind: 'validation', message: 'Choose a stronger password.' },
   same_password: { kind: 'validation', message: 'Choose a password you have not used before.' },

@@ -80,6 +80,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       // Actions pass straight through to the service. State updates arrive via onAuthChange.
       signIn: (input) => auth.signIn(input),
       signUp: (input) => auth.signUp(input),
+      verifySignUpCode: (email, code) => auth.verifySignUpCode(email, code),
+      resendSignUpCode: (email) => auth.resendSignUpCode(email),
       signInWithProvider: (provider) => auth.signInWithProvider(provider),
       requestPasswordReset: (email) => auth.requestPasswordReset(email),
       resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),

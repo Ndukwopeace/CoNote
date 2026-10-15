@@ -47,6 +47,12 @@ email_sent = 20
 subject = "Reset your CoNote password"
 content_path = "./supabase/templates/recovery.html"
 
+# The sign-up email carries a code to type in, not a link (D99). The code is 6 digits, which is
+# the shortest Supabase allows and what the student app expects (SIGN_UP_CODE_LENGTH).
+[auth.email.template.confirmation]
+subject = "Your CoNote code: {{ .Token }}"
+content_path = "./supabase/templates/confirmation.html"
+
 # The summary pipeline's worker checks its own secret token instead of a sign-in token: the
 # scheduler that calls it is not a signed-in person (D90).
 [functions.process-ai-jobs]

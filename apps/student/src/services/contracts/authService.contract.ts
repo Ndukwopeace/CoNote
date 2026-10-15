@@ -89,6 +89,35 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       await expect(auth.getSession()).resolves.toBeNull()
     })
 
+    // Proves the email code is checked before anything is sent, and a code nobody sent is refused,
+    // on every implementation (a real code can only come from the email, so the contract checks
+    // the refusals).
+    it('refuses a malformed or wrong sign-up code', async () => {
+      // Arrange: a fresh service.
+      const auth = create()
+
+      // Assert: too short, not digits, a bad address, and six digits nobody was sent.
+      await expect(auth.verifySignUpCode('ada@example.com', '12')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+      await expect(auth.verifySignUpCode('ada@example.com', 'abcdef')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+      await expect(auth.verifySignUpCode('nope', '123456')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+      await expect(auth.verifySignUpCode('nobody@example.com', '000000')).rejects.toMatchObject({
+        kind: 'validation',
+      })
+      // Nobody was signed in by any of them.
+      await expect(auth.getSession()).resolves.toBeNull()
+    })
+
+    // Proves asking for a new code needs a real address, on every implementation.
+    it('refuses to resend a code to a malformed address', async () => {
+      await expect(create().resendSignUpCode('nope')).rejects.toMatchObject({ kind: 'validation' })
+    })
+
     // Proves sign-out really ends the session (important on shared computers).
     it('clears the session on sign-out', async () => {
       // Arrange: signed in.
@@ -187,7 +216,7 @@ export function runAuthServiceContract(name: string, options: AuthContractOption
       if (result.status === 'signed_in') {
         expect(result.session.user).toMatchObject({ fullName: 'Ada Obi', role: 'student' })
       } else {
-        expect(result.status).toBe('confirm_email')
+        expect(result.status).toBe('verify_code')
       }
     })
   })

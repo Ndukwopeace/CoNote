@@ -1,0 +1,15 @@
+<!-- Sign-up email. {{ .Token }} is the code the student types into the sign-up page, which signs
+     them in at once. There is no link on purpose: a link means leaving the app, opening a browser
+     and signing in again, which is what this replaced. In the hosted project, paste this into
+     Authentication > Emails > Templates > Confirm sign up, and set the subject to
+     "Your CoNote code: {{ .Token }}". The code's length is the project's "Email OTP Length"
+     setting (6 to 10 digits; the app expects 6, see SIGN_UP_CODE_LENGTH). -->
+<h2>Your CoNote code</h2>
+<p>Type this code on the sign-up page to finish creating your account:</p>
+<p style="font-size: 28px; font-weight: bold; letter-spacing: 6px; font-family: monospace">
+  {{ .Token }}
+</p>
+<p>
+  The code works once and expires soon. If you did not sign up for CoNote, ignore this email and
+  nothing happens.
+</p>

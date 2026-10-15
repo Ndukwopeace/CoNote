@@ -20,7 +20,12 @@ import { createSessionCore } from '@conote/supabase/sessionCore'
 
 // The checks every auth service runs, and the name and password rules.
 import { assertEmail, assertRule } from '@/lib/authRules'
-import { fullNameSchema, newPasswordSchema } from '@/lib/authSchemas'
+import {
+  cleanSignUpCode,
+  fullNameSchema,
+  newPasswordSchema,
+  signUpCodeSchema,
+} from '@/lib/authSchemas'
 // Addresses the emails and the Google redirect return to.
 import { ROUTES } from '@/lib/routes'
 // Session shape returned to the app.
@@ -41,6 +46,10 @@ interface SupabaseAuthOptions {
   // The app's address, for links in emails and the Google redirect.
   origin: string
 }
+
+// Shown when a sign-up code is wrong, used or expired. One wording for all three, so nothing about
+// the account leaks, and it says what to do next.
+const CODE_REFUSED = 'That code is not right or has expired. Ask for a new code and try again.'
 
 /** The Supabase auth service: the shared interface, and a way to refresh who is shown as signed in. */
 export type SupabaseAuthService = AuthService & {
@@ -82,15 +91,46 @@ export function createSupabaseAuthService({
           // The database trigger copies the name into the profile. The role is NOT sent: a new
           // account is always a student, whatever the browser says.
           data: { full_name: fullName.trim() },
-          // The confirmation email returns to the sign-in page.
-          emailRedirectTo: `${origin}${ROUTES.login}`,
         },
       })
       if (error) throw fromSupabaseError(error)
-      // Email confirmation is on (D76): the account exists but cannot sign in yet.
-      if (!data.session) return { status: 'confirm_email' }
+      // Email confirmation is on (D76): the account exists but cannot sign in until the student
+      // types the code the email carries (D99).
+      if (!data.session) return { status: 'verify_code' }
       const session = await core.adoptSession(data.session.user.id)
       return { status: 'signed_in', session }
+    },
+
+    async verifySignUpCode(email, code) {
+      assertEmail(email)
+      // SECURITY: the code is checked for shape here too, so a request that skips the form cannot
+      // send Supabase anything but six digits.
+      assertRule(signUpCodeSchema, { code })
+      // The new account is remembered, like every sign-up.
+      rememberStorage.setRemember(true)
+      const { data, error } = await client.auth.verifyOtp({
+        email,
+        token: cleanSignUpCode(code),
+        type: 'signup',
+      })
+      if (error) {
+        const mapped = fromSupabaseError(error)
+        // A dropped connection says nothing about the code, so the student can simply try again.
+        if (mapped.kind === 'network') throw mapped
+        // Wrong, used and expired codes are all refused the same way, in wording we choose.
+        throw new AppError('validation', CODE_REFUSED)
+      }
+      // A right code always brings a session; an answer without one is not a sign-in.
+      if (!data.session || !data.user) throw new AppError('validation', CODE_REFUSED)
+      // The same checks as any sign-in, then tell the app.
+      return core.adoptSession(data.user.id)
+    },
+
+    async resendSignUpCode(email) {
+      assertEmail(email)
+      // Supabase limits how often an email goes out; that limit is explained by the error mapper.
+      const { error } = await client.auth.resend({ type: 'signup', email })
+      if (error) throw fromSupabaseError(error)
     },
 
     async signInWithProvider(provider) {

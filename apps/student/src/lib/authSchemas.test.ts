@@ -7,10 +7,13 @@ import { describe, expect, it } from 'vitest'
 
 // The schemas under test.
 import {
+  SIGN_UP_CODE_LENGTH,
+  cleanSignUpCode,
   forgotPasswordSchema,
   newPasswordSchema,
   resetPasswordSchema,
   signInSchema,
+  signUpCodeSchema,
   signUpSchema,
 } from './authSchemas'
 
@@ -163,5 +166,35 @@ describe('resetPasswordSchema', () => {
     expect(
       firstError(resetPasswordSchema, { password: 'password1', confirmPassword: 'password9' }),
     ).toBe('Passwords do not match.')
+  })
+})
+
+describe('sign-up code', () => {
+  // Proves pasted codes are cleaned: people paste "123 456" or "123-456" from the email.
+  it.each([
+    ['123456', '123456'],
+    [' 123 456 ', '123456'],
+    ['123-456', '123456'],
+    ['12a3b4c5d6', '123456'],
+    ['', ''],
+  ])('cleans %j to %j', (typed, clean) => {
+    expect(cleanSignUpCode(typed)).toBe(clean)
+  })
+
+  // Proves the code is six digits; the length is one constant, so a project setting changing it
+  // is one edit here.
+  it('is six digits long', () => {
+    expect(SIGN_UP_CODE_LENGTH).toBe(6)
+  })
+
+  // Proves anything but the right number of digits is refused with a message that says what to do.
+  it.each([[''], ['12345'], ['1234567'], ['abcdef'], ['12 34']])('refuses %j', (value) => {
+    expect(firstError(signUpCodeSchema, { code: value })).toBe('Enter the 6-digit code.')
+  })
+
+  // Proves a good code passes however it was typed, and comes out clean.
+  it('accepts six digits typed with spaces', () => {
+    const result = signUpCodeSchema.safeParse({ code: '123 456' })
+    expect(result.success && result.data.code).toBe('123456')
   })
 })

@@ -5,7 +5,7 @@
 
 // Connects zod schemas to react-hook-form.
 import { zodResolver } from '@hookform/resolvers/zod'
-// Remembers where the confirmation email went.
+// Remembers which step the sign-up is on.
 import { useState } from 'react'
 // Form state, validation timing and field registration.
 import { useForm } from 'react-hook-form'
@@ -26,12 +26,16 @@ import { Button } from '@conote/ui/button'
 import { Input } from '@conote/ui/input'
 // The Google button.
 import { OAuthButtons } from '@/features/auth/OAuthButtons'
+// The code step.
+import { VerifyCodeForm } from '@/features/auth/VerifyCodeForm'
 // Sign-up actions.
 import { useAuth } from '@/features/auth/useAuth'
 // Busy and error handling shared by the auth forms.
 import { useAuthRequest } from '@/features/auth/useAuthRequest'
 // The sign-up rules and the form's value type.
 import { MAX_NAME_LENGTH, signUpSchema, type SignUpValues } from '@/lib/authSchemas'
+// Keeps the code step across a reload.
+import { clearPendingSignup, readPendingSignup, rememberPendingSignup } from '@/lib/pendingSignup'
 // Route constants.
 import { ROUTES } from '@/lib/routes'
 
@@ -47,15 +51,17 @@ const EMPTY: SignUpValues = {
 /**
  * Create an account. A successful sign-up signs the student in, and RedirectIfSignedIn then
  * opens the dashboard; the page itself never navigates. When the backend needs the email
- * confirmed first (D76), the page says to check the inbox instead.
+ * confirmed first (D76), the page asks for the code it emailed (D99); typing it signs the
+ * student in the same way.
  */
 export function SignUpPage() {
   // The actions this page uses.
   const { signUp, signInWithProvider } = useAuth()
   // Busy flag, server error and the request runner.
   const { error, isPending, run } = useAuthRequest()
-  // The address a confirmation email was sent to, once the backend asks for confirmation (D76).
-  const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null)
+  // The address a code was sent to, once the backend asks for confirmation (D76). Starts from a
+  // remembered sign-up, so the code screen survives the student leaving to read the email.
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(() => readPendingSignup(new Date()))
   // The form. Errors appear when a field loses focus and on submit (FR-AUTH-3).
   const {
     register,
@@ -63,23 +69,25 @@ export function SignUpPage() {
     formState: { errors },
   } = useForm({ resolver: zodResolver(signUpSchema), mode: 'onTouched', defaultValues: EMPTY })
 
-  // The backend created the account but needs the email confirmed before sign-in (D76).
-  if (confirmationSentTo !== null) {
+  // The backend created the account but needs the emailed code before sign-in (D76, D99).
+  if (codeSentTo !== null) {
     return (
       <div>
         {/* Tab title. */}
-        <PageTitle title="Check your email" />
-        <h1 className="text-2xl font-bold">Check your email</h1>
+        <PageTitle title="Enter your code" />
+        <h1 className="text-2xl font-bold">Enter your code</h1>
         {/* Polite status so screen readers announce the change of screen. */}
         <p role="status" className="mt-2 text-sm text-muted-foreground">
-          We sent a confirmation link to <strong>{confirmationSentTo}</strong>. Open it to finish
-          creating your account, then sign in.
+          We sent a code to <strong>{codeSentTo}</strong>. Type it below and you are in.
         </p>
-        <p className="mt-6 text-center text-sm">
-          <Link to={ROUTES.login} className="font-medium text-primary hover:underline">
-            Back to sign in
-          </Link>
-        </p>
+        <VerifyCodeForm
+          email={codeSentTo}
+          onChangeEmail={() => {
+            // Forget the address, so a reload shows the form again.
+            clearPendingSignup()
+            setCodeSentTo(null)
+          }}
+        />
       </div>
     )
   }
@@ -110,7 +118,11 @@ export function SignUpPage() {
           void handleSubmit(async ({ fullName, email, password }) => {
             const result = await run(() => signUp({ fullName, email, password }))
             // Signed in: RedirectIfSignedIn takes over. Otherwise show the next step.
-            if (result.ok && result.value.status === 'confirm_email') setConfirmationSentTo(email)
+            if (result.ok && result.value.status === 'verify_code') {
+              // Remember it, so a reload brings the code screen back.
+              rememberPendingSignup(email, new Date())
+              setCodeSentTo(email)
+            }
           })(event)
         }
         className="mt-6 space-y-4"

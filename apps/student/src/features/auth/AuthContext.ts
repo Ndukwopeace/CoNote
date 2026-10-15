@@ -38,6 +38,10 @@ export type AuthContextValue = AuthState & {
   signIn: (input: SignInInput) => Promise<Session>
   // Create an account.
   signUp: (input: SignUpInput) => Promise<SignUpResult>
+  // Finish a sign-up with the emailed code, which signs the student in.
+  verifySignUpCode: (email: string, code: string) => Promise<Session>
+  // Email a new sign-up code.
+  resendSignUpCode: (email: string) => Promise<void>
   // Sign in with Google.
   signInWithProvider: (provider: OAuthProvider) => Promise<Session>
   // Send a password reset link; the demo also returns the link (FR-AUTH-7).
