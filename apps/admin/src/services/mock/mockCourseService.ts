@@ -380,6 +380,34 @@ export function createMockCourseService({
       return toDetails(course)
     },
 
+    async deleteCourse(courseId) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Who is deleting, and which course.
+      const actor = requireActor()
+      const course = find(courseId)
+      // SECURITY: a course in use can't be deleted by one click; archiving it first is the pause
+      // that keeps a mistaken delete from destroying students' notes.
+      if (course.archivedAt === null) {
+        throw new AppError('validation', 'Archive this course before deleting it.')
+      }
+      // Record first, while the course is still known.
+      record(actor, 'course.deleted', course, { code: course.code })
+      // Remove the course and everything that hangs from it.
+      const classIds = new Set(
+        data.classes.filter((c) => c.courseId === course.id).map((c) => c.id),
+      )
+      data.courses.splice(data.courses.indexOf(course), 1)
+      data.enrollments = data.enrollments.filter((e) => e.courseId !== course.id)
+      data.enrollmentRequests = data.enrollmentRequests.filter((r) => r.courseId !== course.id)
+      data.resources = data.resources.filter((r) => r.courseId !== course.id)
+      data.classes = data.classes.filter((c) => c.courseId !== course.id)
+      data.summaries = data.summaries.filter((s) => !classIds.has(s.classId))
+      data.aiJobs = data.aiJobs.filter((job) => !classIds.has(job.classId))
+      // Save the platform, as every change does.
+      onChange?.()
+    },
+
     async assignTeacher(courseId, teacherId) {
       // Behave like a network call.
       await simulateLatency(latencyMs)

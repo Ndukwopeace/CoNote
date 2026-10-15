@@ -123,6 +123,18 @@ export function useDeleteInvitation() {
   })
 }
 
+/** Deletes an account for good. */
+export function useDeleteUser() {
+  // The user service, and the refresh after the change (the person leaves the lists, and the
+  // courses they were in change).
+  const { users } = useServices()
+  const refresh = useRefreshInBackground()
+  return useMutation({
+    mutationFn: (userId: string) => appQuery(() => users.deleteUser(userId)),
+    onSuccess: refresh,
+  })
+}
+
 /** Sends a password reset link, or an invited person's invitation again. */
 export function useSendPasswordReset() {
   // The user service, and the refresh after a change (the history shows it).

@@ -10,13 +10,20 @@ import { useState } from 'react'
 
 // The confirmation dialog.
 import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
+// The confirmation that asks for a name to be typed.
+import { TypeToConfirmDialog } from '@conote/ui/common/TypeToConfirmDialog'
 // Toasts.
 import { useToast } from '@conote/ui/toast'
 
 // The signed-in administrator.
 import { useAuth } from '@conote/portal'
 // The changes.
-import { useDeleteInvitation, useSendPasswordReset, useSetUserStatus } from '@/hooks/useUsers'
+import {
+  useDeleteInvitation,
+  useDeleteUser,
+  useSendPasswordReset,
+  useSetUserStatus,
+} from '@/hooks/useUsers'
 // Administrator-facing error wording.
 import { errorMessage } from '@/lib/errorMessages'
 // Status rules and wording.
@@ -62,10 +69,12 @@ export function useUserActions(user: UserListItem, { onDeleted }: UserActionOpti
   const setStatus = useSetUserStatus()
   const sendReset = useSendPasswordReset()
   const deleteInvitation = useDeleteInvitation()
+  const deleteUser = useDeleteUser()
   // The change waiting for confirmation, and whether the edit form is open.
   const [pending, setPending] = useState<StatusAction | null>(null)
-  // Whether the delete confirmation is open.
+  // Whether the delete confirmation is open, and whether the one for a real account is.
   const [deleting, setDeleting] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [editing, setEditing] = useState(false)
   const [assigning, setAssigning] = useState(false)
 
@@ -102,6 +111,12 @@ export function useUserActions(user: UserListItem, { onDeleted }: UserActionOpti
     // Asks before deleting an invitation.
     deleteInvitation: () => {
       setDeleting(true)
+    },
+    // Whether the account can be deleted for good: anyone who has accepted, but never one's own.
+    canDeleteUser: !isSelf && user.status !== 'pending',
+    // Asks for the name to be typed before deleting an account for good.
+    deleteUser: () => {
+      setDeletingAccount(true)
     },
     // Starts a change: asks first when it blocks the account.
     changeStatus: (action: StatusAction) => {
@@ -162,6 +177,27 @@ export function useUserActions(user: UserListItem, { onDeleted }: UserActionOpti
               deleteInvitation.mutate(user.id, {
                 onSuccess: () => {
                   toast.success(`The invitation for ${user.fullName} was deleted.`)
+                  onDeleted?.()
+                },
+                onError: (error) => {
+                  toast.error(errorMessage(error))
+                },
+              })
+            }}
+          />
+        )}
+        {deletingAccount && (
+          <TypeToConfirmDialog
+            open
+            onOpenChange={setDeletingAccount}
+            title={`Delete ${user.fullName} for good?`}
+            description="Their account, notes, enrolments and requests are removed and can't be brought back. Deactivating keeps everything, if you only want them out for now."
+            expected={user.fullName}
+            confirmLabel="Delete user"
+            onConfirm={() => {
+              deleteUser.mutate(user.id, {
+                onSuccess: () => {
+                  toast.success(`${user.fullName} was deleted.`)
                   onDeleted?.()
                 },
                 onError: (error) => {

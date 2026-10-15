@@ -120,6 +120,17 @@ export function useRestoreCourse() {
   })
 }
 
+/** Deletes an archived course for good. */
+export function useDeleteCourse() {
+  // The course service, and the refresh after a change.
+  const { courses } = useServices()
+  const refresh = useRefreshCourses()
+  return useMutation({
+    mutationFn: (courseId: string) => appQuery(() => courses.deleteCourse(courseId)),
+    onSuccess: refresh,
+  })
+}
+
 /** Assigns or changes the teacher. */
 export function useAssignTeacher() {
   // The course service, and the refresh after a change.

@@ -431,7 +431,23 @@ describe('setUserStatus, sendPasswordReset and deleteInvitation', () => {
     })
     await expect(service.sendPasswordReset('nobody')).rejects.toMatchObject({ kind: 'not_found' })
     await expect(service.deleteInvitation('nobody')).rejects.toMatchObject({ kind: 'not_found' })
+    await expect(service.deleteUser('nobody')).rejects.toMatchObject({ kind: 'not_found' })
     expect(invoke).not.toHaveBeenCalled()
+  })
+
+  // Proves deleting an account is one call to its function, and its refusals reach the screen.
+  it('deletes a user through the function', async () => {
+    const { service, invoke } = over()
+    await expect(service.deleteUser(USER)).resolves.toBeUndefined()
+    expect(invoke).toHaveBeenCalledWith('delete-user', { userId: USER })
+    const refused = over({
+      status: 400,
+      body: { error: { kind: 'validation', message: "You can't delete your own account." } },
+    })
+    await expect(refused.service.deleteUser(USER)).rejects.toMatchObject({
+      kind: 'validation',
+      message: "You can't delete your own account.",
+    })
   })
 
   // Proves deleting an invitation is one call to its function, and its refusals reach the screen.

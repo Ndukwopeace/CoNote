@@ -355,6 +355,33 @@ describe('CoursesPage', () => {
     expect(await screen.findByText('ENG 101 restored.')).toBeInTheDocument()
   })
 
+  // Proves only an archived course offers Delete, and it needs its code typed before it goes.
+  it('deletes an archived course only after its code is typed', async () => {
+    const { user } = renderCourses('/admin/courses?archived=true')
+    await tableRows()
+
+    // The archived course's menu offers Delete.
+    await user.click(screen.getByRole('button', { name: 'Actions for OLD 100' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
+    const confirm = await screen.findByRole('alertdialog', { name: 'Delete OLD 100 for good?' })
+    const button = within(confirm).getByRole('button', { name: 'Delete course' })
+    expect(button).toBeDisabled()
+    await user.type(within(confirm).getByLabelText('Type OLD 100 to confirm'), 'OLD 100')
+    await user.click(button)
+
+    expect(await screen.findByText('OLD 100 was deleted.')).toBeInTheDocument()
+    expect(await screen.findByText('No archived courses.')).toBeInTheDocument()
+  })
+
+  // Proves a course in use offers no Delete in its menu.
+  it('offers no delete for a course in use', async () => {
+    const { user } = renderCourses()
+    await tableRows()
+    await user.click(screen.getByRole('button', { name: 'Actions for CSC 101' }))
+    await screen.findByRole('menuitem', { name: 'Archive' })
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
   // Proves the page has no accessibility violations.
   it('has no accessibility violations', async () => {
     const { container } = renderCourses()

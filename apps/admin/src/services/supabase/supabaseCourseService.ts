@@ -435,6 +435,18 @@ export function createSupabaseCourseService({
       return toDetails(await findRow(row.id))
     },
 
+    async deleteCourse(courseId) {
+      await requireSession()
+      const row = await findRow(courseId)
+      // SECURITY: only an archived course can go, so one click never destroys a course in use.
+      if (row.archived_at === null) {
+        throw new AppError('validation', 'Archive this course before deleting it.')
+      }
+      // Its classes, notes, summaries, resources and enrolments follow by cascade, and the audit
+      // trigger records who deleted it.
+      await write(client.from('courses').delete().eq('id', row.id))
+    },
+
     async assignTeacher(courseId, teacherId) {
       await requireSession()
       const row = await findInUse(courseId)

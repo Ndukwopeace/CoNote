@@ -347,6 +347,30 @@ describe('changes to a course', () => {
     })
   })
 
+  // SECURITY: proves a course in use is never deleted, and nothing is written when it is refused.
+  it('refuses to delete a course in use', async () => {
+    const { service, queries } = over(null)
+    await expect(service.deleteCourse(COURSE)).rejects.toMatchObject({
+      message: 'Archive this course before deleting it.',
+    })
+    expect(queries.some((query) => query.calls.some((call) => call[0] === 'delete'))).toBe(false)
+  })
+
+  // Proves an archived course is deleted by its ID, and a refusal reaches the screen.
+  it('deletes an archived course by its ID', async () => {
+    const { service, queries } = over('2026-09-01T09:00:00.000Z')
+    await service.deleteCourse(COURSE)
+    const removal = queries.find((query) => query.calls.some((call) => call[0] === 'delete'))!
+    expect(removal.table).toBe('courses')
+    expect(made(removal, 'eq', 'id', COURSE)).toBe(true)
+    const refused = setup((query) =>
+      query.table === 'admin_courses'
+        ? { data: courseRow({ archived_at: '2026-09-01T09:00:00.000Z' }), error: null }
+        : refusal('42501'),
+    )
+    await expect(refused.service.deleteCourse(COURSE)).rejects.toMatchObject({ kind: 'forbidden' })
+  })
+
   // Proves archiving stamps the time from the clock.
   it('archives with the clock’s time', async () => {
     const { service, queries } = over(null)

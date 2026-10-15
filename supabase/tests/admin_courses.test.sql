@@ -98,4 +98,23 @@ select tests.is((select status::text from public.enrollment_requests where stude
 select tests.is((select (public.decide_enrollment_request((select id from public.enrollment_requests where student_id = '00000000-0000-0000-0000-0000000000c2'), 'declined')).status::text), 'declined', 'a suspended student''s request can still be declined');
 select tests.reset();
 
+-- ===== Deleting a course =====
+-- Only an administrator can delete one; a teacher and a student find nothing to delete.
+select tests.login(:t1);
+select tests.affects('delete from public.courses where id = ' || quote_literal(:c1), 0, 'a teacher cannot delete a course');
+select tests.reset();
+select tests.login(:s1);
+select tests.affects('delete from public.courses where id = ' || quote_literal(:c1), 0, 'a student cannot delete a course');
+select tests.reset();
+select tests.anonymous();
+select tests.denied('delete from public.courses where id = ' || quote_literal(:c1), 'a visitor cannot delete a course');
+select tests.reset();
+-- An administrator can: the classes and enrolments go with it, and the audit log says who.
+select tests.login(:admin);
+select tests.affects('delete from public.courses where id = ' || quote_literal(:c1), 1, 'an administrator deletes a course');
+select tests.rows('select * from public.class_sessions where course_id = ' || quote_literal(:c1), 0, 'its classes go with it');
+select tests.rows('select * from public.enrollments where course_id = ' || quote_literal(:c1), 0, 'its enrolments go with it');
+select tests.rows('select * from public.audit_logs where action = ''courses.delete'' and course_id = ' || quote_literal(:c1) || ' and actor_id = ' || quote_literal(:admin), 1, 'the deletion is recorded with who did it');
+select tests.reset();
+
 rollback;

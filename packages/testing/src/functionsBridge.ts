@@ -7,6 +7,7 @@
 
 // The handlers, the settings and the real clients, exactly as the functions use them.
 import { deleteInvitationHandler } from '../../../supabase/functions/_shared/deleteInvitation.ts'
+import { deleteUserHandler } from '../../../supabase/functions/_shared/deleteUser.ts'
 import { healthHandler } from '../../../supabase/functions/_shared/health.ts'
 import { inviteUserHandler } from '../../../supabase/functions/_shared/inviteUser.ts'
 import { sendPasswordResetHandler } from '../../../supabase/functions/_shared/sendPasswordReset.ts'
@@ -48,6 +49,7 @@ export function createFunctionBridge({ url, anonKey, serviceKey, now, token }: B
   // Each function's handler, by name.
   const handlers: Record<string, ((request: Request) => Promise<Response>) | undefined> = {
     'delete-invitation': deleteInvitationHandler(deps),
+    'delete-user': deleteUserHandler(deps),
     health: healthHandler(deps),
     'invite-user': inviteUserHandler(deps),
     'set-user-status': setUserStatusHandler(deps),
