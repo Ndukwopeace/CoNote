@@ -22,7 +22,11 @@ describe('fromSupabaseError', () => {
   // Proves each known sign-in failure becomes a message the form can show.
   it.each([
     ['invalid_credentials', 'validation', 'Email or password is incorrect.'],
-    ['email_not_confirmed', 'validation', 'Confirm your email address first. Check your inbox.'],
+    [
+      'email_not_confirmed',
+      'validation',
+      'Your email is not confirmed yet. Sign up again with the same email to get a new code.',
+    ],
     ['weak_password', 'validation', 'Choose a stronger password.'],
     [
       'over_request_rate_limit',

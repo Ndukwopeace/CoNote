@@ -95,6 +95,9 @@ export function createFakeSupabase() {
     signOut: vi.fn<(c: unknown) => Promise<Answer>>(() =>
       Promise.resolve({ data: {}, error: null }),
     ),
+    resend: vi.fn<(c: unknown) => Promise<Answer>>(() =>
+      Promise.resolve({ data: {}, error: null }),
+    ),
     resetPasswordForEmail: vi.fn<(e: string, o: unknown) => Promise<Answer>>(() =>
       Promise.resolve({ data: {}, error: null }),
     ),

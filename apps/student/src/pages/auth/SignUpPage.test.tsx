@@ -5,18 +5,24 @@
 // Queries the rendered page.
 import { screen } from '@testing-library/react'
 // Vitest building blocks.
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The real route table.
 import { routes } from '@/app/routes'
 // Accessibility check.
 import { expectNoAxeViolations } from '@conote/testing/axe'
+// The shared error type.
+import { AppError } from '@conote/core/errors'
+// Remembers a sign-up that is waiting for its code.
+import { rememberPendingSignup } from '@/lib/pendingSignup'
 // An auth service that hangs.
 import { authWith, hangingAuth } from '@/test/authServices'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 // Services type.
 import type { Services } from '@/services/types'
+// Session type, for the code check.
+import type { Session } from '@/types/auth'
 
 /** Renders the sign-up page and waits for it to load. */
 async function renderSignUp(services?: Partial<Services>) {
@@ -27,6 +33,37 @@ async function renderSignUp(services?: Partial<Services>) {
   // Hand back the tools.
   return result
 }
+
+/** Fills the form with a valid student and submits it. */
+async function fillAndSubmit(user: Awaited<ReturnType<typeof renderSignUp>>['user']) {
+  await user.type(screen.getByLabelText('Full name'), 'Ada Obi')
+  await user.type(screen.getByLabelText('Email address'), 'ada@example.com')
+  await user.type(screen.getByLabelText('Password'), 'password1')
+  await user.type(screen.getByLabelText('Confirm password'), 'password1')
+  await user.click(screen.getByRole('checkbox'))
+  await user.click(screen.getByRole('button', { name: 'Sign up' }))
+}
+
+/**
+ * An auth service whose sign-up asks for the emailed code. `base` is the demo service whose
+ * session a successful check creates; `verifySignUpCode` replaces the check.
+ */
+function needsCode(
+  base = authWith({}),
+  verifySignUpCode: (email: string, code: string) => Promise<Session> = (email, code) =>
+    base.verifySignUpCode(email, code),
+) {
+  return {
+    ...base,
+    signUp: () => Promise.resolve({ status: 'verify_code' as const }),
+    verifySignUpCode,
+  }
+}
+
+beforeEach(() => {
+  // A remembered sign-up from one test must not show the code screen in the next.
+  window.localStorage.clear()
+})
 
 describe('SignUpPage', () => {
   // Proves every part of FR-AUTH-2 is present and accessible.
@@ -113,30 +150,165 @@ describe('SignUpPage', () => {
     ).toBeInTheDocument()
   })
 
-  // Proves a backend that needs email confirmation (D76) shows what to do next instead of
+  // Proves a backend that needs the email confirmed (D76) asks for the code it emailed, instead of
   // pretending the student is signed in.
-  it('asks the student to check their email when confirmation is required', async () => {
-    // Arrange: a service that reports "confirm your email".
-    const { user } = await renderSignUp({
-      auth: authWith({ signUp: () => Promise.resolve({ status: 'confirm_email' as const }) }),
-    })
+  it('asks for the emailed code when confirmation is required', async () => {
+    // Arrange: a service that reports "enter your code".
+    const { user } = await renderSignUp({ auth: needsCode() })
 
     // Act.
-    await user.type(screen.getByLabelText('Full name'), 'Ada Obi')
-    await user.type(screen.getByLabelText('Email address'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    await user.type(screen.getByLabelText('Confirm password'), 'password1')
-    await user.click(screen.getByRole('checkbox'))
-    await user.click(screen.getByRole('button', { name: 'Sign up' }))
+    await fillAndSubmit(user)
 
-    // Assert: the next step names the address and offers the way back to sign in.
+    // Assert: the next step names the address, the form is gone, and the way back is offered.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Check your email' }),
+      await screen.findByRole('heading', { level: 1, name: 'Enter your code' }),
     ).toBeInTheDocument()
     expect(screen.getByText(/ada@example\.com/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to sign in' })).toHaveAttribute('href', '/login')
-    // The form is gone, so nothing can be submitted twice.
+    expect(screen.getByLabelText('Verification code')).toHaveAttribute(
+      'autocomplete',
+      'one-time-code',
+    )
+    expect(screen.getByLabelText('Verification code')).toHaveAttribute('inputmode', 'numeric')
     expect(screen.queryByRole('button', { name: 'Sign up' })).toBeNull()
+  })
+
+  // Proves the student is signed in the moment the sixth digit is typed, with no button to press.
+  it('signs in as soon as the sixth digit is typed', async () => {
+    // Arrange: one demo service; the code check signs its student in.
+    const base = authWith({})
+    const verifySignUpCode = vi.fn((email: string, code: string) =>
+      base.completeProviderSignIn(`${email}/${code}`),
+    )
+    const { user } = await renderSignUp({ auth: needsCode(base, verifySignUpCode) })
+    await fillAndSubmit(user)
+
+    // Act: type the digits.
+    await user.type(await screen.findByLabelText('Verification code'), '482913')
+
+    // Assert: asked once with the address and the code, the remembered address is gone, and the
+    // dashboard opens.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+    ).toBeInTheDocument()
+    expect(verifySignUpCode).toHaveBeenCalledTimes(1)
+    expect(verifySignUpCode).toHaveBeenCalledWith('ada@example.com', '482913')
+    expect(window.localStorage.getItem('conote:pending-signup')).toBeNull()
+  })
+
+  // Proves a code pasted with a space (as people copy it from the email) works.
+  it('accepts a pasted code with a space in it', async () => {
+    // Arrange.
+    const base = authWith({})
+    const verifySignUpCode = vi.fn((email: string, code: string) =>
+      base.completeProviderSignIn(`${email}/${code}`),
+    )
+    const { user } = await renderSignUp({ auth: needsCode(base, verifySignUpCode) })
+    await fillAndSubmit(user)
+
+    // Act.
+    await user.click(await screen.findByLabelText('Verification code'))
+    await user.paste('482 913')
+
+    // Assert.
+    await screen.findByRole('heading', { level: 1, name: /^Good / })
+    expect(verifySignUpCode).toHaveBeenCalledWith('ada@example.com', '482913')
+  })
+
+  // Proves a wrong code stays on the screen with a message that says what to do.
+  it('says so when the code is wrong', async () => {
+    // Arrange.
+    const { user } = await renderSignUp({
+      auth: needsCode(authWith({}), () =>
+        Promise.reject(new AppError('validation', 'That code is not right or has expired.')),
+      ),
+    })
+    await fillAndSubmit(user)
+
+    // Act.
+    await user.type(await screen.findByLabelText('Verification code'), '000000')
+
+    // Assert.
+    expect(await screen.findByText('That code is not right or has expired.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Verification code')).toBeInTheDocument()
+  })
+
+  // Proves a short code is caught on the page, before anything is sent.
+  it('asks for all six digits before sending', async () => {
+    // Arrange.
+    const verifySignUpCode = vi.fn()
+    const { user } = await renderSignUp({ auth: needsCode(authWith({}), verifySignUpCode) })
+    await fillAndSubmit(user)
+
+    // Act.
+    await user.type(await screen.findByLabelText('Verification code'), '482')
+    await user.click(screen.getByRole('button', { name: 'Verify' }))
+
+    // Assert.
+    expect(await screen.findByText('Enter the 6-digit code.')).toBeInTheDocument()
+    expect(verifySignUpCode).not.toHaveBeenCalled()
+  })
+
+  // Proves a new code can be asked for, the student is told, and the button waits before it can be
+  // pressed again (the service limits how often an email goes out).
+  it('sends a new code and waits before another', async () => {
+    // Arrange.
+    const resendSignUpCode = vi.fn(() => Promise.resolve())
+    const { user } = await renderSignUp({
+      auth: { ...needsCode(), resendSignUpCode },
+    })
+    await fillAndSubmit(user)
+
+    // Act.
+    await user.click(await screen.findByRole('button', { name: 'Send a new code' }))
+
+    // Assert.
+    expect(await screen.findByText(/new code is on its way/i)).toBeInTheDocument()
+    expect(resendSignUpCode).toHaveBeenCalledWith('ada@example.com')
+    expect(screen.getByRole('button', { name: /Send a new code in \d+s/ })).toBeDisabled()
+  })
+
+  // Proves a wrong address can be fixed: the form comes back, and the remembered step is dropped.
+  it('goes back to the form to use a different email', async () => {
+    // Arrange.
+    const { user } = await renderSignUp({ auth: needsCode() })
+    await fillAndSubmit(user)
+
+    // Act.
+    await user.click(await screen.findByRole('button', { name: 'Use a different email' }))
+
+    // Assert.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Create your account' }),
+    ).toBeInTheDocument()
+    expect(window.localStorage.getItem('conote:pending-signup')).toBeNull()
+  })
+
+  // Proves the code screen is still there after the page reloads, as happens on a phone when the
+  // student switches to the email app and back.
+  it('shows the code screen again after a reload', async () => {
+    // Arrange: a sign-up from a minute ago is remembered.
+    rememberPendingSignup('ada@example.com', new Date())
+
+    // Act: open the sign-up page.
+    window.localStorage.setItem('conote:keep', '1')
+    renderWithRouter({ routes, path: '/signup', services: { auth: needsCode() } })
+
+    // Assert.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Enter your code' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/ada@example\.com/)).toBeInTheDocument()
+  })
+
+  // Proves the code screen has no accessibility problems.
+  it('has no accessibility violations on the code screen', async () => {
+    // Arrange.
+    const { user, container } = await renderSignUp({ auth: needsCode() })
+    await fillAndSubmit(user)
+    await screen.findByRole('heading', { level: 1, name: 'Enter your code' })
+
+    // Assert.
+    await expectNoAxeViolations(container)
   })
 
   // Proves the button shows progress while the account is created (FR-AUTH-6).

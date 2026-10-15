@@ -130,6 +130,22 @@ describe('mock AuthService', () => {
     expect(session.user.role).toBe('student')
   })
 
+  // Proves the demo (which sends no email) accepts one fixed code, so the code screen can be tried,
+  // and refuses every other.
+  it('verifies the demo sign-up code', async () => {
+    // Arrange.
+    const auth = createService()
+
+    // Act and assert: a wrong code is refused; the demo code signs the student in.
+    await expect(auth.verifySignUpCode('ada@example.com', '000000')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+    const session = await auth.verifySignUpCode('ada@example.com', '123456')
+    expect(session.user).toMatchObject({ email: 'ada@example.com', role: 'student' })
+    await expect(auth.getSession()).resolves.not.toBeNull()
+    await expect(auth.resendSignUpCode('ada@example.com')).resolves.toBeUndefined()
+  })
+
   // Proves the demo finishes a provider sign-in from the code the page found in the address, and
   // refuses a missing one the way a real backend would.
   it('completes a provider sign-in from a code', async () => {

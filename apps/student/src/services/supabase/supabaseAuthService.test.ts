@@ -121,7 +121,8 @@ describe('signUp', () => {
     expect(auth.signUp).toHaveBeenCalledWith({
       email: 'ada@example.com',
       password: 'password1',
-      options: { data: { full_name: 'Ada Obi' }, emailRedirectTo: 'https://app.example/login' },
+      // No link in the email any more, so no return address either: the student types a code.
+      options: { data: { full_name: 'Ada Obi' } },
     })
   })
 
@@ -129,7 +130,7 @@ describe('signUp', () => {
   it('asks for email confirmation when there is no session yet', async () => {
     const { service, auth } = setup()
     auth.signUp.mockResolvedValueOnce({ data: { session: null, user: { id: '1' } }, error: null })
-    await expect(service.signUp(input)).resolves.toEqual({ status: 'confirm_email' })
+    await expect(service.signUp(input)).resolves.toEqual({ status: 'verify_code' })
   })
 
   // Proves a backend with confirmation switched off signs the student in.
@@ -587,6 +588,108 @@ describe('completeProviderSignIn', () => {
     profile.answer = { data: profileRow({ status }), error: null }
     await expect(service.completeProviderSignIn('google-code')).rejects.toMatchObject({
       kind: 'forbidden',
+    })
+  })
+})
+
+describe('verifySignUpCode', () => {
+  // Proves bad input never reaches Supabase: a wrong address, or anything but six digits.
+  it('validates before calling Supabase', async () => {
+    const { service, auth } = setup()
+    await expect(service.verifySignUpCode('nope', '123456')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+    await expect(service.verifySignUpCode('ada@example.com', '12345')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'Enter the 6-digit code.',
+    })
+    await expect(service.verifySignUpCode('ada@example.com', 'abcdef')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+    expect(auth.verifyOtp).not.toHaveBeenCalled()
+  })
+
+  // Proves the code is checked for a sign-up, cleaned of spaces, and the student is signed in from
+  // their profile without any further step.
+  it('verifies the code and signs the student in', async () => {
+    const { service, auth } = setup()
+    const session = await service.verifySignUpCode('ada@example.com', '123 456')
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'ada@example.com',
+      token: '123456',
+      type: 'signup',
+    })
+    expect(session.user).toMatchObject({ role: 'student', fullName: 'Victory Eze' })
+  })
+
+  // Proves the sign-in is remembered, like every new account (a sign-up is not a shared computer).
+  it('remembers the new session', async () => {
+    const { service } = setup()
+    await service.verifySignUpCode('ada@example.com', '123456')
+    expect(window.localStorage.getItem('fake-remember')).toBe('1')
+  })
+
+  // Proves a code that is wrong, used or expired is explained in one way, so nothing about the
+  // account leaks, and the message says what to do.
+  it('explains a code that was refused', async () => {
+    const { service, auth } = setup()
+    auth.verifyOtp.mockResolvedValueOnce({
+      data: {},
+      error: { name: 'AuthApiError', status: 403, code: 'otp_expired', message: 'raw text' },
+    })
+    await expect(service.verifySignUpCode('ada@example.com', '123456')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'That code is not right or has expired. Ask for a new code and try again.',
+    })
+  })
+
+  // Proves a dropped connection is reported as one, so the student can simply try again.
+  it('reports a dropped connection', async () => {
+    const { service, auth } = setup()
+    auth.verifyOtp.mockResolvedValueOnce({
+      data: {},
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'offline' },
+    })
+    await expect(service.verifySignUpCode('ada@example.com', '123456')).rejects.toMatchObject({
+      kind: 'network',
+    })
+  })
+
+  // Proves an answer without a session is not mistaken for a sign-in.
+  it('refuses an answer that carries no session', async () => {
+    const { service, auth } = setup()
+    auth.verifyOtp.mockResolvedValueOnce({ data: { session: null, user: null }, error: null })
+    await expect(service.verifySignUpCode('ada@example.com', '123456')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+})
+
+describe('resendSignUpCode', () => {
+  // Proves a new code is asked for as a sign-up email, and a bad address never reaches Supabase.
+  it('asks Supabase to send the sign-up email again', async () => {
+    const { service, auth } = setup()
+    await expect(service.resendSignUpCode('nope')).rejects.toMatchObject({ kind: 'validation' })
+    expect(auth.resend).not.toHaveBeenCalled()
+    await service.resendSignUpCode('ada@example.com')
+    expect(auth.resend).toHaveBeenCalledWith({ type: 'signup', email: 'ada@example.com' })
+  })
+
+  // Proves the limit on emails is explained, not shown as a failure.
+  it('explains the limit on emails', async () => {
+    const { service, auth } = setup()
+    auth.resend.mockResolvedValueOnce({
+      data: {},
+      error: {
+        name: 'AuthApiError',
+        status: 429,
+        code: 'over_email_send_rate_limit',
+        message: 'x',
+      },
+    })
+    await expect(service.resendSignUpCode('ada@example.com')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'Too many attempts. Wait a few minutes and try again.',
     })
   })
 })

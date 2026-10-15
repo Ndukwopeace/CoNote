@@ -148,10 +148,40 @@ export const changePasswordSchema = z
     when: bothPasswordsPresent,
   })
 
+/**
+ * How many digits the emailed sign-up code has. Supabase's email codes are 6 to 10 digits long
+ * (its minimum is 6), and this must match the "Email OTP Length" setting of the project.
+ */
+export const SIGN_UP_CODE_LENGTH = 6
+
+/**
+ * A typed or pasted code with everything but its digits removed. People paste "482 913" or
+ * "482-913" from the email, and a phone's keyboard may add a space.
+ */
+export function cleanSignUpCode(text: string): string {
+  // Keep the digits only.
+  return text.replaceAll(/\D/g, '')
+}
+
+/** The code form: the emailed digits, cleaned first, then counted. */
+export const signUpCodeSchema = z.object({
+  // Cleaned before it is counted, so a pasted code with a space passes.
+  code: z
+    .string()
+    .transform(cleanSignUpCode)
+    .pipe(
+      z
+        .string()
+        .length(SIGN_UP_CODE_LENGTH, `Enter the ${String(SIGN_UP_CODE_LENGTH)}-digit code.`),
+    ),
+})
+
 /** What the sign-in form holds while being filled in. */
 export type SignInValues = z.input<typeof signInSchema>
 /** What the sign-up form holds while being filled in. */
 export type SignUpValues = z.input<typeof signUpSchema>
+/** What the code form holds while being filled in. */
+export type SignUpCodeValues = z.input<typeof signUpCodeSchema>
 /** What the forgot-password form holds. */
 export type ForgotPasswordValues = z.input<typeof forgotPasswordSchema>
 /** What the reset-password form holds. */

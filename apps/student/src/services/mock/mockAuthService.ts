@@ -8,7 +8,12 @@ import { z } from 'zod'
 
 // The same name and password rules the forms use (FR-AUTH-3), and the checks every service runs.
 import { assertEmail, assertRule } from '@/lib/authRules'
-import { fullNameSchema, newPasswordSchema } from '@/lib/authSchemas'
+import {
+  cleanSignUpCode,
+  fullNameSchema,
+  newPasswordSchema,
+  signUpCodeSchema,
+} from '@/lib/authSchemas'
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
 // The reset page's address, for the demo reset link.
@@ -33,6 +38,10 @@ import { DEMO_STUDENT_ID } from './seed/constants'
  * SECURITY: the browser deletes sessionStorage when the tab or browser closes, so a name and
  * email are not left sitting on a shared computer.
  */
+// The one sign-up code the demo accepts, since it sends no email. It is shown nowhere in the app;
+// tests and anyone trying the demo's code screen use it.
+const DEMO_SIGN_UP_CODE = '123456'
+
 const SESSION_KEY = storageKey('session')
 /**
  * "Remember me" marker in localStorage. Deliberately holds no email or name
@@ -200,6 +209,32 @@ export function createMockAuthService({
       await simulateLatency(latencyMs)
       // No real provider in the demo: sign straight in as the demo student.
       return store(demoSession(DEMO_STUDENT.email), true)
+    },
+
+    async verifySignUpCode(email, code) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      assertEmail(email)
+      // SECURITY: the same rule as a real backend: six digits.
+      assertRule(signUpCodeSchema, { code })
+      // The demo sends no email, so it accepts one fixed code and refuses every other.
+      if (cleanSignUpCode(code) !== DEMO_SIGN_UP_CODE) {
+        throw new AppError(
+          'validation',
+          'That code is not right or has expired. Ask for a new code and try again.',
+        )
+      }
+      // A new account is in no courses yet, as in the demo's own sign-up.
+      startNewStudent(localStore)
+      // Signed in, and remembered like every new account.
+      return store(demoSession(email), true)
+    },
+
+    async resendSignUpCode(email) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Only the address is checked; the demo sends nothing.
+      assertEmail(email)
     },
 
     async completeProviderSignIn(code) {
