@@ -30,7 +30,7 @@ const BAR_COLOURS: Record<Theme, string> = { light: '#4F46E5', dark: '#0b0b10' }
 /** Whether a stored value is one of the themes. */
 function isTheme(value: unknown): value is Theme {
   // Compares against the list, so nothing else gets through.
-  return THEMES.some((theme) => theme === value)
+  return (THEMES as readonly unknown[]).includes(value)
 }
 
 /** The saved theme, or the default when nothing valid is saved. */

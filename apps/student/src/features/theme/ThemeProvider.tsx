@@ -26,7 +26,7 @@ function deviceStorage(): Pick<Storage, 'getItem' | 'setItem'> {
 /** Provides the theme to everything inside it. */
 export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   // The first render already has the saved theme, so there is no flash of the wrong one.
-  const [theme, setThemeState] = useState<Theme>(() => readTheme(deviceStorage()))
+  const [theme, setTheme] = useState<Theme>(() => readTheme(deviceStorage()))
 
   // Puts the theme on <html> whenever it changes, and takes it off when the app unmounts.
   useEffect(() => {
@@ -39,17 +39,17 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   // Stable value, so consumers only re-render when the theme changes.
   const value = useMemo<ThemeContextValue>(() => {
     /** Switches and remembers. */
-    function setTheme(next: Theme) {
+    function change(next: Theme) {
       // Show it now.
-      setThemeState(next)
+      setTheme(next)
       // Keep it for the next visit.
       saveTheme(deviceStorage(), next)
     }
     return {
       theme,
-      setTheme,
+      setTheme: change,
       toggle: () => {
-        setTheme(nextTheme(theme))
+        change(nextTheme(theme))
       },
     }
   }, [theme])

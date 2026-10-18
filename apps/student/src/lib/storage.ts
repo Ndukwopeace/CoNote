@@ -9,7 +9,7 @@ export const STORAGE_PREFIX = 'conote:'
 export const MOCK_DATA_PREFIX = `${STORAGE_PREFIX}mock:`
 
 /** The light/dark choice. It belongs to the device, not to the student, so sign-out keeps it. */
-const KEPT_KEYS = [`${STORAGE_PREFIX}theme`]
+const KEPT_KEYS = new Set([`${STORAGE_PREFIX}theme`])
 
 /** Builds a namespaced key: storageKey('draft', 'class-1') → "conote:draft:class-1". */
 export function storageKey(...parts: string[]) {
@@ -34,7 +34,7 @@ export function clearUserData(stores: Storage[]) {
         key.startsWith(STORAGE_PREFIX) &&
         !key.startsWith(MOCK_DATA_PREFIX) &&
         // The device's theme stays.
-        !KEPT_KEYS.includes(key),
+        !KEPT_KEYS.has(key),
     )
     // Delete every collected key.
     for (const key of keys) store.removeItem(key)
