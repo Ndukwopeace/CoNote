@@ -126,3 +126,30 @@ export function addTag(tags: string[], raw: string): AddTagResult {
   // Fits: a new list, so the caller's array is untouched.
   return { tags: [...tags, tag] }
 }
+
+/** Escapes the characters that make HTML. */
+function escapeHtml(text: string): string {
+  // & first, so the entities added after it are not escaped again.
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+}
+
+/**
+ * The note body for text typed in the Home composer: each non-blank line a paragraph.
+ * SECURITY: the text is escaped, so typed or pasted markup stays text and can't reach the page.
+ */
+export function textToNoteHtml(text: string): string {
+  return (
+    text
+      .split('\n')
+      // Spaces around a line are noise.
+      .map((line) => line.trim())
+      // Blank lines make no paragraph.
+      .filter((line) => line !== '')
+      .map((line) => `<p>${escapeHtml(line)}</p>`)
+      .join('')
+  )
+}

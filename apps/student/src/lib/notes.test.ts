@@ -15,6 +15,7 @@ import {
   MAX_TAGS,
   noteInputSchema,
   resolveNoteTitle,
+  textToNoteHtml,
 } from './notes'
 
 /** A valid note input; tests override one field at a time. */
@@ -128,5 +129,25 @@ describe('addTag', () => {
     [[], 'x'.repeat(MAX_TAG_LENGTH + 1), 'Keep tags to 30 characters or fewer.'],
   ])('refuses %j + %j', (tags, raw, error) => {
     expect(addTag(tags, raw)).toEqual({ tags, error })
+  })
+})
+
+describe('textToNoteHtml', () => {
+  // Proves typed text becomes paragraphs: each line one block, so the note reads as typed.
+  it('turns each line into a paragraph', () => {
+    expect(textToNoteHtml('Waterfall\nIterative')).toBe('<p>Waterfall</p><p>Iterative</p>')
+  })
+
+  // SECURITY: typed text is never taken as HTML, so pasted markup stays text.
+  it('escapes markup', () => {
+    expect(textToNoteHtml('<img src=x onerror=alert(1)> & "quotes"')).toBe(
+      '<p>&lt;img src=x onerror=alert(1)&gt; &amp; &quot;quotes&quot;</p>',
+    )
+  })
+
+  // Proves blank lines and edge spaces are dropped, and an empty input gives an empty body.
+  it('drops blank lines and trims', () => {
+    expect(textToNoteHtml('  one  \n\n   \ntwo ')).toBe('<p>one</p><p>two</p>')
+    expect(textToNoteHtml('   \n ')).toBe('')
   })
 })

@@ -19,7 +19,7 @@ test('every course and class is reachable from Home', async ({ page, isMobile })
   await expect(page).toHaveURL(/\/dashboard$/)
 
   // Home is the note form (D101); the demo always has a class in progress, so it is the chosen one.
-  await expect(page.getByText(/SWE 311 · SDLC Models/)).toBeVisible()
+  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
   await expectNoAxeViolations(page)
 
   // The Classes list marks the class in progress as Live. It is in the sidebar, so only desktop

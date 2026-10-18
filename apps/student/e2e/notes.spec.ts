@@ -85,33 +85,53 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   expect(cspViolations).toEqual([])
 })
 
-// D101: Home is the note form. The class on now is already chosen, so a note takes no navigation.
+// D101, D102: Home is the note composer. The class on now is already chosen, so a note takes no
+// navigation: type, send, and it is in the stream.
 test('a student writes a note straight from Home', async ({ page }) => {
   // Start collecting CSP violations before anything loads.
   const cspViolations = watchCspViolations(page)
 
-  // Sign in: Home opens on the statement and the form, on the class in progress.
+  // Sign in: Home opens on the statement and the composer, on the class in progress.
   await page.goto('/login')
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
-  await expect(page.getByText(/SWE 311 · SDLC Models/)).toBeVisible()
+  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Type and save, without choosing a course or class.
-  await page.getByRole('textbox', { name: 'Note', exact: true }).click()
-  await page.keyboard.type('Agile favours working software')
-  await page.getByRole('button', { name: 'Save Note' }).click()
+  // Tag it, type and send, without choosing a course or class.
+  await page.getByRole('button', { name: 'Example', exact: true }).click()
+  await page
+    .getByRole('textbox', { name: 'Note', exact: true })
+    .fill('Agile favours working software')
+  await page.getByRole('button', { name: 'Save note' }).click()
 
-  // Still on Home, with a link to the note's class, and a fresh form.
-  await expect(page.getByText('Note saved.').first()).toBeVisible()
+  // Still on Home: the note is in the stream, tagged, and the composer is empty again.
+  await expect(page.getByText('Agile favours working software')).toBeVisible()
   await expect(page).toHaveURL(/\/dashboard$/)
-  await page.getByRole('link', { name: 'See it in the class' }).click()
-  await expect(page).toHaveURL(/\/courses\/swe-311\/classes\/swe-311-c4\?tab=notes$/)
+  await expect(page.getByRole('textbox', { name: 'Note', exact: true })).toHaveValue('')
+
+  // Its link opens the note, which lists it under the class.
+  await page.getByRole('link', { name: 'Open note' }).last().click()
+  await expect(page).toHaveURL(/\/notes\/[\w-]+$/)
   await expect(
-    page.getByRole('tabpanel').getByRole('link', { name: /Agile favours/ }),
+    page.getByRole('heading', { level: 1, name: 'Agile favours working software' }),
   ).toBeVisible()
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
   expect(cspViolations).toEqual([])
+})
+
+// D102: the same screen answers questions: Note | Ask.
+test('a student switches Home to Ask and asks about the class', async ({ page }) => {
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+
+  await page.getByRole('button', { name: 'Ask', exact: true }).click()
+  await expect(page).toHaveURL(/mode=ask/)
+  await page.getByRole('textbox', { name: 'Ask a question' }).fill('What is waterfall?')
+  await page.getByRole('button', { name: 'Send' }).click()
+  await expect(page.getByRole('log', { name: 'Conversation' })).toContainText('What is waterfall?')
+  await expectNoAxeViolations(page)
 })

@@ -61,6 +61,11 @@ function clockTime(date: Date): string {
     : `${hour}:${String(minutes).padStart(2, '0')} ${period}`
 }
 
+/** "9 AM" or "10:42 AM" for the moment `iso` names, in local time (a note's time). */
+export function formatClockTime(iso: string): string {
+  return clockTime(new Date(iso))
+}
+
 /** "9 AM – 11:30 AM" for a class, in local time. */
 export function formatClassTime(startsAt: string, endsAt: string): string {
   // Start and end on the 12-hour clock, joined by an en dash.
