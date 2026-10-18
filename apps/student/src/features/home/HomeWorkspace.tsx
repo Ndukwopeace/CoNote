@@ -125,9 +125,9 @@ export function HomeWorkspace({
       setTitle('')
       setTag(null)
       setAnnounce('Note saved.')
-    } catch (failure) {
+    } catch (error_) {
       // Refused or failed: say why, and keep what was typed.
-      setError(errorMessage(toAppError(failure)))
+      setError(errorMessage(toAppError(error_)))
     }
   }
 

@@ -66,11 +66,8 @@ export function DashboardPage() {
       {/* Tab title "Home", matching the tab bar (D35). */}
       <PageTitle title="Home" />
       {/* Note | Ask: the same screen with a different job (D102). */}
-      <div
-        role="group"
-        aria-label="Mode"
-        className="mx-auto flex gap-0.5 rounded-full border bg-card p-1"
-      >
+      <fieldset className="mx-auto flex min-w-0 gap-0.5 rounded-full border bg-card p-1">
+        <legend className="sr-only">Mode</legend>
         {(['note', 'ask'] as const).map((option) => (
           <button
             key={option}
@@ -87,7 +84,7 @@ export function DashboardPage() {
             {option === 'note' ? 'Note' : 'Ask'}
           </button>
         ))}
-      </div>
+      </fieldset>
       {/* Everything that needs data. */}
       <HomeContent mode={mode} onModeChange={setMode} greeting={`${greetingFor(now)}, ${name}.`} />
     </div>
