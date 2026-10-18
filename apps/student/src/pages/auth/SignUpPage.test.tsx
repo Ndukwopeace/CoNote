@@ -141,13 +141,11 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Sign up' }))
 
-    // Assert: greeted by the new first name.
+    // Assert: on Home, greeted by the new first name.
     expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: /Good (morning|afternoon|evening), Ada/,
-      }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
+    expect(screen.getByText(/Good (morning|afternoon|evening), Ada\./)).toBeInTheDocument()
   })
 
   // Proves a backend that needs the email confirmed (D76) asks for the code it emailed, instead of
@@ -188,7 +186,7 @@ describe('SignUpPage', () => {
     // Assert: asked once with the address and the code, the remembered address is gone, and the
     // dashboard opens.
     expect(
-      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
     expect(verifySignUpCode).toHaveBeenCalledTimes(1)
     expect(verifySignUpCode).toHaveBeenCalledWith('ada@example.com', '482913')
@@ -210,7 +208,7 @@ describe('SignUpPage', () => {
     await user.paste('482 913')
 
     // Assert.
-    await screen.findByRole('heading', { level: 1, name: /^Good / })
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
     expect(verifySignUpCode).toHaveBeenCalledWith('ada@example.com', '482913')
   })
 

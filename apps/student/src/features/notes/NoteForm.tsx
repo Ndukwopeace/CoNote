@@ -1,6 +1,7 @@
 /**
  * The note form for New and Edit (FR-NTE-1 to FR-NTE-6, FR-NTE-9): class, title, rich-text body
- * and tags, with drafts, an unsaved-changes guard and the published-summary notice.
+ * and tags, with drafts, an unsaved-changes guard and the published-summary notice. A new note
+ * opened without a class starts on the likely one (D101), which the student can change.
  */
 
 // Connects the shared note rules to the form.
@@ -40,6 +41,7 @@ import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
 import { useCreateNote, useUpdateNote } from '@/hooks/useNoteMutations'
 // Relative times for the draft banner.
+import { defaultNoteClass } from '@/lib/classes'
 import { formatRelativeTime } from '@/lib/dates'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
@@ -72,8 +74,16 @@ interface NoteValues {
   tags: string[]
 }
 
+/** What a page can add to the form. */
+interface NoteFormProps {
+  mode: NoteFormMode
+  // Called with the saved note instead of leaving for its class, so a page that stays (Home) can
+  // start a fresh note. Without it the form returns to the class's Notes tab, with a Cancel button.
+  onSaved?: (note: Note) => void
+}
+
 /** Loads the student's courses and classes, then shows the form. */
-export function NoteForm({ mode }: Readonly<{ mode: NoteFormMode }>) {
+export function NoteForm({ mode, onSaved }: Readonly<NoteFormProps>) {
   // The class list (for the picker, the label and the published notice).
   const courses = useMyCourses()
   const classes = useMyClasses()
@@ -95,7 +105,14 @@ export function NoteForm({ mode }: Readonly<{ mode: NoteFormMode }>) {
   if (!courses.data || !classes.data) return <ListSkeleton rows={3} />
 
   // Loaded.
-  return <NoteFormFields mode={mode} courses={courses.data} classes={classes.data} />
+  return (
+    <NoteFormFields
+      mode={mode}
+      courses={courses.data}
+      classes={classes.data}
+      {...(onSaved ? { onSaved } : {})}
+    />
+  )
 }
 
 /** Where Cancel returns to: the note when editing, the class when known, otherwise Notes. */
@@ -110,7 +127,13 @@ function NoteFormFields({
   mode,
   courses,
   classes,
-}: Readonly<{ mode: NoteFormMode; courses: Course[]; classes: ClassSession[] }>) {
+  onSaved,
+}: Readonly<{
+  mode: NoteFormMode
+  courses: Course[]
+  classes: ClassSession[]
+  onSaved?: (note: Note) => void
+}>) {
   // Navigation after save and cancel.
   const navigate = useNavigate()
   // Toasts.
@@ -121,14 +144,23 @@ function NoteFormFields({
   const create = useCreateNote()
   const update = useUpdateNote()
 
+  // The likely class for a new note opened without one: the latest that has started. Worked out
+  // once, so a class starting while the student types doesn't swap the class under them.
+  const [guessedId] = useState(() =>
+    mode.kind === 'new' && mode.classId === null
+      ? defaultNoteClass(classes, new Date())?.id
+      : undefined,
+  )
   // SECURITY: a class from the address counts only if it is one of the student's classes, so a
   // crafted ?classId= can't preselect someone else's class.
   const startClassId =
     mode.kind === 'edit'
       ? mode.note.classId
-      : (classes.find((c) => c.id === mode.classId)?.id ?? '')
-  // The class fixed by where the form was opened from (edit, or new from a class).
+      : (classes.find((c) => c.id === mode.classId)?.id ?? guessedId ?? '')
+  // The class fixed by where the form was opened from (edit, or new from a class), or guessed.
   const fixedClass = classes.find((c) => c.id === startClassId)
+  // Whether the student asked to choose another class than the guessed one.
+  const [changing, setChanging] = useState(false)
   // The draft for this note or class (FR-NTE-5).
   const draft = useNoteDraft(
     mode.kind === 'edit' ? draftKey({ noteId: mode.note.id }) : draftKey({ classId: startClassId }),
@@ -223,7 +255,14 @@ function NoteFormFields({
       // Saved: the draft has done its job (FR-NTE-5).
       draft.clear()
       toast.success('Note saved.')
-      leave(`${routeTo.class(note.courseId, note.classId)}?tab=notes`)
+      if (onSaved) {
+        // The page stays: stop the draft and guard from acting on the old form, then hand over.
+        leaving.current = true
+        setHasUnsavedChanges(false)
+        onSaved(note)
+      } else {
+        leave(`${routeTo.class(note.courseId, note.classId)}?tab=notes`)
+      }
     } catch (error) {
       // Refused or failed: say why, keep everything typed (and the draft).
       setServerError(errorMessage(toAppError(error)))
@@ -287,12 +326,29 @@ function NoteFormFields({
       {/* The service's refusal. */}
       {serverError && <FormMessage tone="error">{serverError}</FormMessage>}
 
-      {/* The class: a fixed label when known, otherwise course → class pickers (FR-NTE-1). */}
-      {fixedClass ? (
+      {/* The class: a label when known (with Change when it was guessed), otherwise course →
+          class pickers (FR-NTE-1). */}
+      {fixedClass && !changing ? (
         <div className="space-y-1">
           <p className="text-sm font-medium">Class</p>
           <p className="text-sm text-muted-foreground">
             {courseOf(fixedClass)?.code} · {fixedClass.title}
+            {guessedId && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => {
+                    // Open the pickers on the guessed class, so changing starts from it.
+                    setCourseId(fixedClass.courseId)
+                    setChanging(true)
+                  }}
+                >
+                  Change
+                </button>
+              </>
+            )}
           </p>
         </div>
       ) : (
@@ -391,17 +447,20 @@ function NoteFormFields({
 
       {/* Cancel and Save; Save is last, the primary action on the right. */}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            // Nothing to lose: leave at once. Otherwise ask (FR-NTE-5).
-            if (isDirty) setConfirmCancel(true)
-            else leave(cancelTarget(mode, fixedClass))
-          }}
-        >
-          Cancel
-        </Button>
+        {/* A page that stays on Home has nowhere to cancel to. */}
+        {!onSaved && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              // Nothing to lose: leave at once. Otherwise ask (FR-NTE-5).
+              if (isDirty) setConfirmCancel(true)
+              else leave(cancelTarget(mode, fixedClass))
+            }}
+          >
+            Cancel
+          </Button>
+        )}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving…' : 'Save Note'}
         </Button>

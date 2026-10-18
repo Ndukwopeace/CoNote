@@ -33,7 +33,7 @@ describe('AuthCallbackPage', () => {
 
     // Assert.
     expect(
-      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
   })
 
@@ -47,7 +47,7 @@ describe('AuthCallbackPage', () => {
 
     // Act.
     renderCallback('/auth/callback?code=once', { ...base, completeProviderSignIn })
-    await screen.findByRole('heading', { level: 1, name: /^Good / })
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
 
     // Assert.
     expect(completeProviderSignIn).toHaveBeenCalledTimes(1)

@@ -137,7 +137,7 @@ describe('Join your courses', () => {
     await router.navigate('/courses')
     await screen.findByRole('heading', { level: 1, name: 'My Courses' })
     await router.navigate('/dashboard')
-    await screen.findByRole('heading', { level: 1, name: /^Good / })
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

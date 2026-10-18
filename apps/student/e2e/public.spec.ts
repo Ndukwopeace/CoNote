@@ -46,9 +46,7 @@ test('a new visitor signs up from the landing page and reaches the dashboard', a
     .getByRole('dialog', { name: 'Join your courses' })
     .getByRole('button', { name: 'Not now' })
     .click()
-  await expect(
-    page.getByRole('heading', { level: 1, name: /Good (morning|afternoon|evening), Ada/ }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
   expect(cspViolations).toEqual([])

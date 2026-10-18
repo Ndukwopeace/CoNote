@@ -7,6 +7,7 @@
 import {
   Bell,
   BookOpen,
+  CalendarDays,
   LayoutDashboard,
   NotebookPen,
   Settings,
@@ -41,8 +42,11 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   // Home: the dashboard. "Home" is shorter and is the label phone users expect (D35).
   { label: 'Home', to: ROUTES.dashboard, icon: LayoutDashboard, inBottomBar: true },
-  // Enrolled courses; classes are reached through a course.
+  // Enrolled courses; a course's classes are on its Classes tab.
   { label: 'Courses', to: ROUTES.courses, icon: BookOpen, inBottomBar: true },
+  // Every class across the courses (Today, Upcoming, Past). Home no longer links here (D101), so
+  // it is in the sidebar; on phones the bottom bar keeps its four places to work.
+  { label: 'Classes', to: ROUTES.classes, icon: CalendarDays, inBottomBar: false },
   // All notes.
   { label: 'Notes', to: ROUTES.notes, icon: NotebookPen, inBottomBar: true },
   // Ask CoNote AI. In the demo its replies are canned examples, so it carries the Preview label.
