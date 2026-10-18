@@ -30,11 +30,16 @@ import { createServices } from '@/app/createServices'
 import { installPromptStore } from '@/features/pwa/installPrompt'
 // The checked environment variables (importing this validates them).
 import { env } from '@/lib/env'
+// Puts the saved light or dark theme on the page.
+import { applySavedTheme } from '@/lib/theme'
 
 // The element index.html provides for the app.
 const container = document.getElementById('root')
 // Without it nothing can render; fail with a message that says why.
 if (!container) throw new Error('Missing #root element in index.html')
+
+// Show the saved theme at once, before the services load, so there is no flash of the other one.
+applySavedTheme(document, window)
 
 // Listen for the install offer now: Chrome sends it early, often before any menu exists.
 installPromptStore.start(window)

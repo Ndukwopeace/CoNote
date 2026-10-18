@@ -68,7 +68,7 @@ export function ForgotPasswordPage() {
 
       {/* Way back, in both states. */}
       <p className="mt-6 text-center text-sm">
-        <Link to={ROUTES.login} className="font-medium text-primary hover:underline">
+        <Link to={ROUTES.login} className="font-medium text-link hover:underline">
           Back to sign in
         </Link>
       </p>

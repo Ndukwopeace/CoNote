@@ -18,6 +18,9 @@ export { watchCspViolations }
 export async function expectNoAxeViolations(page: Page) {
   // Wait for the splash to leave.
   await expect(page.locator('#splash')).toHaveCount(0)
+  // A drawer that is still sliding shut keeps the page behind it hidden from screen readers, so
+  // let it finish before scanning.
+  await expect(page.locator('[role="dialog"][data-state="closed"]')).toHaveCount(0)
   // Then scan.
   await expectNoAxeViolationsOnPage(page)
 }
@@ -35,18 +38,12 @@ export async function signIn(page: Page, { remember = true } = {}) {
 }
 
 /**
- * Home's own navigation (D103): the sidebar on larger screens; on phones the drawer, opened here
- * from the menu button. Home has no bottom bar, so this is how to leave it.
+ * The shared navigation (D104), the same on every page: the sidebar on larger screens; on phones
+ * the drawer, opened here from the menu button. There is no bottom bar.
  */
-export async function homeNav(page: Page, isMobile: boolean) {
+export async function mainNav(page: Page, isMobile: boolean) {
   // Phones: open the drawer first.
   if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
   // The navigation named "Main" (inside the drawer on phones).
   return page.getByRole('navigation', { name: 'Main' })
-}
-
-/** The primary navigation visible at the current screen size. */
-export function primaryNav(page: Page, isMobile: boolean) {
-  // Phones use the bottom bar; larger screens use the sidebar.
-  return page.getByRole('navigation', { name: isMobile ? 'Quick navigation' : 'Main navigation' })
 }

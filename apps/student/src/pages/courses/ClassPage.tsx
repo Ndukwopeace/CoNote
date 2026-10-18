@@ -126,7 +126,7 @@ function ClassDetails({
       {/* Back to the course. */}
       <Link
         to={routeTo.course(course.id)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         {course.title}

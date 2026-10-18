@@ -44,6 +44,18 @@ describe('clearUserData', () => {
     expect(window.localStorage.getItem('conote:mock:notes')).toBe('[]')
   })
 
+  // Proves the light/dark choice is a setting of the device, not of the student, so it stays.
+  it('keeps the theme choice, which belongs to the device', () => {
+    // Arrange: a saved theme.
+    window.localStorage.setItem('conote:theme', 'light')
+
+    // Act.
+    clearUserData([window.localStorage])
+
+    // Assert: still there.
+    expect(window.localStorage.getItem('conote:theme')).toBe('light')
+  })
+
   // Proves CoNote only deletes its own keys, never another site's or app's data.
   it('leaves keys that belong to other apps alone', () => {
     // Arrange: a key without CoNote's prefix.

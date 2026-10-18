@@ -338,7 +338,7 @@ function NoteFormFields({
                 {' '}
                 <button
                   type="button"
-                  className="font-medium text-primary hover:underline"
+                  className="font-medium text-link hover:underline"
                   onClick={() => {
                     // Open the pickers on the guessed class, so changing starts from it.
                     setCourseId(fixedClass.courseId)

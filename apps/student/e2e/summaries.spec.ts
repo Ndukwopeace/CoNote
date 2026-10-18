@@ -7,7 +7,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 // Shared helpers.
-import { expectNoAxeViolations, homeNav, signIn, watchCspViolations } from './helpers.ts'
+import { expectNoAxeViolations, mainNav, signIn, watchCspViolations } from './helpers.ts'
 
 /** Signs in and waits for Home. */
 async function signInToHome(page: Page) {
@@ -22,7 +22,7 @@ test('a student reads a new summary and asks CoNote AI about it', async ({ page,
   await signInToHome(page)
 
   // Home's navigation counts the two new summaries (the demo's) and opens the Summaries tab.
-  const nav = await homeNav(page, isMobile)
+  const nav = await mainNav(page, isMobile)
   await expect(nav.getByRole('link', { name: /Summaries.*2 new/ })).toBeVisible()
   await nav.getByRole('link', { name: /Summaries/ }).click()
   await expect(page).toHaveURL(/\/notes\?tab=summaries$/)

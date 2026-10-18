@@ -1,22 +1,12 @@
 /**
- * Home's navigation (D103): the drawer on phones and the sidebar on wider screens. The classes
- * of today and earlier (choosing one files the next notes under it), then Summaries, All notes,
- * Courses, Classes and Settings, and the way to sign out.
+ * Home's navigation (D103, D104): the shared navigation with Home's own section above the links,
+ * the classes of today and earlier (choosing one files the next notes under it).
  */
 
-// Icon for the sign-out button.
-import { LogOut } from 'lucide-react'
-// Client-side links.
-import { Link } from 'react-router'
-
-// The CoNote logo.
-import { Logo } from '@conote/ui/common/Logo'
-// Sign-in state: signing out.
-import { useAuth } from '@/features/auth/useAuth'
+// The navigation every page shares, and the look of its rows.
+import { AppNav, NAV_ROW } from '@/layouts/AppNav'
 // Class rules.
 import { groupClassesByDay } from '@/lib/classes'
-// Addresses.
-import { ROUTES } from '@/lib/routes'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
 // Shapes.
@@ -24,10 +14,6 @@ import type { ClassSession, Course } from '@/types/domain'
 
 /** How many earlier classes the navigation lists. */
 const EARLIER_LIMIT = 4
-
-/** The look of one row, link or button. */
-const ROW =
-  'flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-[0.9375rem] outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50'
 
 /** What the navigation shows and calls. */
 interface HomeNavProps {
@@ -52,8 +38,6 @@ export function HomeNav({
   newSummaries,
   onDone,
 }: Readonly<HomeNavProps>) {
-  // Only sign-out is needed from the auth context.
-  const { signOut } = useAuth()
   // Today's classes and the ones before today (most recent first).
   const groups = groupClassesByDay(classes, now)
   const earlier = groups.past.slice(0, EARLIER_LIMIT)
@@ -70,7 +54,7 @@ export function HomeNav({
             onChoose(session.id)
             onDone?.()
           }}
-          className={cn(ROW, session.id === chosenId && 'bg-accent')}
+          className={cn(NAV_ROW, session.id === chosenId && 'bg-accent')}
         >
           {course?.code} · {session.title}
         </button>
@@ -79,11 +63,8 @@ export function HomeNav({
   }
 
   return (
-    <nav aria-label="Main" className="flex h-full flex-col gap-1 overflow-y-auto p-3.5">
-      {/* The logo. */}
-      <div className="px-1.5 pb-3">
-        <Logo />
-      </div>
+    // The shared navigation, with Home's classes above the links.
+    <AppNav newSummaries={newSummaries} {...(onDone ? { onDone } : {})}>
       <h2 className="px-2 pt-1.5 pb-1 text-xs tracking-wider text-muted-foreground uppercase">
         Today
       </h2>
@@ -100,36 +81,6 @@ export function HomeNav({
           <ul>{earlier.map(classRow)}</ul>
         </>
       )}
-      <div className="my-3 h-px bg-border" />
-      <Link to={`${ROUTES.notes}?tab=summaries`} className={ROW}>
-        Summaries
-        {newSummaries > 0 && (
-          <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs text-primary-foreground">
-            {newSummaries} new
-          </span>
-        )}
-      </Link>
-      <Link to={ROUTES.notes} className={ROW}>
-        All notes
-      </Link>
-      <Link to={ROUTES.courses} className={ROW}>
-        Courses
-      </Link>
-      <Link to={ROUTES.classes} className={ROW}>
-        Classes
-      </Link>
-      <Link to={ROUTES.settings} className={ROW}>
-        Settings
-      </Link>
-      {/* No navigation here: the route guard sends the student to the landing page. */}
-      <button
-        type="button"
-        onClick={() => void signOut()}
-        className={cn(ROW, 'mt-auto justify-start gap-2 text-muted-foreground')}
-      >
-        <LogOut aria-hidden="true" className="size-4" />
-        Sign out
-      </button>
-    </nav>
+    </AppNav>
   )
 }

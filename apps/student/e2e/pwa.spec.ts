@@ -7,13 +7,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 // Shared helpers.
-import {
-  expectNoAxeViolations,
-  homeNav,
-  primaryNav,
-  signIn,
-  watchCspViolations,
-} from './helpers.ts'
+import { expectNoAxeViolations, mainNav, signIn, watchCspViolations } from './helpers.ts'
 
 // FR-PWA-1: what the browser needs to offer installation.
 test('the app has an installable manifest with its icons', async ({ page, request }) => {
@@ -97,9 +91,9 @@ test('a returning student can open the app and move between pages offline', asyn
 
   // Pages whose code was never loaded still open: it comes from the precache (FR-PWA-2). Home's
   // own navigation (D103) leads out of it.
-  await (await homeNav(page, isMobile)).getByRole('link', { name: 'All notes' }).click()
+  await (await mainNav(page, isMobile)).getByRole('link', { name: 'All notes' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible()
-  await primaryNav(page, isMobile).getByRole('link', { name: 'Courses' }).click()
+  await (await mainNav(page, isMobile)).getByRole('link', { name: 'Courses' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
 
   // Reopening an address offline is served from the cached app shell (FR-PWA-3).
@@ -331,7 +325,7 @@ test('the installed app skips the landing page', async ({ browser, isMobile }) =
   await expect(page).toHaveURL(/\/dashboard$/)
 
   // Signing out (from Home's navigation) ends on sign in, not the landing page.
-  await (await homeNav(page, isMobile)).getByRole('button', { name: 'Sign out' }).click()
+  await (await mainNav(page, isMobile)).getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)
   await context.close()
 })

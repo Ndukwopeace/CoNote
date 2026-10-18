@@ -166,8 +166,10 @@ describe('Settings: Account', () => {
     // Arrange.
     const { user, router } = renderTab('account')
 
-    // Act.
-    await user.click(await screen.findByRole('button', { name: 'Sign out' }))
+    // Act: the Account tab's own button, not the navigation's (both sign out).
+    await user.click(
+      await within(await screen.findByRole('main')).findByRole('button', { name: 'Sign out' }),
+    )
 
     // Assert.
     await waitFor(() => {

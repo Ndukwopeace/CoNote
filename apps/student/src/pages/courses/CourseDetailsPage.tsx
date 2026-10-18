@@ -110,7 +110,7 @@ function CourseDetails({ course }: Readonly<{ course: Course }>) {
       {/* Back to the list. */}
       <Link
         to={ROUTES.courses}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         My Courses

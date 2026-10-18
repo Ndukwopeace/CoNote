@@ -33,7 +33,7 @@ const buttonVariants = cva(
         // No background until hovered; used for icon buttons.
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         // Looks like a text link.
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-link underline-offset-4 hover:underline',
       },
       size: {
         // 40 px tall.

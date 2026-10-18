@@ -38,7 +38,7 @@ export function NotFoundPanel({ title, backTo, backLabel }: Readonly<NotFoundPan
       {/* The way back. */}
       <Link
         to={backTo}
-        className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         {backLabel}

@@ -14,7 +14,7 @@ import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
 import { useUnreadCount } from '@/hooks/useNotifications'
 import { useNow } from '@/hooks/useNow'
-import { usePublishedSummaries } from '@/hooks/useSummaries'
+import { useNewSummaryCount } from '@/hooks/useNewSummaryCount'
 // Greeting.
 import { greetingFor } from '@/lib/dates'
 // "Victory Okafor" → "Victory".
@@ -32,7 +32,7 @@ export function DashboardPage() {
   // navigation, so a failure there never blocks Home.
   const courses = useMyCourses()
   const classes = useMyClasses()
-  const summaries = usePublishedSummaries()
+  const newSummaries = useNewSummaryCount()
   const unread = useUnreadCount()
 
   // Where the data stands: the screen shows its frame in every state.
@@ -54,7 +54,7 @@ export function DashboardPage() {
         }}
         courses={courses.data ?? []}
         classes={classes.data ?? []}
-        newSummaries={summaries.data?.filter((s) => !s.viewedByMe).length ?? 0}
+        newSummaries={newSummaries}
         unread={unread.data ?? 0}
         greeting={`${greetingFor(now)}, ${name}.`}
       />

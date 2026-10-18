@@ -46,19 +46,26 @@ afterEach(() => {
 })
 
 describe('DashboardPage: frame', () => {
-  // Proves Home is its own screen: dark while open, with no search bar or bottom bar, and the
-  // dark theme goes when the student leaves for another page.
-  it('is dark, without the portal bar, and gives the theme back on leaving', async () => {
-    const { router } = renderDashboard()
+  // Proves Home is its own screen, without the portal's search bar, and follows the student's
+  // theme (light by default) instead of forcing dark.
+  it('is light by default and has no portal search bar', async () => {
+    renderDashboard()
     await screen.findByRole('textbox', { name: 'Note' })
 
-    expect(document.documentElement).toHaveClass('dark')
+    expect(document.documentElement).not.toHaveClass('dark')
     expect(screen.queryByRole('combobox', { name: /Search courses/ })).toBeNull()
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull()
+  })
+
+  // Proves the student's saved dark choice shows on Home and stays when they go to another page.
+  it('follows a saved dark theme, here and on the next page', async () => {
+    window.localStorage.setItem('conote:theme', 'dark')
+    const { router } = renderDashboard()
+    await screen.findByRole('textbox', { name: 'Note' })
+    expect(document.documentElement).toHaveClass('dark')
 
     await router.navigate('/courses')
     await screen.findByRole('heading', { level: 1, name: 'My Courses' })
-    expect(document.documentElement).not.toHaveClass('dark')
+    expect(document.documentElement).toHaveClass('dark')
   })
 
   // Proves the top bar: the menu, the Note | Ask switch and the bell with its unread count.

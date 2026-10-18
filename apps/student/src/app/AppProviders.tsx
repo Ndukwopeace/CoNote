@@ -16,6 +16,8 @@ import { AuthProvider } from '@/features/auth/AuthProvider'
 import { OfflineSync } from '@/features/offline/OfflineSync'
 // Toast messages.
 import { ToastProvider } from '@conote/ui/toast'
+// Light or dark, for every page.
+import { ThemeProvider } from '@/features/theme/ThemeProvider'
 // Injected service implementations.
 import { ServicesProvider } from '@/services/ServicesProvider'
 // Their type.
@@ -34,20 +36,23 @@ interface AppProvidersProps {
 /** Every app-wide provider, in one place, so tests render exactly what production renders. */
 export function AppProviders({ services, queryClient, children }: Readonly<AppProvidersProps>) {
   return (
-    // Outermost: services, because AuthProvider needs them.
-    <ServicesProvider services={services}>
-      {/* Next: the query cache, because AuthProvider clears it on sign-out. */}
-      <QueryClientProvider client={queryClient}>
-        {/* Sign-in state, available to every page. */}
-        <AuthProvider>
-          {/* Saves and restores the signed-in student's notes for offline reading. */}
-          <OfflineSync />
-          {/* Tooltip settings, toasts, then the app itself. */}
-          <TooltipProvider>
-            <ToastProvider aboveBottomNav>{children}</ToastProvider>
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ServicesProvider>
+    // Outermost: the theme, so every page, dialog and error screen follows it.
+    <ThemeProvider>
+      {/* Services, because AuthProvider needs them. */}
+      <ServicesProvider services={services}>
+        {/* Next: the query cache, because AuthProvider clears it on sign-out. */}
+        <QueryClientProvider client={queryClient}>
+          {/* Sign-in state, available to every page. */}
+          <AuthProvider>
+            {/* Saves and restores the signed-in student's notes for offline reading. */}
+            <OfflineSync />
+            {/* Tooltip settings, toasts, then the app itself. */}
+            <TooltipProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ServicesProvider>
+    </ThemeProvider>
   )
 }

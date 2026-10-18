@@ -121,7 +121,7 @@ function NoteView({ note, classLabel }: Readonly<{ note: Note; classLabel: strin
       {/* Back to Notes. */}
       <Link
         to={ROUTES.notes}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Notes
@@ -132,7 +132,7 @@ function NoteView({ note, classLabel }: Readonly<{ note: Note; classLabel: strin
         {classLabel && (
           <Link
             to={routeTo.class(note.courseId, note.classId)}
-            className="text-sm font-semibold text-muted-foreground hover:text-primary hover:underline"
+            className="text-sm font-semibold text-muted-foreground hover:text-link hover:underline"
           >
             {classLabel}
           </Link>
