@@ -184,7 +184,7 @@ export function SignUpPage() {
                 to={ROUTES.terms}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
+                className="font-medium text-link hover:underline"
               >
                 Terms of Service
                 {/* Screen readers are told the link opens a new tab. */}
@@ -198,7 +198,7 @@ export function SignUpPage() {
                 to={ROUTES.privacy}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
+                className="font-medium text-link hover:underline"
               >
                 Privacy Policy
                 {/* Screen readers are told the link opens a new tab. */}
@@ -228,7 +228,7 @@ export function SignUpPage() {
       {/* Link back to sign in. */}
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link to={ROUTES.login} className="font-medium text-primary hover:underline">
+        <Link to={ROUTES.login} className="font-medium text-link hover:underline">
           Sign in
         </Link>
       </p>

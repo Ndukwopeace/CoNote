@@ -74,7 +74,7 @@ export function HelpTab() {
       <SettingsSection title="Contact">
         <p className="flex items-center gap-2 text-sm">
           <Mail aria-hidden="true" className="size-4 text-primary" />
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-primary hover:underline">
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-link hover:underline">
             {SUPPORT_EMAIL}
           </a>
         </p>

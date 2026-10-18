@@ -43,9 +43,8 @@ The brief asks for a "Supabase-ready architecture" and says the portal will *eve
 - Folder structure from section 5.1
 - Every route from section 7 registered, with placeholder pages
 - `PublicLayout`, `AuthLayout` and `PortalLayout`:
-  - desktop: sidebar
-  - tablet: icon rail
-  - phone: bottom tab bar
+  - desktop and tablet: sidebar
+  - phone: drawer from a menu button (the first build had an icon rail and a bottom tab bar; D104 replaced them)
   - top bar with search box, bell and avatar menu
 - Service interfaces plus the data-source switch (`VITE_DATA_SOURCE`)
 - Mock auth service, `AuthProvider`, and the `RequireStudent` guard with the `?redirect=` return

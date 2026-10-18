@@ -53,7 +53,7 @@ export function NoteRow({ note, classLabel, now, onDelete }: Readonly<NoteRowPro
         {/* The title opens the note. */}
         <Link
           to={routeTo.note(note.id)}
-          className="block font-semibold hover:text-primary hover:underline"
+          className="block font-semibold hover:text-link hover:underline"
         >
           {title}
         </Link>

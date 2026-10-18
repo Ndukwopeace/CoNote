@@ -72,7 +72,7 @@ flowchart LR
   PROFILE -. "redirect" .-> SETTINGS
 ```
 
-Every portal page also reaches the seven primary nav items and the top-bar controls (section 1.3); Home has its own menu with the same destinations (D103). Those links are left out of the diagram to keep it readable.
+Every portal page also reaches the navigation's destinations and the top-bar controls (section 1.3); Home has its own top bar and the same navigation (D103, D104). Those links are left out of the diagram to keep it readable.
 
 ### 1.2 Page inventory
 
@@ -101,16 +101,17 @@ Every portal page also reaches the seven primary nav items and the top-bar contr
 
 ### 1.3 Navigation model
 
-**Primary nav** (sidebar on desktop, icon rail on tablet, bottom bar on phone):
+**Navigation** (the same on every signed-in page: a sidebar from tablet width, a drawer on phones opened from the menu button; no bottom bar, D104):
 
-- Home (the dashboard)
+- Home (on Home, its classes of today and earlier come first)
+- Summaries (with "n new")
+- All notes
 - Courses
-- Notes
-- Ask AI
-- Notifications (on phones: the top-bar bell, with its unread badge)
-- Settings (on phones: the avatar menu)
+- Classes
+- Settings
+- Light mode / Dark mode, and Sign out, below the links
 
-The phone bottom bar holds the first four only, so each tab has room for its label (D35).
+Notifications is the top-bar bell, with its unread badge. Ask AI is Home's Ask mode.
 
 **Top bar:**
 
@@ -469,9 +470,9 @@ Each journey below is a table:
 | Stage | Does | Screen | Needs | Risk | Design response |
 |---|---|---|---|---|---|
 | Open | Opens CoNote from the home screen | Dashboard (phone) | Fast load on mobile data, even with a weak signal | Slow first paint, or nothing at all offline | Installed app shell from the cache (FR-PWA-2); code-split routes and LCP target (NFR-3) |
-| Move around | Uses the bottom bar | Any | Thumb-reachable nav | Tiny targets | Bottom bar, 44 px targets (section 8, NFR-1) |
+| Move around | Opens the menu | Any | One familiar navigation on every page | Different layouts on different pages | The same drawer or sidebar everywhere, 44 px targets (section 8, D104, NFR-1) |
 | Read | Reads a summary | Summary (phone) | Readable text, no sideways scrolling | Side panel squeezes the text | AI panel becomes a floating button and bottom sheet (FR-SUM-4) |
-| Settings | Changes notification preferences | Avatar menu → Settings | To find Settings without a nav item | Can't find it | Settings in the avatar menu on phones (section 8) |
+| Settings | Changes notification preferences | Menu → Settings | To find Settings in the navigation | Can't find it | Settings in the navigation and the avatar menu (section 8) |
 
 ---
 

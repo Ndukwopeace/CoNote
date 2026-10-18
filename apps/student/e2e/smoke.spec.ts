@@ -7,13 +7,7 @@
 import { expect, test } from '@playwright/test'
 
 // Shared helpers.
-import {
-  expectNoAxeViolations,
-  homeNav,
-  primaryNav,
-  signIn,
-  watchCspViolations,
-} from './helpers.ts'
+import { expectNoAxeViolations, mainNav, signIn, watchCspViolations } from './helpers.ts'
 
 /** The dashboard's heading: a time-of-day greeting for the demo student (FR-DSH-1). */
 const GREETING = "Let's CoNote"
@@ -45,21 +39,22 @@ test('a student signs in, visits every portal page and signs out', async ({ page
   await expect(page.getByRole('heading', { level: 1, name: GREETING })).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Home has its own navigation (D103): leave it for My Courses through that.
-  await (await homeNav(page, isMobile)).getByRole('link', { name: 'Courses', exact: true }).click()
+  // The shared navigation (D104) leads from Home to My Courses.
+  await (await mainNav(page, isMobile)).getByRole('link', { name: 'Courses', exact: true }).click()
   await expect(page).toHaveURL(/\/courses$/)
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Every destination in the portal's visible navigation: [link text, page heading, address].
+  // Every destination in the shared navigation: [link text, page heading, address].
   const destinations = [
-    ['Notes', 'Notes', /\/notes$/],
-    ['Ask AI', 'Ask CoNote AI', /\/ask-ai$/],
+    ['All notes', 'Notes', /\/notes$/],
+    ['Classes', 'All classes', /\/classes$/],
+    ['Settings', 'Settings', /\/settings\/profile$/],
     ['Home', GREETING, /\/dashboard$/],
   ] as const
   // Click through each and check address, heading and accessibility.
   for (const [link, heading, url] of destinations) {
-    await primaryNav(page, isMobile).getByRole('link', { name: link }).click()
+    await (await mainNav(page, isMobile)).getByRole('link', { name: link, exact: true }).click()
     await expect(page).toHaveURL(url)
     await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
     await expectNoAxeViolations(page)
@@ -127,22 +122,14 @@ test('without "remember me" the session ends with the browser session', async ({
 
 // Proves nobody meets the canned Ask AI replies unlabelled (T0): the navigation item and the page
 // both say "Preview", at phone and desktop widths, with no accessibility problems.
-test('Ask AI is labelled as a preview in the navigation and on its page', async ({
-  page,
-  isMobile,
-}) => {
-  // Sign in, then open a portal page (Home has its own navigation, D103).
+test('Ask AI is labelled as a preview on its page', async ({ page }) => {
+  // Sign in, then open the Ask AI page directly (it is Home's Ask mode in the navigation, D102).
   await page.goto('/login')
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
-  await page.goto('/courses')
-
-  // The navigation item carries the label in its name.
-  const link = primaryNav(page, isMobile).getByRole('link', { name: /^Ask AI\s*Preview$/ })
-  await expect(link).toBeVisible()
+  await page.goto('/ask-ai')
 
   // The page shows the badge beside its heading and the one-line note under it.
-  await link.click()
   const heading = page.getByRole('heading', { level: 1, name: 'Ask CoNote AI' })
   await expect(heading).toBeVisible()
   await expect(page.getByRole('main').getByText('Preview', { exact: true })).toBeVisible()
@@ -166,24 +153,24 @@ test('an unknown address shows the not-found page', async ({ page }) => {
   await expectNoAxeViolations(page)
 })
 
-// Proves the right navigation shows at each screen size (REQUIREMENTS.md section 8).
-test('the portal adapts its navigation to the screen size', async ({ page, isMobile }) => {
-  // Sign in. Home has neither bar (D103): it has its own menu.
+// Proves the same navigation shows on every page at each screen size (D104): a sidebar on
+// larger screens, a drawer on phones, and no bottom bar anywhere.
+test('every page has the same navigation, and no bottom bar', async ({ page, isMobile }) => {
+  // Sign in.
   await page.goto('/login')
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByRole('navigation', { name: 'Quick navigation' })).toHaveCount(0)
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toHaveCount(0)
 
-  // On the other pages: the bottom bar is visible only on phones.
-  await page.goto('/courses')
-  await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
-  // Bottom bar visible only on phones.
-  await expect(page.getByRole('navigation', { name: 'Quick navigation' })).toBeVisible({
-    visible: isMobile,
-  })
-  // Sidebar visible only on larger screens.
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible({
-    visible: !isMobile,
-  })
+  // On Home and on another page alike.
+  for (const address of ['/dashboard', '/courses']) {
+    await page.goto(address)
+    await expect(page.getByRole('navigation', { name: 'Quick navigation' })).toHaveCount(0)
+    // The sidebar is visible on larger screens; on phones it is behind the menu button.
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible({
+      visible: !isMobile,
+    })
+    await expect(page.getByRole('button', { name: 'Open menu' })).toBeVisible({
+      visible: isMobile,
+    })
+  }
 })

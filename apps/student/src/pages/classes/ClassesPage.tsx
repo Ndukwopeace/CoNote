@@ -38,7 +38,7 @@ export function ClassesPage() {
       {/* Back to Home, where this page is opened from. */}
       <Link
         to={ROUTES.dashboard}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Home

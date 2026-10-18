@@ -10,6 +10,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { PageTitle } from '@conote/ui/common/PageTitle'
 // The five tabs.
 import { AccountTab } from '@/features/settings/AccountTab'
+import { AppearanceSection } from '@/features/settings/AppearanceSection'
 import { HelpTab } from '@/features/settings/HelpTab'
 import { NotificationSettingsTab } from '@/features/settings/NotificationSettingsTab'
 import { PrivacyTab } from '@/features/settings/PrivacyTab'
@@ -64,6 +65,8 @@ export function SettingsPage() {
         </ul>
       </nav>
       {/* The chosen section. */}
+      {/* Appearance first on Profile: it needs no data, so it shows while the profile loads. */}
+      {tab === 'profile' && <AppearanceSection />}
       {tab === 'profile' && <ProfileTab />}
       {tab === 'account' && <AccountTab />}
       {tab === 'notifications' && <NotificationSettingsTab />}

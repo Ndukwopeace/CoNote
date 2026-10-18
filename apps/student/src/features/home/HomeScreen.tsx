@@ -10,7 +10,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 // The drawer.
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@conote/ui/sheet'
+// The phone drawer.
+import { NavDrawer } from '@/layouts/NavDrawer'
 // Failed-load panel and loading placeholder.
 import { LoadError } from '@/components/common/LoadError'
 import { ListSkeleton } from '@/components/common/Skeletons'
@@ -183,17 +184,11 @@ export function HomeScreen({
       </div>
 
       {/* Phones: the navigation slides in from the left. */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="left" className="w-[min(20rem,85vw)] max-w-none p-0">
-          <SheetTitle className="sr-only">Menu</SheetTitle>
-          <SheetDescription className="sr-only">
-            Your classes, summaries, notes, courses and settings.
-          </SheetDescription>
-          {nav(() => {
-            setDrawerOpen(false)
-          })}
-        </SheetContent>
-      </Sheet>
+      <NavDrawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        {nav(() => {
+          setDrawerOpen(false)
+        })}
+      </NavDrawer>
 
       <ClassSheet
         open={sheetOpen}

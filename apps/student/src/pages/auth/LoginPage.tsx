@@ -105,7 +105,7 @@ export function LoginPage() {
             <span>Remember me</span>
           </label>
           {/* Forgotten password. */}
-          <Link to={ROUTES.forgotPassword} className="font-medium text-primary hover:underline">
+          <Link to={ROUTES.forgotPassword} className="font-medium text-link hover:underline">
             Forgot password?
           </Link>
         </div>
@@ -124,7 +124,7 @@ export function LoginPage() {
       {/* Link to sign-up for new students. */}
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <Link to={ROUTES.signup} className="font-medium text-primary hover:underline">
+        <Link to={ROUTES.signup} className="font-medium text-link hover:underline">
           Sign up
         </Link>
       </p>

@@ -118,7 +118,7 @@ function BackToClass({ course, session }: Readonly<{ course: Course; session: Cl
   return (
     <Link
       to={routeTo.class(course.id, session.id)}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
     >
       <ArrowLeft aria-hidden="true" className="size-4" />
       {session.title}

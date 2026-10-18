@@ -12,6 +12,9 @@
   --brand-primary-dark: #3730a3;
   /* Pale brand tint: active navigation background, info banners. */
   --brand-primary-light: #eef2ff;
+  /* Link text. The primary colour fills buttons that carry white text, so it can't also be the
+     link colour on a dark page; this one can differ per theme (D104). */
+  --brand-link: #4f46e5;
 
   /* Surfaces and text */
   /* Page background. */
@@ -93,15 +96,17 @@
 }
 
 /*
- * Dark theme (D103). Used by the student Home screen: the app adds the "dark" class to <html>
- * while Home is open and takes it off when the student leaves, so menus and dialogs that Radix
- * renders at the end of <body> are dark too. Only the tokens that differ are repeated.
+ * Dark theme (D103, D104). The student app adds the "dark" class to <html> when the student
+ * chooses dark, on every page, so menus and dialogs that Radix renders at the end of <body> are
+ * dark too. Only the tokens that differ are repeated.
  */
 :root.dark {
   color-scheme: dark;
   /* The brand tint becomes a translucent indigo, and its "dark" partner a light indigo for text. */
   --brand-primary-light: rgb(99 102 241 / 0.24);
   --brand-primary-dark: #c7d2fe;
+  /* Links: a lighter indigo, about 8:1 on the dark page. */
+  --brand-link: #a5b4fc;
   --brand-background: #0b0b10;
   --brand-surface: #16161d;
   --brand-foreground: #f4f4f8;
@@ -118,4 +123,17 @@
   --primary-foreground: #ffffff;
   /* Subtle fill for skeletons, the composer and the segmented switch. */
   --muted: #1e1e27;
+  /* Secondary buttons and badges: opaque, so they stay readable over the landing page's indigo
+     band (a translucent tint would pick its colour up). */
+  --secondary: #312e81;
+  /* Course accents: the tints become translucent so they sit on the dark surface, and the icon
+     colours are lifted so they stay readable on it. */
+  --brand-accent-1: #a5b4fc;
+  --brand-accent-1-soft: rgb(99 102 241 / 0.24);
+  --brand-accent-2: #86efac;
+  --brand-accent-2-soft: rgb(34 197 94 / 0.18);
+  --brand-accent-3: #fdba74;
+  --brand-accent-3-soft: rgb(249 115 22 / 0.2);
+  --brand-accent-4: #7dd3fc;
+  --brand-accent-4-soft: rgb(14 165 233 / 0.2);
 }
