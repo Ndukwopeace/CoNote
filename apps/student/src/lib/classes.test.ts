@@ -15,6 +15,7 @@ import {
   defaultNoteClass,
   getClassStatus,
   groupClassesByDay,
+  recentClasses,
   upcomingClasses,
 } from './classes'
 
@@ -151,5 +152,24 @@ describe('defaultNoteClass', () => {
   it('picks nothing when no class has started yet', () => {
     expect(defaultNoteClass([at(0, 11, 12), at(1, 9, 10)], now)).toBeUndefined()
     expect(defaultNoteClass([], now)).toBeUndefined()
+  })
+})
+
+describe('recentClasses', () => {
+  // Proves the list for choosing a class: started classes only, latest first, capped.
+  it('lists started classes, latest first, up to the limit', () => {
+    const sessions = [
+      at(1, 9, 10, 'tomorrow'),
+      at(-3, 9, 10, 'three-days'),
+      at(0, 9, 11, 'now'),
+      at(-1, 9, 10, 'yesterday'),
+    ]
+    expect(recentClasses(sessions, now, 3).map((s) => s.id)).toEqual([
+      'now',
+      'yesterday',
+      'three-days',
+    ])
+    expect(recentClasses(sessions, now, 2)).toHaveLength(2)
+    expect(recentClasses([], now, 5)).toEqual([])
   })
 })

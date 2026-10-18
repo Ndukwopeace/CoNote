@@ -6,7 +6,13 @@
 import { describe, expect, it } from 'vitest'
 
 // The functions under test.
-import { formatClassDate, formatClassTime, formatRelativeTime, greetingFor } from './dates'
+import {
+  formatClassDate,
+  formatClassTime,
+  formatClockTime,
+  formatRelativeTime,
+  greetingFor,
+} from './dates'
 
 describe('greetingFor', () => {
   // Proves the greeting follows the local hour (FR-DSH-1): [hour, greeting].
@@ -70,5 +76,13 @@ describe('formatRelativeTime', () => {
   // Proves a time slightly in the future (clock skew) doesn't say "-1 min ago".
   it('treats a time in the future as just now', () => {
     expect(formatRelativeTime(new Date(now.getTime() + 30_000).toISOString(), now)).toBe('Just now')
+  })
+})
+
+describe('formatClockTime', () => {
+  // Proves a note's time reads on the 12-hour clock, minutes only when they aren't zero.
+  it('shows the local time of an instant', () => {
+    expect(formatClockTime(new Date(2026, 8, 28, 10, 42).toISOString())).toBe('10:42 AM')
+    expect(formatClockTime(new Date(2026, 8, 28, 15, 0).toISOString())).toBe('3 PM')
   })
 })

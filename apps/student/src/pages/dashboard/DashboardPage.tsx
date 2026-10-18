@@ -1,15 +1,14 @@
 /**
- * Home, at /dashboard (D101): the frequent job comes first. It opens on "Let's CoNote" and the
- * note form, with the class already chosen, so writing a note takes no navigation. A student in no
- * courses sees the way to find some instead (FR-DSH-6, FR-ENR-1, FR-ENR-2).
+ * Home, at /dashboard (D101, D102): the frequent job comes first. A chat-style screen: the
+ * student's notes for the class on now, the composer at the bottom with the class and tags above
+ * it, and a Note | Ask switch. A student in no courses sees the way to find some instead
+ * (FR-DSH-6, FR-ENR-1, FR-ENR-2).
  */
 
 // Icon for the no-courses state.
 import { GraduationCap } from 'lucide-react'
-// The saved note, for the line under the form.
-import { useState } from 'react'
-// Client-side links.
-import { Link } from 'react-router'
+// Client-side links and the query string.
+import { Link, useSearchParams } from 'react-router'
 
 // Enrolment empty state.
 import { EmptyState } from '@conote/ui/common/EmptyState'
@@ -27,21 +26,22 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 import { ListSkeleton } from '@/components/common/Skeletons'
 // Sign-in state, for the name.
 import { useAuth } from '@/features/auth/useAuth'
-// The note form.
-import { NoteForm } from '@/features/notes/NoteForm'
+// The stream and composer.
+import { HomeWorkspace } from '@/features/home/HomeWorkspace'
 // Data hooks.
+import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
 import { useNow } from '@/hooks/useNow'
 // Greeting.
 import { greetingFor } from '@/lib/dates'
 // "Victory Okafor" → "Victory".
 import { firstName } from '@conote/core/initials'
-// Route constants and builders.
-import { ROUTES, routeTo } from '@/lib/routes'
-// The saved note's shape.
-import type { Note } from '@/types/domain'
+// Route constants.
+import { ROUTES } from '@/lib/routes'
+// Class-name helper.
+import { cn } from '@conote/ui/utils'
 
-/** Home. The statement shows at once; the form follows the data. */
+/** Home. The switch shows at once; the workspace follows the data. */
 export function DashboardPage() {
   // Current sign-in state.
   const auth = useAuth()
@@ -49,73 +49,99 @@ export function DashboardPage() {
   const now = useNow()
   // The first name when signed in (always true behind the guard), otherwise empty.
   const name = auth.status === 'signedIn' ? firstName(auth.session.user.fullName) : ''
+  // Note or Ask, kept in the address so a link can open Home on either.
+  const [params, setParams] = useSearchParams()
+  const mode = params.get('mode') === 'ask' ? 'ask' : 'note'
+
+  /** Switches mode, keeping the rest of the address. */
+  function setMode(next: 'note' | 'ask') {
+    const updated = new URLSearchParams(params)
+    if (next === 'ask') updated.set('mode', 'ask')
+    else updated.delete('mode')
+    setParams(updated, { replace: true })
+  }
 
   return (
-    <div className="w-full max-w-3xl space-y-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       {/* Tab title "Home", matching the tab bar (D35). */}
       <PageTitle title="Home" />
-      <header>
-        {/* The statement is the page heading (D101). */}
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Let&apos;s CoNote</h1>
-        {/* A quiet greeting under it. */}
-        <p className="mt-1 text-muted-foreground">
-          {greetingFor(now)}, {name}.
-        </p>
-      </header>
+      {/* Note | Ask: the same screen with a different job (D102). */}
+      <fieldset className="mx-auto flex min-w-0 gap-0.5 rounded-full border bg-card p-1">
+        <legend className="sr-only">Mode</legend>
+        {(['note', 'ask'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={mode === option}
+            onClick={() => {
+              setMode(option)
+            }}
+            className={cn(
+              'min-h-10 rounded-full px-6 text-sm font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              mode === option ? 'bg-muted text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            {option === 'note' ? 'Note' : 'Ask'}
+          </button>
+        ))}
+      </fieldset>
       {/* Everything that needs data. */}
-      <HomeContent />
+      <HomeContent mode={mode} onModeChange={setMode} greeting={`${greetingFor(now)}, ${name}.`} />
     </div>
   )
 }
 
 /** The data-driven part of Home, with its loading, error and empty states. */
-function HomeContent() {
-  // The student's courses decide whether there is anything to write a note for.
+function HomeContent({
+  mode,
+  onModeChange,
+  greeting,
+}: Readonly<{
+  mode: 'note' | 'ask'
+  onModeChange: (mode: 'note' | 'ask') => void
+  greeting: string
+}>) {
+  // The courses and classes decide what there is to write for.
   const courses = useMyCourses()
-  // How many notes were saved here, which starts the form again; and the last one, for the link.
-  const [round, setRound] = useState(0)
-  const [saved, setSaved] = useState<Note | null>(null)
+  const classes = useMyClasses()
 
-  // Failed: one message and a retry.
-  if (courses.isError) {
+  // Failed: one message and a retry that repeats only the failed reads.
+  const failed = courses.error ?? classes.error
+  if (failed) {
     return (
       <LoadError
-        error={courses.error}
+        error={failed}
         onRetry={() => {
           void courses.refetch()
+          void classes.refetch()
         }}
       />
     )
   }
-  // Still loading: the shape of the form.
-  if (!courses.data) return <ListSkeleton rows={3} />
+  // Still loading: the shape of the stream.
+  if (!courses.data || !classes.data) return <ListSkeleton rows={3} />
   // Not enrolled in anything: there is no class to write for (FR-DSH-6).
-  if (courses.data.length === 0) return <NoCourses />
+  if (courses.data.length === 0) {
+    return (
+      <>
+        {/* The statement still opens the page, above the way to find courses. */}
+        <header className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight">Let&apos;s CoNote</h1>
+          <p className="text-muted-foreground">{greeting}</p>
+        </header>
+        <NoCourses />
+      </>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      {/* After a save: the next step, and a way to see the note where it was filed. */}
-      {saved && (
-        <output className="block text-sm text-muted-foreground">
-          Note saved.{' '}
-          <Link
-            to={`${routeTo.class(saved.courseId, saved.classId)}?tab=notes`}
-            className="font-medium text-primary hover:underline"
-          >
-            See it in the class
-          </Link>
-        </output>
-      )}
-      {/* The form; a new key after each save gives a fresh note, ready for the next thought. */}
-      <NoteForm
-        key={round}
-        mode={{ kind: 'new', classId: null }}
-        onSaved={(note) => {
-          setSaved(note)
-          setRound((count) => count + 1)
-        }}
-      />
-    </div>
+    <HomeWorkspace
+      courses={courses.data}
+      classes={classes.data}
+      mode={mode}
+      onModeChange={onModeChange}
+      greeting={greeting}
+    />
   )
 }
 

@@ -114,3 +114,22 @@ export function defaultNoteClass(
       .sort((a, b) => byStartAscending(b, a))[0]
   )
 }
+
+/** The classes a student can file a note under, for the class sheet: started ones, latest first. */
+export function recentClasses(
+  sessions: readonly ClassSession[],
+  now: Date,
+  limit: number,
+): ClassSession[] {
+  // Milliseconds for easy comparison.
+  const time = now.getTime()
+  return (
+    sessions
+      // Only classes that have started.
+      .filter((session) => Date.parse(session.startsAt) <= time)
+      // Latest start first.
+      .sort((a, b) => byStartAscending(b, a))
+      // Only the first few.
+      .slice(0, limit)
+  )
+}
