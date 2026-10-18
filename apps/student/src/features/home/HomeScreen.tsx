@@ -70,7 +70,7 @@ export function HomeScreen({
   // summary), else the one on now (or just over), else none, and the student chooses. That guess
   // is made once, when the data arrives, so a class starting while the student types doesn't
   // swap it.
-  const [chosen_, setChosenId] = useState<string | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   const [guessed, setGuessed] = useState<string | null | undefined>(undefined)
   if (status === 'ready' && guessed === undefined) {
     setGuessed(
@@ -79,7 +79,7 @@ export function HomeScreen({
         null,
     )
   }
-  const chosenId = chosen_ ?? guessed ?? null
+  const chosenId = picked ?? guessed ?? null
   const [sheetOpen, setSheetOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const chosen = classes.find((c) => c.id === chosenId)
@@ -104,7 +104,7 @@ export function HomeScreen({
         classes={classes}
         courses={courses}
         chosenId={chosenId}
-        onChoose={setChosenId}
+        onChoose={setPicked}
         now={now}
         newSummaries={newSummaries}
         {...(onDone ? { onDone } : {})}
@@ -203,7 +203,7 @@ export function HomeScreen({
         chosenId={chosenId}
         now={now}
         onChoose={(classId) => {
-          setChosenId(classId)
+          setPicked(classId)
           setSheetOpen(false)
         }}
       />
