@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test'
 // Shared helpers.
 import { expectNoAxeViolations, signIn, watchCspViolations } from './helpers.ts'
 
-test('every course and class is reachable from Home', async ({ page }) => {
+test('every course and class is reachable from Home', async ({ page, isMobile }) => {
   // Start collecting CSP violations before anything loads.
   const cspViolations = watchCspViolations(page)
 
@@ -18,13 +18,19 @@ test('every course and class is reachable from Home', async ({ page }) => {
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
 
-  // The demo always has a class in progress, so the first upcoming class is Live.
-  const upcoming = page.getByRole('region', { name: 'Upcoming Classes' })
-  await expect(upcoming.getByRole('listitem').first()).toContainText('Live')
+  // Home is the note form (D101); the demo always has a class in progress, so it is the chosen one.
+  await expect(page.getByText(/SWE 311 · SDLC Models/)).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Home → My Courses through the stat card.
-  await page.getByRole('link', { name: '4 My Courses' }).click()
+  // The Classes list marks the class in progress as Live. It is in the sidebar, so only desktop
+  // can click to it; phones reach the same list by its address.
+  await page.goto('/classes')
+  await expect(page.getByRole('main')).toContainText('Live')
+  await expectNoAxeViolations(page)
+
+  // Home → My Courses through the navigation.
+  await page.goto('/dashboard')
+  await page.getByRole('link', { name: 'Courses', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   await expectNoAxeViolations(page)
 
@@ -61,9 +67,11 @@ test('every course and class is reachable from Home', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   }
 
-  // Home → All classes through "View all": all twelve demo classes are listed.
+  // Home → All classes through the sidebar (phones have no sidebar entry): all twelve demo
+  // classes are listed.
   await page.goto('/dashboard')
-  await page.getByRole('link', { name: 'View all classes' }).click()
+  if (isMobile) await page.goto('/classes')
+  else await page.getByRole('link', { name: 'Classes', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'All classes' })).toBeVisible()
   await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(12)
   await expectNoAxeViolations(page)

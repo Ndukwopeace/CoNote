@@ -21,9 +21,12 @@ test('a student reads a new summary and asks CoNote AI about it', async ({ page,
   const cspViolations = watchCspViolations(page)
   await signInToHome(page)
 
-  // Home counts two new summaries; the card opens the Summaries tab.
-  await page.getByRole('link', { name: '2 New Summaries' }).click()
+  // Notes → Summaries tab (two new ones in the demo).
+  await page.getByRole('link', { name: 'Notes', exact: true }).click()
+  await page.getByRole('tab', { name: /Summaries/ }).click()
   await expect(page).toHaveURL(/\/notes\?tab=summaries$/)
+  // Two summaries are unread; each carries the Published badge until it is opened.
+  await expect(page.getByRole('tabpanel').getByText('Published')).toHaveCount(2)
   await page
     .getByRole('tabpanel')
     .getByRole('link', { name: /Software Requirements/ })
@@ -51,9 +54,9 @@ test('a student reads a new summary and asks CoNote AI about it', async ({ page,
   await expectNoAxeViolations(page)
   if (isMobile) await page.keyboard.press('Escape')
 
-  // Opening it marked it viewed: Home now counts one.
-  await page.goto('/dashboard')
-  await expect(page.getByRole('link', { name: '1 New Summaries' })).toBeVisible()
+  // Opening it marked it viewed: one unread summary is left.
+  await page.goto('/notes?tab=summaries')
+  await expect(page.getByRole('tabpanel').getByText('Published')).toHaveCount(1)
 
   // SECURITY: nothing in the journey was blocked by the security policy.
   expect(cspViolations).toEqual([])

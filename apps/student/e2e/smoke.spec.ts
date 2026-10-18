@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test'
 import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
 
 /** The dashboard's heading: a time-of-day greeting for the demo student (FR-DSH-1). */
-const GREETING = /^Good (morning|afternoon|evening), Victory$/
+const GREETING = "Let's CoNote"
 
 /**
  * M1 smoke test (docs/MILESTONES.md): sign in, visit every portal page, sign out.

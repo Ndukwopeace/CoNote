@@ -84,3 +84,34 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   // SECURITY: the whole journey ran without the security policy blocking anything.
   expect(cspViolations).toEqual([])
 })
+
+// D101: Home is the note form. The class on now is already chosen, so a note takes no navigation.
+test('a student writes a note straight from Home', async ({ page }) => {
+  // Start collecting CSP violations before anything loads.
+  const cspViolations = watchCspViolations(page)
+
+  // Sign in: Home opens on the statement and the form, on the class in progress.
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
+  await expect(page.getByText(/SWE 311 · SDLC Models/)).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // Type and save, without choosing a course or class.
+  await page.getByRole('textbox', { name: 'Note', exact: true }).click()
+  await page.keyboard.type('Agile favours working software')
+  await page.getByRole('button', { name: 'Save Note' }).click()
+
+  // Still on Home, with a link to the note's class, and a fresh form.
+  await expect(page.getByText('Note saved.').first()).toBeVisible()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.getByRole('link', { name: 'See it in the class' }).click()
+  await expect(page).toHaveURL(/\/courses\/swe-311\/classes\/swe-311-c4\?tab=notes$/)
+  await expect(
+    page.getByRole('tabpanel').getByRole('link', { name: /Agile favours/ }),
+  ).toBeVisible()
+
+  // SECURITY: the whole journey ran without the security policy blocking anything.
+  expect(cspViolations).toEqual([])
+})

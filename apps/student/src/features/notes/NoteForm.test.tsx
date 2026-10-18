@@ -65,21 +65,55 @@ describe('NoteForm: new note', () => {
     expect(await screen.findByRole('link', { name: /Spiral model/ })).toBeInTheDocument()
   })
 
-  // Proves the course → class picker when no class was given, and the FR-NTE-1/4 checks.
-  it('asks for a class and a body', async () => {
+  // Proves a note opened with no class starts on the class that is on now (D101), shows it with
+  // Change, and Change opens the pickers on that class.
+  it('starts on the class that is on now and lets the student change it', async () => {
     // Arrange.
     const { user } = renderAt('/notes/new')
-    await body()
+    expect(await screen.findByText(/SWE 311 · SDLC Models/)).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Course' })).toBeNull()
 
-    // Act: save straight away.
+    // Act.
+    await user.click(screen.getByRole('button', { name: 'Change' }))
+
+    // Assert: the pickers show, on the guessed course and class.
+    expect(screen.getByRole('combobox', { name: 'Course' })).toHaveValue('swe-311')
+    expect(screen.getByRole('combobox', { name: 'Class' })).toHaveValue('swe-311-c4')
+  })
+
+  // Proves the guessed class is the one the note is saved under, with nothing chosen by hand.
+  it('saves a note under the guessed class', async () => {
+    // Arrange.
+    const { user, router } = renderAt('/notes/new')
+    await screen.findByText(/SWE 311 · SDLC Models/)
+
+    // Act.
+    await user.click(await body())
+    await user.keyboard('Waterfall is sequential')
+    await user.click(screen.getByRole('button', { name: 'Save Note' }))
+
+    // Assert.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/courses/swe-311/classes/swe-311-c4')
+    })
+  })
+
+  // Proves the course → class picker, the FR-NTE-1/4 checks, and that a class link isn't changeable.
+  it('asks for a class and a body once the guess is changed', async () => {
+    // Arrange.
+    const { user } = renderAt('/notes/new')
+    await screen.findByText(/SWE 311 · SDLC Models/)
+    await user.click(screen.getByRole('button', { name: 'Change' }))
+
+    // Act: pick a different course, which clears the class, then save straight away.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Course' }), 'eng-201')
     await user.click(screen.getByRole('button', { name: 'Save Note' }))
 
     // Assert: both problems are reported.
     expect(await screen.findByText('Choose the class this note is for.')).toBeInTheDocument()
     expect(screen.getByText('Write something in your note.')).toBeInTheDocument()
 
-    // Act: pick a course, then one of its classes.
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Course' }), 'eng-201')
+    // Act: pick one of the course's classes.
     const classSelect = screen.getByRole('combobox', { name: 'Class' })
     expect(
       within(classSelect)
@@ -304,7 +338,7 @@ describe('NoteForm: drafts', () => {
   it('has no accessibility violations', async () => {
     // Act.
     const { container } = renderAt('/notes/new')
-    await screen.findByRole('combobox', { name: 'Course' })
+    await screen.findByRole('button', { name: 'Change' })
 
     // Assert.
     await expectNoAxeViolations(container)

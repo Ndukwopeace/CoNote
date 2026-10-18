@@ -50,7 +50,7 @@ function renderPortal(path = '/dashboard') {
 
 describe('PortalLayout', () => {
   // Proves the sidebar lists exactly the agreed destinations, in order (decision D6).
-  it('shows the six primary destinations in the sidebar', async () => {
+  it('shows the seven primary destinations in the sidebar', async () => {
     // Arrange: render the portal on the dashboard.
     renderPortal()
     // Arrange: find the sidebar navigation.
@@ -65,6 +65,8 @@ describe('PortalLayout', () => {
     expect(labels).toEqual([
       'Home',
       'Courses',
+      // Home no longer links to the class list (D101), so the sidebar does.
+      'Classes',
       'Notes',
       // jsdom applies no CSS, so the desktop pill and the rail's word both appear.
       'Ask AIPreviewPreview',

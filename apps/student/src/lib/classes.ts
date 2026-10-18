@@ -89,3 +89,28 @@ export function adjacentClasses(
   // Only include the ones that exist (the strict optional-property rule requires this).
   return { ...(previous ? { previous } : {}), ...(next ? { next } : {}) }
 }
+
+/** How far back a class still counts as the one a new note is probably for. */
+const NOTE_CLASS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * The class a new note is most likely for: the latest class that has started, so the one on now,
+ * or the one that just ended. Older than a week, or none started yet, and nothing is guessed.
+ */
+export function defaultNoteClass(
+  sessions: readonly ClassSession[],
+  now: Date,
+): ClassSession | undefined {
+  // Milliseconds for easy comparison.
+  const time = now.getTime()
+  return (
+    sessions
+      // Started, and recently enough to still be the likely one.
+      .filter((session) => {
+        const start = Date.parse(session.startsAt)
+        return start <= time && time - start <= NOTE_CLASS_WINDOW_MS
+      })
+      // Latest start first.
+      .sort((a, b) => byStartAscending(b, a))[0]
+  )
+}

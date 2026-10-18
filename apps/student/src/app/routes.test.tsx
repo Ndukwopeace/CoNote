@@ -28,7 +28,7 @@ describe('app routes: portal pages', () => {
   // Proves every portal address reaches its page, identified by its one h1.
   it.each([
     // [address, expected h1]
-    ['/dashboard', /^Good (morning|afternoon|evening), Victory$/],
+    ['/dashboard', "Let's CoNote"],
     ['/classes', 'All classes'],
     ['/courses', 'My Courses'],
     ['/courses/swe-311', 'Software Engineering'],
@@ -55,13 +55,11 @@ describe('app routes: portal pages', () => {
     // Act: render the dashboard.
     renderApp('/dashboard')
 
-    // Assert: greeting by first name.
+    // Assert: the statement, and the greeting by first name under it.
     expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: /Good (morning|afternoon|evening), Victory/,
-      }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
+    expect(screen.getByText(/Good (morning|afternoon|evening), Victory\./)).toBeInTheDocument()
   })
 
   // Proves the old /profile address still works (decision D7).
@@ -120,7 +118,7 @@ describe('app routes: public pages', () => {
 
     // Assert: on the dashboard.
     expect(
-      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
   })
 
@@ -199,7 +197,7 @@ describe('app routes: signing in', () => {
 
     // Assert: on the dashboard.
     expect(
-      await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
   })
 })
@@ -247,7 +245,7 @@ describe('app routes: the installed app (decision D36)', () => {
     // Arrange: signed in, in the installed app.
     setStandalone(true)
     const { user, router } = renderApp('/dashboard')
-    await screen.findByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / })
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
 
     // Act: sign out from the account menu.
     await user.click(screen.getByRole('button', { name: /Account menu/ }))

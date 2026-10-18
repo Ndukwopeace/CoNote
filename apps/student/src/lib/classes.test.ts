@@ -10,7 +10,13 @@ import { describe, expect, it } from 'vitest'
 import { makeClass } from '@/test/factories'
 
 // The rules under test.
-import { adjacentClasses, getClassStatus, groupClassesByDay, upcomingClasses } from './classes'
+import {
+  adjacentClasses,
+  defaultNoteClass,
+  getClassStatus,
+  groupClassesByDay,
+  upcomingClasses,
+} from './classes'
 
 // A fixed "now": Monday 28 September 2026, 10:00 local time.
 const now = new Date(2026, 8, 28, 10, 0)
@@ -119,5 +125,31 @@ describe('adjacentClasses', () => {
   // Proves an unknown class gets no links rather than wrong ones.
   it('returns nothing for an unknown class', () => {
     expect(adjacentClasses(sessions, 'nope')).toEqual({})
+  })
+})
+
+describe('defaultNoteClass', () => {
+  // Proves the class that is on now wins, even when an earlier one is also recent.
+  it('picks the class that is on now', () => {
+    const sessions = [at(-1, 9, 11, 'yesterday'), at(0, 9, 11, 'now'), at(0, 14, 15, 'later')]
+    expect(defaultNoteClass(sessions, now)?.id).toBe('now')
+  })
+
+  // Proves a student writing up after class gets the one that just ended, not a future one.
+  it('picks the latest class that has started, once it is over', () => {
+    const sessions = [at(-2, 9, 11, 'older'), at(0, 8, 9, 'just-ended'), at(1, 9, 11, 'tomorrow')]
+    expect(defaultNoteClass(sessions, now)?.id).toBe('just-ended')
+  })
+
+  // Proves an old class is not guessed: after a week the student chooses.
+  it('picks nothing when the latest class is over a week old', () => {
+    expect(defaultNoteClass([at(-8, 9, 11, 'old')], now)).toBeUndefined()
+    expect(defaultNoteClass([at(-7, 11, 12, 'edge')], now)?.id).toBe('edge')
+  })
+
+  // Proves nothing is picked when no class has started, or there are none.
+  it('picks nothing when no class has started yet', () => {
+    expect(defaultNoteClass([at(0, 11, 12), at(1, 9, 10)], now)).toBeUndefined()
+    expect(defaultNoteClass([], now)).toBeUndefined()
   })
 })

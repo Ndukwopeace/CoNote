@@ -1,9 +1,11 @@
 /**
- * Tests for Home, the dashboard (FR-DSH-1 to FR-DSH-6), over the demo data at a fixed time.
+ * Tests for Home (D101): the "Let's CoNote" statement and the note form with the class already
+ * chosen, over the demo data at a fixed time; and the no-courses, loading and error states
+ * (FR-DSH-6).
  */
 
 // Queries.
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 // Vitest building blocks.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,6 +15,8 @@ import { routes } from '@/app/routes'
 import { expectNoAxeViolations } from '@conote/testing/axe'
 // Empty, failing and hanging data.
 import { emptyCatalog, failingCatalog, hangingCatalog } from '@/test/catalogServices'
+// Layout stand-ins the editor needs in jsdom.
+import { installEditorDomStubs } from '@/test/editorDom'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.
@@ -25,6 +29,9 @@ function renderDashboard(services: Partial<Services> = {}) {
   return renderWithRouter({ routes, path: '/dashboard', session: makeSession(), services })
 }
 
+// The editor needs layout calls jsdom lacks.
+installEditorDomStubs()
+
 // Only Date is faked, at 9:00 on a Monday, so timers and promises run normally.
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date(2026, 8, 28, 9, 0), toFake: ['Date'] })
@@ -36,86 +43,51 @@ afterEach(() => {
 })
 
 describe('DashboardPage', () => {
-  // Proves the greeting follows the clock and uses the first name (FR-DSH-1).
-  it('greets the student for the time of day', async () => {
+  // Proves Home opens on the statement, with a quiet greeting for the time of day and the name.
+  it("opens on the Let's CoNote statement", async () => {
     // Act.
     renderDashboard()
 
     // Assert.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Good morning, Victory' }),
+      await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
-    expect(screen.getByText("Here's what's happening with your learning.")).toBeInTheDocument()
+    expect(screen.getByText('Good morning, Victory.')).toBeInTheDocument()
   })
 
-  // Proves the four stat cards count the demo data and link to their lists (FR-DSH-2).
-  it('shows four stat cards that link to their lists', async () => {
+  // Proves the note form is right there, with the class already chosen and no pickers.
+  it('shows the note form on the class that is on now', async () => {
     // Act.
     renderDashboard()
 
-    // Assert: 4 courses, 2 classes today (the live one and one later), 2 unread summaries,
-    // 11 notes.
-    expect(await screen.findByRole('link', { name: '4 My Courses' })).toHaveAttribute(
-      'href',
-      '/courses',
-    )
-    expect(screen.getByRole('link', { name: '2 Classes Today' })).toHaveAttribute(
-      'href',
-      '/classes',
-    )
-    expect(screen.getByRole('link', { name: '2 New Summaries' })).toHaveAttribute(
-      'href',
-      '/notes?tab=summaries',
-    )
-    expect(screen.getByRole('link', { name: '11 Notes Created' })).toHaveAttribute('href', '/notes')
+    // Assert: the live demo class is chosen, and the body is ready to type in.
+    expect(await screen.findByText(/SWE 311 · SDLC Models/)).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Course' })).toBeNull()
+    // Home has nowhere to cancel to.
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull()
   })
 
-  // Proves the next three classes show, live one first, each linking to its class (FR-DSH-3).
-  it('lists the next three classes with Live and Upcoming badges', async () => {
+  // Proves a saved note stays on Home: a link to it, and a fresh form for the next one.
+  it('saves a note, stays on Home and starts a fresh note', async () => {
+    // Arrange.
+    const { user, router } = renderDashboard()
+    await user.click(await screen.findByRole('textbox', { name: 'Note' }))
+    await user.keyboard('Waterfall is sequential')
+
     // Act.
-    renderDashboard()
+    await user.click(screen.getByRole('button', { name: 'Save Note' }))
 
-    // Assert.
-    const section = await screen.findByRole('region', { name: 'Upcoming Classes' })
-    const links = await within(section).findAllByRole('link', { name: /SWE|ENG|CSE|BUS/ })
-    expect(links).toHaveLength(3)
-    expect(links[0]).toHaveTextContent('SDLC Models')
-    expect(links[0]).toHaveTextContent('Live')
-    expect(links[0]).toHaveAttribute('href', '/courses/swe-311/classes/swe-311-c4')
-    expect(links[1]).toHaveTextContent('Hash Tables')
-    expect(links[1]).toHaveTextContent('Upcoming')
-    expect(within(section).getByRole('link', { name: 'View all classes' })).toHaveAttribute(
-      'href',
-      '/classes',
-    )
+    // Assert: the link to the class's notes, still on Home, with an empty form.
+    const link = await screen.findByRole('link', { name: 'See it in the class' })
+    expect(link).toHaveAttribute('href', '/courses/swe-311/classes/swe-311-c4?tab=notes')
+    expect(router.state.location.pathname).toBe('/dashboard')
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'Note' })).toHaveTextContent('')
+    })
   })
 
-  // Proves the five newest events show with relative times (FR-DSH-4).
-  it('shows the five most recent events', async () => {
-    // Act.
-    renderDashboard()
-
-    // Assert.
-    const section = await screen.findByRole('region', { name: 'Recent Activity' })
-    const items = await within(section).findAllByRole('listitem')
-    expect(items).toHaveLength(5)
-    expect(items[0]).toHaveTextContent('Note saved')
-    expect(items[0]).toHaveTextContent('25 min ago')
-  })
-
-  // Proves the Ask AI card links to the chat (FR-DSH-5).
-  it('links to Ask CoNote AI', async () => {
-    // Act.
-    renderDashboard()
-
-    // Assert.
-    expect(await screen.findByRole('link', { name: /Ask CoNote AI/ })).toHaveAttribute(
-      'href',
-      '/ask-ai',
-    )
-  })
-
-  // Proves a student with no courses sees the enrolment message (FR-DSH-6).
+  // Proves a student with no courses sees the enrolment message, not a form (FR-DSH-6).
   it('explains when the student has no courses', async () => {
     // Act.
     renderDashboard(emptyCatalog())
@@ -127,7 +99,7 @@ describe('DashboardPage', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Find courses' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Upcoming Classes' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull()
   })
 
   // Proves loading shows skeletons, not a blank page (section 11).
@@ -135,7 +107,7 @@ describe('DashboardPage', () => {
     // Act.
     renderDashboard(hangingCatalog())
 
-    // Assert: the greeting is there straight away; the data area says it's loading.
+    // Assert: the statement is there straight away; the data area says it's loading.
     await screen.findByRole('heading', { level: 1 })
     expect(screen.getAllByRole('status').some((el) => el.textContent.includes('Loading…'))).toBe(
       true,
@@ -156,7 +128,7 @@ describe('DashboardPage', () => {
   it('has no accessibility violations', async () => {
     // Act.
     const { container } = renderDashboard()
-    await screen.findByRole('region', { name: 'Recent Activity' })
+    await screen.findByRole('textbox', { name: 'Note' })
 
     // Assert.
     await expectNoAxeViolations(container)
