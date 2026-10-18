@@ -7,7 +7,13 @@
 import { expect, test, type Page } from '@playwright/test'
 
 // Shared helpers.
-import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
+import {
+  expectNoAxeViolations,
+  homeNav,
+  primaryNav,
+  signIn,
+  watchCspViolations,
+} from './helpers.ts'
 
 // FR-PWA-1: what the browser needs to offer installation.
 test('the app has an installable manifest with its icons', async ({ page, request }) => {
@@ -89,8 +95,9 @@ test('a returning student can open the app and move between pages offline', asyn
     page.getByText("You're offline. Some things may not load until you reconnect."),
   ).toBeVisible()
 
-  // Pages whose code was never loaded still open: it comes from the precache (FR-PWA-2).
-  await primaryNav(page, isMobile).getByRole('link', { name: 'Notes' }).click()
+  // Pages whose code was never loaded still open: it comes from the precache (FR-PWA-2). Home's
+  // own navigation (D103) leads out of it.
+  await (await homeNav(page, isMobile)).getByRole('link', { name: 'All notes' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible()
   await primaryNav(page, isMobile).getByRole('link', { name: 'Courses' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
@@ -297,7 +304,7 @@ test('the landing page shows the Add to Home Screen steps on iPhone', async ({ b
 })
 
 // D36: the installed app shows sign-in and the portal, never the public landing page.
-test('the installed app skips the landing page', async ({ browser }) => {
+test('the installed app skips the landing page', async ({ browser, isMobile }) => {
   // A window that reports the installed-app display mode, as Chrome does after installing.
   const context = await browser.newContext()
   await context.addInitScript(() => {
@@ -323,9 +330,8 @@ test('the installed app skips the landing page', async ({ browser }) => {
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
 
-  // Signing out ends on sign in, not the landing page.
-  await page.getByRole('button', { name: /account menu/i }).click()
-  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  // Signing out (from Home's navigation) ends on sign in, not the landing page.
+  await (await homeNav(page, isMobile)).getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)
   await context.close()
 })

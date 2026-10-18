@@ -72,7 +72,7 @@ flowchart LR
   PROFILE -. "redirect" .-> SETTINGS
 ```
 
-Every portal page also reaches the seven primary nav items and the top-bar controls (section 1.3). Those links are left out of the diagram to keep it readable.
+Every portal page also reaches the seven primary nav items and the top-bar controls (section 1.3); Home has its own menu with the same destinations (D103). Those links are left out of the diagram to keep it readable.
 
 ### 1.2 Page inventory
 

@@ -29,7 +29,7 @@ export function NoteBubble({ note }: Readonly<{ note: Note }>) {
       <p className="text-xs text-muted-foreground">
         {meta}
         {' · '}
-        <Link to={routeTo.note(note.id)} className="font-medium text-primary hover:underline">
+        <Link to={routeTo.note(note.id)} className="font-medium text-primary-dark hover:underline">
           Open<span className="sr-only"> note</span>
         </Link>
       </p>

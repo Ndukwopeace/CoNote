@@ -15,7 +15,7 @@ import {
   defaultNoteClass,
   getClassStatus,
   groupClassesByDay,
-  recentClasses,
+  classesToChoose,
   upcomingClasses,
 } from './classes'
 
@@ -155,21 +155,24 @@ describe('defaultNoteClass', () => {
   })
 })
 
-describe('recentClasses', () => {
-  // Proves the list for choosing a class: started classes only, latest first, capped.
-  it('lists started classes, latest first, up to the limit', () => {
+describe('classesToChoose', () => {
+  // Proves the class sheet offers every class: started ones latest first, then upcoming ones
+  // soonest first, so a student can always choose.
+  it('lists started classes latest first, then upcoming ones soonest first', () => {
     const sessions = [
-      at(1, 9, 10, 'tomorrow'),
-      at(-3, 9, 10, 'three-days'),
+      at(2, 9, 10, 'in-two-days'),
+      at(-3, 9, 10, 'three-days-ago'),
       at(0, 9, 11, 'now'),
+      at(1, 9, 10, 'tomorrow'),
       at(-1, 9, 10, 'yesterday'),
     ]
-    expect(recentClasses(sessions, now, 3).map((s) => s.id)).toEqual([
+    expect(classesToChoose(sessions, now).map((s) => s.id)).toEqual([
       'now',
       'yesterday',
-      'three-days',
+      'three-days-ago',
+      'tomorrow',
+      'in-two-days',
     ])
-    expect(recentClasses(sessions, now, 2)).toHaveLength(2)
-    expect(recentClasses([], now, 5)).toEqual([])
+    expect(classesToChoose([], now)).toEqual([])
   })
 })

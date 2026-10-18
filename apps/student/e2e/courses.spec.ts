@@ -7,7 +7,7 @@
 import { expect, test } from '@playwright/test'
 
 // Shared helpers.
-import { expectNoAxeViolations, signIn, watchCspViolations } from './helpers.ts'
+import { expectNoAxeViolations, homeNav, signIn, watchCspViolations } from './helpers.ts'
 
 test('every course and class is reachable from Home', async ({ page, isMobile }) => {
   // Start collecting CSP violations before anything loads.
@@ -22,15 +22,14 @@ test('every course and class is reachable from Home', async ({ page, isMobile })
   await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // The Classes list marks the class in progress as Live. It is in the sidebar, so only desktop
-  // can click to it; phones reach the same list by its address.
-  await page.goto('/classes')
+  // Home → the Classes list through Home's navigation; it marks the class in progress as Live.
+  await (await homeNav(page, isMobile)).getByRole('link', { name: 'Classes', exact: true }).click()
   await expect(page.getByRole('main')).toContainText('Live')
   await expectNoAxeViolations(page)
 
-  // Home → My Courses through the navigation.
+  // Back Home, then → My Courses through the navigation.
   await page.goto('/dashboard')
-  await page.getByRole('link', { name: 'Courses', exact: true }).click()
+  await (await homeNav(page, isMobile)).getByRole('link', { name: 'Courses', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   await expectNoAxeViolations(page)
 
@@ -67,11 +66,9 @@ test('every course and class is reachable from Home', async ({ page, isMobile })
     await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   }
 
-  // Home → All classes through the sidebar (phones have no sidebar entry): all twelve demo
-  // classes are listed.
+  // Home → All classes through Home's navigation: all twelve demo classes are listed.
   await page.goto('/dashboard')
-  if (isMobile) await page.goto('/classes')
-  else await page.getByRole('link', { name: 'Classes', exact: true }).click()
+  await (await homeNav(page, isMobile)).getByRole('link', { name: 'Classes', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'All classes' })).toBeVisible()
   await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(12)
   await expectNoAxeViolations(page)

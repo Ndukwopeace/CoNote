@@ -91,3 +91,31 @@
   /* Focus ring colour. */
   --ring: var(--brand-primary);
 }
+
+/*
+ * Dark theme (D103). Used by the student Home screen: the app adds the "dark" class to <html>
+ * while Home is open and takes it off when the student leaves, so menus and dialogs that Radix
+ * renders at the end of <body> are dark too. Only the tokens that differ are repeated.
+ */
+:root.dark {
+  color-scheme: dark;
+  /* The brand tint becomes a translucent indigo, and its "dark" partner a light indigo for text. */
+  --brand-primary-light: rgb(99 102 241 / 0.24);
+  --brand-primary-dark: #c7d2fe;
+  --brand-background: #0b0b10;
+  --brand-surface: #16161d;
+  --brand-foreground: #f4f4f8;
+  --brand-muted-foreground: #a1a1b2;
+  --brand-border: #2b2b38;
+  /* Status tints and their readable text. */
+  --brand-success-soft: #12301f;
+  --brand-success-strong: #86efac;
+  --brand-warning-soft: #3a2a0b;
+  --brand-warning-strong: #fcd34d;
+  --brand-error-soft: #3f1d24;
+  --brand-error-strong: #fca5a5;
+  /* Text on primary buttons stays white (the surface is now dark). */
+  --primary-foreground: #ffffff;
+  /* Subtle fill for skeletons, the composer and the segmented switch. */
+  --muted: #1e1e27;
+}

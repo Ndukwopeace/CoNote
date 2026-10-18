@@ -244,8 +244,8 @@ describe('app routes: the installed app (decision D36)', () => {
   it('ends on sign in after signing out', async () => {
     // Arrange: signed in, in the installed app.
     setStandalone(true)
-    const { user, router } = renderApp('/dashboard')
-    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
+    const { user, router } = renderApp('/courses')
+    await screen.findByRole('heading', { level: 1, name: 'My Courses' })
 
     // Act: sign out from the account menu.
     await user.click(screen.getByRole('button', { name: /Account menu/ }))

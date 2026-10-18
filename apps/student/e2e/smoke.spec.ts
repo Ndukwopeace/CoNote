@@ -7,7 +7,13 @@
 import { expect, test } from '@playwright/test'
 
 // Shared helpers.
-import { expectNoAxeViolations, primaryNav, signIn, watchCspViolations } from './helpers.ts'
+import {
+  expectNoAxeViolations,
+  homeNav,
+  primaryNav,
+  signIn,
+  watchCspViolations,
+} from './helpers.ts'
 
 /** The dashboard's heading: a time-of-day greeting for the demo student (FR-DSH-1). */
 const GREETING = "Let's CoNote"
@@ -39,9 +45,14 @@ test('a student signs in, visits every portal page and signs out', async ({ page
   await expect(page.getByRole('heading', { level: 1, name: GREETING })).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Every destination in the visible navigation: [link text, page heading, expected address].
+  // Home has its own navigation (D103): leave it for My Courses through that.
+  await (await homeNav(page, isMobile)).getByRole('link', { name: 'Courses', exact: true }).click()
+  await expect(page).toHaveURL(/\/courses$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // Every destination in the portal's visible navigation: [link text, page heading, address].
   const destinations = [
-    ['Courses', 'My Courses', /\/courses$/],
     ['Notes', 'Notes', /\/notes$/],
     ['Ask AI', 'Ask CoNote AI', /\/ask-ai$/],
     ['Home', GREETING, /\/dashboard$/],
@@ -54,8 +65,8 @@ test('a student signs in, visits every portal page and signs out', async ({ page
     await expectNoAxeViolations(page)
   }
 
-  // Notifications through the top-bar bell (the only way on phones, decision D35).
-  await page.getByRole('banner').getByRole('link', { name: 'Notifications' }).click()
+  // Notifications through Home's bell.
+  await page.getByRole('link', { name: /^Notifications/ }).click()
   await expect(page).toHaveURL(/\/notifications$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Notifications' })).toBeVisible()
   await expectNoAxeViolations(page)
@@ -120,10 +131,11 @@ test('Ask AI is labelled as a preview in the navigation and on its page', async 
   page,
   isMobile,
 }) => {
-  // Sign in.
+  // Sign in, then open a portal page (Home has its own navigation, D103).
   await page.goto('/login')
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
+  await page.goto('/courses')
 
   // The navigation item carries the label in its name.
   const link = primaryNav(page, isMobile).getByRole('link', { name: /^Ask AI\s*Preview$/ })
@@ -156,11 +168,16 @@ test('an unknown address shows the not-found page', async ({ page }) => {
 
 // Proves the right navigation shows at each screen size (REQUIREMENTS.md section 8).
 test('the portal adapts its navigation to the screen size', async ({ page, isMobile }) => {
-  // Sign in.
+  // Sign in. Home has neither bar (D103): it has its own menu.
   await page.goto('/login')
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('navigation', { name: 'Quick navigation' })).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toHaveCount(0)
 
+  // On the other pages: the bottom bar is visible only on phones.
+  await page.goto('/courses')
+  await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
   // Bottom bar visible only on phones.
   await expect(page.getByRole('navigation', { name: 'Quick navigation' })).toBeVisible({
     visible: isMobile,

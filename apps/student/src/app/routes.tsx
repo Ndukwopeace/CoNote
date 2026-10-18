@@ -18,6 +18,8 @@ import { SkipLandingInApp } from '@/features/pwa/SkipLandingInApp'
 import { RequireStudent } from '@/features/auth/RequireStudent'
 // Centred card for sign in and password pages.
 import { AuthLayout } from '@/layouts/AuthLayout'
+// Home's own frame: dark, with its own menu and composer (D103).
+import { HomeLayout } from '@/layouts/HomeLayout'
 // Signed-in shell with navigation.
 import { PortalLayout } from '@/layouts/PortalLayout'
 // Header and footer for public pages.
@@ -32,13 +34,6 @@ import { routeTo } from '@/lib/routes'
  * "Lazy" means a page's code downloads only when first visited, keeping the first load small.
  */
 const portalRoutes: RouteObject[] = [
-  // Home after sign-in.
-  {
-    path: 'dashboard',
-    lazy: async () => ({
-      Component: (await import('@/pages/dashboard/DashboardPage')).DashboardPage,
-    }),
-  },
   // Every class across courses.
   {
     path: 'classes',
@@ -207,7 +202,23 @@ export const routes: RouteObject[] = [
       // signed-out visitor or a non-student.
       {
         element: <RequireStudent />,
-        children: [{ element: <PortalLayout />, children: portalRoutes }],
+        children: [
+          // Home after sign-in, in its own frame (D103).
+          {
+            element: <HomeLayout />,
+            children: [
+              {
+                path: 'dashboard',
+                lazy: async () => ({
+                  Component: (await import('@/pages/dashboard/DashboardPage')).DashboardPage,
+                }),
+                errorElement: <RouteErrorBoundary />,
+              },
+            ],
+          },
+          // Every other portal page, in the shell with navigation.
+          { element: <PortalLayout />, children: portalRoutes },
+        ],
       },
       // Any other address: the not-found page.
       {
