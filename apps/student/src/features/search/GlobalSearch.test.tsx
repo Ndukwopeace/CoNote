@@ -17,9 +17,9 @@ import { makeSession } from '@/test/factories'
 // Render helper.
 import { renderWithRouter } from '@/test/renderWithRouter'
 
-/** Renders the portal on Home, signed in. */
+/** Renders the portal on My Courses, signed in. */
 function renderPortal() {
-  return renderWithRouter({ routes, path: '/dashboard', session: makeSession() })
+  return renderWithRouter({ routes, path: '/courses', session: makeSession() })
 }
 
 /** The search box. */

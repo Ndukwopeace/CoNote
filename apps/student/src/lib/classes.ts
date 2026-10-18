@@ -115,21 +115,20 @@ export function defaultNoteClass(
   )
 }
 
-/** The classes a student can file a note under, for the class sheet: started ones, latest first. */
-export function recentClasses(
-  sessions: readonly ClassSession[],
-  now: Date,
-  limit: number,
-): ClassSession[] {
+/**
+ * Every class a student can file a note under, for the class sheet: the ones that have started,
+ * latest first, then the ones still to come, soonest first. Nothing is left out, so the student
+ * can always choose.
+ */
+export function classesToChoose(sessions: readonly ClassSession[], now: Date): ClassSession[] {
   // Milliseconds for easy comparison.
   const time = now.getTime()
-  return (
-    sessions
-      // Only classes that have started.
-      .filter((session) => Date.parse(session.startsAt) <= time)
-      // Latest start first.
-      .sort((a, b) => byStartAscending(b, a))
-      // Only the first few.
-      .slice(0, limit)
-  )
+  const started = sessions.filter((session) => Date.parse(session.startsAt) <= time)
+  const coming = sessions.filter((session) => Date.parse(session.startsAt) > time)
+  return [
+    // Latest start first.
+    ...started.sort((a, b) => byStartAscending(b, a)),
+    // Soonest start first.
+    ...coming.sort(byStartAscending),
+  ]
 }

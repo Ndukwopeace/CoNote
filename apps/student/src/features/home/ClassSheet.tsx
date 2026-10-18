@@ -1,6 +1,7 @@
 /**
- * The sheet that opens from the class chip (D102): the student's classes that have started,
- * latest first, each with when it was. Choosing one files the next notes under it.
+ * The sheet that opens from the class chip (D102): every class of the student's, the ones that
+ * have started first (latest first), then the ones to come, each with when it is. Choosing one
+ * files the next notes under it.
  */
 
 // The bottom sheet.
@@ -43,7 +44,9 @@ export function ClassSheet({
       <SheetContent side="bottom" className="gap-3 p-5">
         <SheetTitle>Which class?</SheetTitle>
         <SheetDescription>
-          CoNote chose the class on now. Change it only if you are writing about another.
+          {chosenId
+            ? 'Change it only if you are writing about another class.'
+            : 'Choose the class your notes are for.'}
         </SheetDescription>
         <ul className="flex flex-col gap-2 overflow-y-auto">
           {classes.map((session) => {

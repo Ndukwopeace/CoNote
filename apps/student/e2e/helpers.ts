@@ -34,6 +34,17 @@ export async function signIn(page: Page, { remember = true } = {}) {
   await page.getByRole('button', { name: 'Sign in' }).click()
 }
 
+/**
+ * Home's own navigation (D103): the sidebar on larger screens; on phones the drawer, opened here
+ * from the menu button. Home has no bottom bar, so this is how to leave it.
+ */
+export async function homeNav(page: Page, isMobile: boolean) {
+  // Phones: open the drawer first.
+  if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
+  // The navigation named "Main" (inside the drawer on phones).
+  return page.getByRole('navigation', { name: 'Main' })
+}
+
 /** The primary navigation visible at the current screen size. */
 export function primaryNav(page: Page, isMobile: boolean) {
   // Phones use the bottom bar; larger screens use the sidebar.

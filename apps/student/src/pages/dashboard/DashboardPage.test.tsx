@@ -1,12 +1,12 @@
 /**
- * Tests for Home (D101, D102): the "Let's CoNote" statement, the stream of the chosen class's
- * notes, the composer with the class chip and tags, the class sheet, the summary card and the
- * Ask mode, over the demo data at a fixed time; and the no-courses, loading and error states
- * (FR-DSH-6).
+ * Tests for Home (D101, D102, D103): the "Let's CoNote" statement, the stream of the chosen
+ * class's notes, the composer with the class chip and tags, the class sheet, the summary card, the
+ * Ask mode, the navigation (drawer and sidebar), the dark frame without the portal's own bar, and
+ * the no-courses, loading and error states (FR-DSH-6), over the demo data at a fixed time.
  */
 
 // Queries.
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 // Vitest building blocks.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -45,6 +45,36 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('DashboardPage: frame', () => {
+  // Proves Home is its own screen: dark while open, with no search bar or bottom bar, and the
+  // dark theme goes when the student leaves for another page.
+  it('is dark, without the portal bar, and gives the theme back on leaving', async () => {
+    const { router } = renderDashboard()
+    await screen.findByRole('textbox', { name: 'Note' })
+
+    expect(document.documentElement).toHaveClass('dark')
+    expect(screen.queryByRole('combobox', { name: /Search courses/ })).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull()
+
+    await router.navigate('/courses')
+    await screen.findByRole('heading', { level: 1, name: 'My Courses' })
+    expect(document.documentElement).not.toHaveClass('dark')
+  })
+
+  // Proves the top bar: the menu, the Note | Ask switch and the bell with its unread count.
+  it('has the menu, the switch and the bell in the top bar', async () => {
+    renderDashboard()
+    await screen.findByRole('textbox', { name: 'Note' })
+
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Note' })).toHaveAttribute('aria-pressed', 'true')
+    expect(await screen.findByRole('link', { name: /Notifications, \d+ unread/ })).toHaveAttribute(
+      'href',
+      '/notifications',
+    )
+  })
+})
+
 describe('DashboardPage: Note mode', () => {
   // Proves Home opens on the statement, with a quiet greeting for the time of day and the name.
   it("opens on the Let's CoNote statement", async () => {
@@ -68,7 +98,6 @@ describe('DashboardPage: Note mode', () => {
     for (const tag of ['Key concept', 'Question', 'Example', 'Aha moment']) {
       expect(screen.getByRole('button', { name: tag })).toHaveAttribute('aria-pressed', 'false')
     }
-    // Home has no class picker on the page itself.
     expect(screen.queryByRole('combobox', { name: 'Course' })).toBeNull()
   })
 
@@ -105,21 +134,6 @@ describe('DashboardPage: Note mode', () => {
     const { user } = renderDashboard()
     await user.type(await screen.findByRole('textbox', { name: 'Note' }), '<b>bold</b>{Enter}')
     expect(await screen.findByText('<b>bold</b>')).toBeVisible()
-  })
-
-  // Proves the class sheet lists started classes and choosing one moves the chip and the stream.
-  it('changes the class from the chip', async () => {
-    const { user } = renderDashboard()
-    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }))
-
-    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
-    expect(within(sheet).getByText('On now')).toBeVisible()
-    await user.click(
-      within(sheet).getByRole('button', { name: /Citing Sources|Software Requirements/ }),
-    )
-
-    expect(screen.queryByRole('dialog', { name: 'Which class?' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeNull()
   })
 
   // Proves the "+" menu: a title on request, a way to the full editor, and the photo option shown
@@ -161,23 +175,6 @@ describe('DashboardPage: Note mode', () => {
     expect(box).toHaveValue('Will not save')
   })
 
-  // Proves that with no class started yet the chip asks for one, and sending opens the sheet
-  // instead of guessing, keeping the text.
-  it('asks for a class when none has started', async () => {
-    const base = createTestServices().classes
-    const { user } = renderDashboard({
-      classes: { ...base, listMyClasses: () => Promise.resolve([makeClass()]) },
-    })
-    expect(await screen.findByRole('button', { name: 'Choose a class' })).toBeVisible()
-    expect(screen.getByText('Choose a class below, then type a thought.')).toBeVisible()
-
-    await user.type(await screen.findByRole('textbox', { name: 'Note' }), 'Early thought{Enter}')
-
-    expect(await screen.findByRole('dialog', { name: 'Which class?' })).toBeVisible()
-    // The sheet hides the page from the accessibility tree while it is open.
-    expect(screen.getByRole('textbox', { name: 'Note', hidden: true })).toHaveValue('Early thought')
-  })
-
   // Proves a class with a published summary shows it in the stream, with the way to read it and
   // to ask about it (which switches to Ask on that class).
   it('shows the approved summary in the stream and opens Ask from it', async () => {
@@ -197,33 +194,165 @@ describe('DashboardPage: Note mode', () => {
   })
 })
 
+describe('DashboardPage: choosing the class', () => {
+  /** A student whose classes have all yet to start. */
+  function onlyFuture() {
+    const base = createTestServices().classes
+    return {
+      classes: {
+        ...base,
+        listMyClasses: () =>
+          Promise.resolve([makeClass({ id: 'later', courseId: 'swe-311', title: 'Later class' })]),
+      },
+    }
+  }
+
+  // Proves that with no class started the chip asks the student to choose, and the sheet offers
+  // every class, including the ones still to come; choosing one files the notes under it.
+  it('lets the student choose when no class has started', async () => {
+    const { user } = renderDashboard(onlyFuture())
+    const chip = await screen.findByRole('button', { name: 'Choose a class' })
+    expect(screen.getByText('Choose a class below, then type a thought.')).toBeVisible()
+
+    await user.click(chip)
+    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+    await user.click(within(sheet).getByRole('button', { name: /Later class/ }))
+
+    expect(await screen.findByRole('button', { name: /Class: .*Later class/ })).toBeVisible()
+  })
+
+  // Proves sending with no class opens the sheet instead of guessing, keeping the text.
+  it('opens the class sheet when sending with no class', async () => {
+    const { user } = renderDashboard(onlyFuture())
+    await user.type(await screen.findByRole('textbox', { name: 'Note' }), 'Early thought{Enter}')
+
+    expect(await screen.findByRole('dialog', { name: 'Which class?' })).toBeVisible()
+    // The sheet hides the page from the accessibility tree while it is open.
+    expect(screen.getByRole('textbox', { name: 'Note', hidden: true })).toHaveValue('Early thought')
+  })
+
+  // Proves the sheet lists the started classes first and then the ones to come, and choosing one
+  // moves the chip.
+  it('changes the class from the chip', async () => {
+    const { user } = renderDashboard()
+    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }))
+
+    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+    expect(within(sheet).getByText('On now')).toBeVisible()
+    const names = within(sheet)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+    // 12 classes in the demo, and the one on now comes first.
+    expect(names.filter((n) => n.includes(' · '))).toHaveLength(12)
+    await user.click(within(sheet).getByRole('button', { name: /Essay Structure/ }))
+
+    expect(screen.queryByRole('dialog', { name: 'Which class?' })).toBeNull()
+    expect(
+      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
+    ).toBeVisible()
+  })
+})
+
+describe('DashboardPage: navigation', () => {
+  // Proves the sidebar (wider screens) lists today's classes, earlier ones and the pages, with the
+  // CoNote logo; choosing a class there moves the chip.
+  it('lists the classes and pages, and choosing a class moves the chip', async () => {
+    const { user } = renderDashboard()
+    await screen.findByRole('textbox', { name: 'Note' })
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+
+    expect(within(nav).getByText('Today')).toBeVisible()
+    expect(within(nav).getByText('Earlier')).toBeVisible()
+    expect(within(nav).getByRole('link', { name: /Summaries/ })).toHaveAttribute(
+      'href',
+      '/notes?tab=summaries',
+    )
+    for (const [name, href] of [
+      ['All notes', '/notes'],
+      ['Courses', '/courses'],
+      ['Classes', '/classes'],
+      ['Settings', '/settings'],
+    ] as const) {
+      expect(within(nav).getByRole('link', { name })).toHaveAttribute('href', href)
+    }
+    // The CoNote word beside the mark.
+    expect(within(nav).getByText('CoNote')).toBeVisible()
+
+    await user.click(within(nav).getByRole('button', { name: /ENG 201 · Essay Structure/ }))
+    expect(
+      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
+    ).toBeVisible()
+  })
+
+  // Proves the phone menu opens the same navigation as a drawer, and choosing a class closes it.
+  it('opens the drawer from the menu button and closes it on a choice', async () => {
+    const { user } = renderDashboard()
+    await screen.findByRole('textbox', { name: 'Note' })
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+
+    const drawer = await screen.findByRole('dialog', { name: 'Menu' })
+    await user.click(within(drawer).getByRole('button', { name: /ENG 201 · Essay Structure/ }))
+
+    expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
+    expect(
+      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
+    ).toBeVisible()
+  })
+
+  // Proves the student can sign out from Home, where the account menu is gone.
+  it('signs out from the navigation', async () => {
+    const { user, router } = renderDashboard()
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+
+    await user.click(within(nav).getByRole('button', { name: 'Sign out' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).not.toBe('/dashboard')
+    })
+  })
+})
+
 describe('DashboardPage: Ask mode', () => {
-  // Proves Ask is the same screen with the chat for the chosen class, labelled Preview in the
-  // demo, and switching back returns to the notes.
-  it('switches to the chat for the chosen class and back', async () => {
+  // Proves Ask is the same screen: the statement and suggested questions while empty, a question
+  // sent from the composer shown as a bubble, then the answer.
+  it('asks a question and shows the conversation', async () => {
     const { user } = renderDashboard()
     await screen.findByRole('textbox', { name: 'Note' })
 
     await user.click(screen.getByRole('button', { name: 'Ask' }))
-
-    expect(await screen.findByRole('textbox', { name: 'Ask a question' })).toBeVisible()
+    const box = await screen.findByRole('textbox', { name: 'Ask a question' })
     expect(within(screen.getByRole('main')).getByText('Preview')).toBeVisible()
     expect(screen.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
 
+    await user.type(box, 'What is waterfall?{Enter}')
+
+    expect(await screen.findByText('What is waterfall?')).toBeVisible()
+    // The answer arrives as the second bubble.
+    await waitFor(() => {
+      expect(within(screen.getByRole('log')).getAllByRole('listitem')).toHaveLength(2)
+    })
     await user.click(screen.getByRole('button', { name: 'Note' }))
     expect(await screen.findByRole('textbox', { name: 'Note' })).toBeVisible()
   })
 
-  // Proves a link can open Home on Ask.
-  it('opens on Ask from the address', async () => {
-    renderDashboard({}, '/dashboard?mode=ask')
-    expect(await screen.findByRole('textbox', { name: 'Ask a question' })).toBeVisible()
+  // Proves a suggested question sends itself.
+  it('sends a suggested question', async () => {
+    const { user } = renderDashboard({}, '/dashboard?mode=ask')
+    const suggestions = await screen.findAllByRole('button', { name: /\?$|summar|class/i })
+    expect(suggestions.length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Ask' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(
+      within(screen.getByRole('main'))
+        .getAllByRole('listitem')[0]!
+        .querySelector('button') as HTMLElement,
+    )
+    expect(await screen.findByRole('log', { name: 'Conversation' })).toBeVisible()
   })
 })
 
 describe('DashboardPage: states', () => {
-  // Proves a student with no courses sees the enrolment message, not a composer (FR-DSH-6).
+  // Proves a student with no courses sees the enrolment message under the statement, not a
+  // composer (FR-DSH-6).
   it('explains when the student has no courses', async () => {
     renderDashboard(emptyCatalog())
 
@@ -232,6 +361,7 @@ describe('DashboardPage: states', () => {
         /You're not enrolled in any courses yet\. Find a course to request to join, or wait for your teacher or administrator to add you\./,
       ),
     ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Find courses' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull()
   })
@@ -240,10 +370,25 @@ describe('DashboardPage: states', () => {
   it('shows skeletons while loading', async () => {
     renderDashboard(hangingCatalog())
 
-    await screen.findByRole('heading', { level: 1 }).catch(() => undefined)
-    expect(screen.getAllByRole('status').some((el) => el.textContent.includes('Loading…'))).toBe(
-      true,
-    )
+    await waitFor(() => {
+      expect(screen.getAllByRole('status').some((el) => el.textContent.includes('Loading…'))).toBe(
+        true,
+      )
+    })
+  })
+
+  // Proves the frame is there while the data loads, so a student can always leave Home (offline,
+  // for one): the menu, the switch, the bell and the navigation.
+  it('keeps the menu and navigation while loading', async () => {
+    renderDashboard(hangingCatalog())
+
+    expect(await screen.findByRole('button', { name: 'Open menu' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Note' })).toBeVisible()
+    expect(
+      within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', {
+        name: 'Courses',
+      }),
+    ).toBeVisible()
   })
 
   // Proves a failed load explains itself and offers a retry (section 11).

@@ -55,6 +55,7 @@ Run all of these before pushing. CI runs the same set plus `npm audit` and gitle
 ## Gotchas
 
 - Routes live in each app's `src/app/routes.tsx` and `src/lib/routes.ts`. Pages are lazy-loaded, so tests use `findBy…`.
+- The student Home (`/dashboard`) is outside `PortalLayout`: `HomeLayout` gives it no bars and puts the dark theme on `<html>` (`:root.dark` in `tokens.css`) while it is open (D103). It has its own navigation (`HomeNav`), so browser tests leave it with `homeNav` in `apps/student/e2e/helpers.ts`, and tests that need the portal's top bar render another page such as `/courses`.
 - Sign-out never navigates from the caller. The route guard (`RequireStudent`, or `RequireRole` from `@conote/portal` in the admin and teacher apps) does it, which avoids two competing redirects.
 - Sign-in, password recovery, guards, the frame and the error screens of the admin and teacher apps live in `packages/portal` (D77). An app supplies only its words, addresses and accounts (`pages/auth/*`, `app/routes.tsx`, `services/mock/mockAuthService.ts`). Fix a bug there once, in the package. Both apps' `styles/globals.css` have an `@source` line for it, so its classes are generated.
 - Radix `Slot` (`asChild`) turns a function `className` into a string. Don't pass `NavLink`'s function className through it; use `SidebarLink`.

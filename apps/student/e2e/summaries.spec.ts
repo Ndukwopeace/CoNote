@@ -7,7 +7,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 // Shared helpers.
-import { expectNoAxeViolations, signIn, watchCspViolations } from './helpers.ts'
+import { expectNoAxeViolations, homeNav, signIn, watchCspViolations } from './helpers.ts'
 
 /** Signs in and waits for Home. */
 async function signInToHome(page: Page) {
@@ -21,9 +21,10 @@ test('a student reads a new summary and asks CoNote AI about it', async ({ page,
   const cspViolations = watchCspViolations(page)
   await signInToHome(page)
 
-  // Notes → Summaries tab (two new ones in the demo).
-  await page.getByRole('link', { name: 'Notes', exact: true }).click()
-  await page.getByRole('tab', { name: /Summaries/ }).click()
+  // Home's navigation counts the two new summaries (the demo's) and opens the Summaries tab.
+  const nav = await homeNav(page, isMobile)
+  await expect(nav.getByRole('link', { name: /Summaries.*2 new/ })).toBeVisible()
+  await nav.getByRole('link', { name: /Summaries/ }).click()
   await expect(page).toHaveURL(/\/notes\?tab=summaries$/)
   // Two summaries are unread; each carries the Published badge until it is opened.
   await expect(page.getByRole('tabpanel').getByText('Published')).toHaveCount(2)

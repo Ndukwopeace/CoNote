@@ -35,10 +35,10 @@ beforeEach(() => {
   install.install.mockClear()
 })
 
-/** Renders the dashboard signed in and opens the account menu. */
+/** Renders a portal page signed in and opens the account menu. */
 async function openAccountMenu() {
   // Signed in, on a portal page.
-  const result = renderWithRouter({ routes, path: '/dashboard', session: makeSession() })
+  const result = renderWithRouter({ routes, path: '/courses', session: makeSession() })
   // Open the avatar menu once the page has loaded.
   await result.user.click(await screen.findByRole('button', { name: /Account menu/ }))
   // Hand back the tools.
