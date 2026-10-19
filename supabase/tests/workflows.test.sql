@@ -106,9 +106,14 @@ select tests.affects('insert into public.summary_views (summary_id, student_id) 
 select tests.reset();
 
 -- ===== Notes writes =====
+-- A class of the student's course that begins tomorrow (D107).
+insert into public.class_sessions (id, course_id, number, title, starts_at, ends_at) values
+  ('00000000-0000-0000-0000-00000000d0f1', :c1, 9, 'Tomorrow', now() + interval '1 day', now() + interval '1 day' + interval '1 hour');
 select tests.login(:s1);
 select tests.affects('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 1, 'a student writes a note in their course');
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c2) || ', ' || quote_literal(:k2) || ')', 'cannot write a note in a course not joined');
+select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ''00000000-0000-0000-0000-00000000d0f1'')', 'cannot write a note about a class that has not started');
+select tests.denied('update public.notes set class_id = ''00000000-0000-0000-0000-00000000d0f1'' where student_id = ' || quote_literal(:s1), 'cannot move a note to a class that has not started');
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s2) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 'cannot write a note as another student');
 select tests.fails_with('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k2) || ')', '23503', 'a note''s class must belong to its course');
 -- The browser names no author: the signed-in student is the default.

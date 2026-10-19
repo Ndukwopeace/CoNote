@@ -116,19 +116,24 @@ export function defaultNoteClass(
 }
 
 /**
- * Every class a student can file a note under, for the class sheet: the ones that have started,
- * latest first, then the ones still to come, soonest first. Nothing is left out, so the student
- * can always choose.
+ * Whether a class has started, which is when a student may write about it: a class still to come
+ * is not offered, and the services refuse it too (D107).
+ */
+export function hasClassStarted(session: ClassSession, now: Date): boolean {
+  // The start itself counts: a class is open for notes the minute it begins.
+  return Date.parse(session.startsAt) <= now.getTime()
+}
+
+/**
+ * Every class a student can file a note under, for the class sheet: the ones that have started
+ * (on now, or over), latest first. A class still to come is left out (D107).
  */
 export function classesToChoose(sessions: readonly ClassSession[], now: Date): ClassSession[] {
-  // Milliseconds for easy comparison.
-  const time = now.getTime()
-  const started = sessions.filter((session) => Date.parse(session.startsAt) <= time)
-  const coming = sessions.filter((session) => Date.parse(session.startsAt) > time)
-  return [
-    // Latest start first.
-    ...started.sort((a, b) => byStartAscending(b, a)),
-    // Soonest start first.
-    ...coming.sort(byStartAscending),
-  ]
+  return (
+    sessions
+      // Only the classes that have started.
+      .filter((session) => hasClassStarted(session, now))
+      // Latest start first.
+      .sort((a, b) => byStartAscending(b, a))
+  )
 }

@@ -99,6 +99,7 @@ describe('NoteForm: new note', () => {
   })
 
   // Proves the course → class picker, the FR-NTE-1/4 checks, and that a class link isn't changeable.
+  // The picker offers only the classes that have started (D107): ENG 201's later ones are left out.
   it('asks for a class and a body once the guess is changed', async () => {
     // Arrange.
     const { user } = renderAt('/notes/new')
@@ -119,13 +120,8 @@ describe('NoteForm: new note', () => {
       within(classSelect)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual([
-      'Choose a class',
-      '1. Essay Structure',
-      '2. Citing Sources',
-      '3. Argument and Evidence',
-    ])
-    await user.selectOptions(classSelect, 'eng-201-c2')
+    ).toEqual(['Choose a class', '1. Essay Structure'])
+    await user.selectOptions(classSelect, 'eng-201-c1')
 
     // Assert: the class error has gone.
     await waitFor(() => {

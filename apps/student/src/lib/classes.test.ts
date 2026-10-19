@@ -15,6 +15,7 @@ import {
   defaultNoteClass,
   getClassStatus,
   groupClassesByDay,
+  hasClassStarted,
   classesToChoose,
   upcomingClasses,
 } from './classes'
@@ -155,23 +156,32 @@ describe('defaultNoteClass', () => {
   })
 })
 
+describe('hasClassStarted', () => {
+  // Proves a class can be written about from the minute it starts, and not a second before.
+  it('is true from the start time on and false before it', () => {
+    const session = at(0, 10, 11)
+    expect(hasClassStarted(session, new Date(2026, 8, 28, 9, 59, 59))).toBe(false)
+    expect(hasClassStarted(session, now)).toBe(true)
+    expect(hasClassStarted(session, new Date(2026, 8, 28, 12, 0))).toBe(true)
+  })
+})
+
 describe('classesToChoose', () => {
-  // Proves the class sheet offers every class: started ones latest first, then upcoming ones
-  // soonest first, so a student can always choose.
-  it('lists started classes latest first, then upcoming ones soonest first', () => {
+  // Proves the class sheet offers only classes that have started (on now, or over), latest first,
+  // and leaves out the ones still to come.
+  it('lists started classes latest first and leaves out classes still to come', () => {
     const sessions = [
       at(2, 9, 10, 'in-two-days'),
       at(-3, 9, 10, 'three-days-ago'),
       at(0, 9, 11, 'now'),
       at(1, 9, 10, 'tomorrow'),
       at(-1, 9, 10, 'yesterday'),
+      at(0, 11, 12, 'later-today'),
     ]
     expect(classesToChoose(sessions, now).map((s) => s.id)).toEqual([
       'now',
       'yesterday',
       'three-days-ago',
-      'tomorrow',
-      'in-two-days',
     ])
     expect(classesToChoose([], now)).toEqual([])
   })
