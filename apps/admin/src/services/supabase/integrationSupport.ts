@@ -122,6 +122,8 @@ export class Harness extends StackHarness<PlatformData> {
     ]) {
       ok(await this.server.from(table).delete().neq('id', nobody), `clear ${table}`)
     }
+    // Programmes start from nothing too; a student's programme is cleared with them.
+    ok(await this.server.from('programmes').delete().neq('id', nobody), 'clear programmes')
     ok(
       await this.server
         .from('platform_settings')
@@ -178,6 +180,41 @@ export class Harness extends StackHarness<PlatformData> {
       ),
       'insert courses',
     )
+    // The programmes, once the courses and students they refer to exist.
+    if (data.programmes.length > 0) {
+      ok(
+        await this.server.from('programmes').insert(
+          data.programmes.map((programme) => ({
+            id: id(programme.id),
+            code: programme.code,
+            name: programme.name,
+            open_enrolment: programme.openEnrolment,
+            created_at: programme.createdAt,
+          })),
+        ),
+        'insert programmes',
+      )
+    }
+    if (data.programmeCourses.length > 0) {
+      ok(
+        await this.server.from('programme_courses').insert(
+          data.programmeCourses.map((link) => ({
+            programme_id: id(link.programmeId),
+            course_id: id(link.courseId),
+          })),
+        ),
+        'insert programme courses',
+      )
+    }
+    for (const member of data.programmeMembers) {
+      ok(
+        await this.server
+          .from('profiles')
+          .update({ programme_id: id(member.programmeId) })
+          .eq('id', id(member.studentId)),
+        'programme member',
+      )
+    }
     for (const user of data.users) {
       if (user.role === 'teacher' && user.status !== 'active') {
         ok(

@@ -13,7 +13,7 @@ import { AppError } from '@conote/core/errors'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
 // Shapes.
-import type { CourseStatus, JoinableCourse, JoinRequest } from '@/types/domain'
+import type { CourseStatus, JoinableCourse, JoinableProgramme, JoinRequest } from '@/types/domain'
 
 // The interface implemented.
 import type { EnrolmentService } from '../types'
@@ -35,10 +35,25 @@ export interface CatalogCourse {
   archived: boolean
 }
 
+/** A programme on the platform (D105), as the join dialog sees it. */
+export interface CatalogProgramme {
+  id: string
+  code: string
+  name: string
+  // Closed programmes are not listed or open to joining.
+  openEnrolment: boolean
+  // Archived programmes are never listed or open to joining.
+  archived: boolean
+  // The courses it holds, whatever their state.
+  courseIds: readonly string[]
+}
+
 /** What the factory needs. */
 interface MockEnrolmentOptions {
   // Every course on the platform.
   catalog: readonly CatalogCourse[]
+  // Every programme on the platform; none when left out.
+  programmes?: readonly CatalogProgramme[]
   // The courses the student is in when nothing is stored.
   initialEnrolledIds: readonly string[]
   // Delay per call; tests pass 0.
@@ -57,6 +72,8 @@ interface MockEnrolmentOptions {
  */
 const storedStateSchema = z.object({
   enrolledCourseIds: z.array(z.string()),
+  // The programme the student joined, if any (absent in state stored before programmes existed).
+  programmeId: z.string().nullable().optional(),
   requests: z.array(
     z.object({
       id: z.string(),
@@ -72,6 +89,9 @@ type State = z.infer<typeof storedStateSchema>
 
 /** The message for a course that can't take a request, whatever the reason. */
 const NOT_OPEN = "This course isn't open for requests."
+
+/** The message for a programme that can't be joined, whatever the reason. */
+const PROGRAMME_NOT_OPEN = "This programme isn't open."
 
 /**
  * Makes the demo student a new one: in no courses, with no requests. Called when someone signs up,
@@ -97,9 +117,15 @@ function isOpen(course: CatalogCourse) {
   return !course.archived && course.status !== 'completed'
 }
 
+/** Programmes students can join: open and not archived. */
+function isJoinable(programme: CatalogProgramme) {
+  return programme.openEnrolment && !programme.archived
+}
+
 /** Builds the demo enrolment service over `catalog`. */
 export function createMockEnrolment({
   catalog,
+  programmes = [],
   initialEnrolledIds,
   latencyMs,
   store,
@@ -243,6 +269,51 @@ export function createMockEnrolment({
       return toJoinRequest(request, 'pending')
     },
 
+    async listJoinableProgrammes() {
+      await wait()
+      const state = read()
+      return programmes
+        .filter(isJoinable)
+        .map((programme): JoinableProgramme => {
+          // The courses in use it holds, by code.
+          const codes = programme.courseIds
+            .map(courseById)
+            .filter((course): course is CatalogCourse => course !== undefined && isOpen(course))
+            .map((course) => course.code)
+            .sort((a, b) => a.localeCompare(b))
+          return {
+            id: programme.id,
+            code: programme.code,
+            name: programme.name,
+            courseCount: codes.length,
+            courseCodes: codes,
+            isMine: state.programmeId === programme.id,
+          }
+        })
+        .sort((a, b) => a.code.localeCompare(b.code))
+    },
+
+    async joinProgramme(programmeId) {
+      await wait()
+      const state = read()
+      const programme = programmes.find((candidate) => candidate.id === programmeId)
+      // An unknown, closed or archived programme all answer the same.
+      if (!programme || !isJoinable(programme)) {
+        throw new AppError('validation', PROGRAMME_NOT_OPEN)
+      }
+      // The courses in use that the student is not in yet.
+      const added = programme.courseIds.filter((id) => {
+        const course = courseById(id)
+        return course !== undefined && isOpen(course) && !state.enrolledCourseIds.includes(id)
+      })
+      write({
+        ...state,
+        enrolledCourseIds: [...state.enrolledCourseIds, ...added],
+        programmeId: programme.id,
+      })
+      return added.length
+    },
+
     async cancelJoinRequest(requestId) {
       await wait()
       const state = read()
@@ -272,6 +343,8 @@ export function createMockEnrolment({
         throw new AppError('conflict', 'This request has already been decided.')
       }
       write({
+        // Keep the rest of the state (the programme joined).
+        ...state,
         // Approval enrols the student, as the admin console does.
         enrolledCourseIds:
           decision === 'approved'

@@ -274,6 +274,17 @@ describe('CoursesPage', () => {
     expect(await screen.findByLabelText('Loading courses')).toBeInTheDocument()
   })
 
+  // Proves a course can also come from a timetable: the page links to the import.
+  it('links to the timetable import', async () => {
+    renderCourses()
+    await tableRows()
+
+    expect(screen.getByRole('link', { name: 'Import timetable' })).toHaveAttribute(
+      'href',
+      '/admin/programmes/import',
+    )
+  })
+
   // Proves a course can be created from the dialog, and appears in the list.
   it('creates a course', async () => {
     const { user } = renderCourses()

@@ -91,6 +91,22 @@ export interface JoinableCourse {
   requestId: string | null
 }
 
+/** A programme a student can join (D105): a year of a course of study and the courses it holds. */
+export interface JoinableProgramme {
+  // Programme ID.
+  id: string
+  // Short code, e.g. "SWE-Y3".
+  code: string
+  // Full name, e.g. "Software Engineering, Year 3".
+  name: string
+  // How many courses in use joining would add the student to.
+  courseCount: number
+  // Those courses' codes, A to Z.
+  courseCodes: string[]
+  // Whether this is the programme the student already joined.
+  isMine: boolean
+}
+
 /** A request to join a course that is still open to the student's attention (FR-ENR-4). */
 export interface JoinRequest {
   // Request ID.

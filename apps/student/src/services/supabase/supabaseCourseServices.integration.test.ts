@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // The shared contracts every implementation must meet.
 import { runCoursesAndClassesContract } from '../contracts/coursesAndClasses.contract'
 import { runEnrolmentServiceContract } from '../contracts/enrolmentService.contract'
+import { runProgrammeContract } from '../contracts/programmeEnrolment.contract'
 
 // What the real-backend tests share.
 import { ADMIN_EMAIL, CONFIGURED, EMAIL, serverClient, signedIn } from './integrationSupport'
@@ -30,6 +31,10 @@ const PHY = '20000000-0000-0000-0000-000000000003'
 const CHM = '20000000-0000-0000-0000-000000000004'
 const CSC = '20000000-0000-0000-0000-000000000005'
 const ENG = '20000000-0000-0000-0000-000000000006'
+// The programmes this suite creates (D105): one open, one closed, one archived.
+const PROG_OPEN = '60000000-0000-0000-0000-000000000001'
+const PROG_CLOSED = '60000000-0000-0000-0000-000000000002'
+const PROG_ARCHIVED = '60000000-0000-0000-0000-000000000003'
 
 describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   // The signed-in student, the signed-in administrator, and the server (which bypasses RLS).
@@ -41,9 +46,32 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
     student = await signedIn(EMAIL ?? '', 'conote-test-student')
     admin = await signedIn(ADMIN_EMAIL ?? '', 'conote-test-admin')
     server = serverClient()
+    // The programmes: the open one holds a course in use, one not started, one the student is
+    // already in, a completed one and an archived one.
+    await server.from('programmes').delete().in('id', [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED])
+    const created = await server.from('programmes').insert([
+      { id: PROG_OPEN, code: 'TST-Y1', name: 'Test programme, open', open_enrolment: true },
+      { id: PROG_CLOSED, code: 'TST-Y2', name: 'Test programme, closed', open_enrolment: false },
+      {
+        id: PROG_ARCHIVED,
+        code: 'TST-Y3',
+        name: 'Test programme, archived',
+        open_enrolment: true,
+        archived_at: new Date().toISOString(),
+      },
+    ])
+    if (created.error) throw new Error(`Could not create the programmes: ${created.error.message}`)
+    const linked = await server
+      .from('programme_courses')
+      .insert(
+        [CHM, PHY, MTH, CSC, ENG].map((course) => ({ programme_id: PROG_OPEN, course_id: course })),
+      )
+    if (linked.error) throw new Error(`Could not link the courses: ${linked.error.message}`)
   })
 
   afterAll(async () => {
+    // Removing the programmes removes their links; students keep the courses they joined.
+    await server.from('programmes').delete().in('id', [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED])
     await student.auth.signOut()
     await admin.auth.signOut()
   })
@@ -51,7 +79,13 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   // Every test starts as the seed leaves the student: no requests, and not in the open course.
   beforeEach(async () => {
     await server.from('enrollment_requests').delete().eq('student_id', STUDENT_ID)
-    await server.from('enrollments').delete().eq('student_id', STUDENT_ID).eq('course_id', CHM)
+    await server
+      .from('enrollments')
+      .delete()
+      .eq('student_id', STUDENT_ID)
+      .in('course_id', [CHM, PHY])
+    // No programme joined yet.
+    await server.from('profiles').update({ programme_id: null }).eq('id', STUDENT_ID)
   })
 
   runCoursesAndClassesContract('Supabase', {
@@ -81,6 +115,47 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
         if (error) throw new Error(`Could not ${decision} the request`)
       },
     }),
+  })
+
+  runProgrammeContract('Supabase', {
+    fixture: {
+      open: PROG_OPEN,
+      closed: PROG_CLOSED,
+      archived: PROG_ARCHIVED,
+      // CHM 110, MTH 202 and PHY 101 are in use.
+      openCodes: ['CHM 110', 'MTH 202', 'PHY 101'],
+      // The student is already in MTH 202.
+      newCourses: [CHM, PHY],
+      completedCourse: CSC,
+      archivedCourse: ENG,
+    },
+    create: () => ({ service: createSupabaseEnrolmentService({ client: student }) }),
+  })
+
+  describe('programmes beyond the contract', () => {
+    // Proves a student cannot read the tables behind the view, or choose a programme by writing
+    // their own profile: only join_programme sets it.
+    it('keeps the programme tables and the profile column out of a student’s reach', async () => {
+      const table = await student.from('programmes').select('id')
+      expect(table.data ?? []).toEqual([])
+
+      const links = await student.from('programme_courses').select('course_id')
+      expect(links.data ?? []).toEqual([])
+
+      const own = await student
+        .from('profiles')
+        .update({ programme_id: PROG_OPEN })
+        .eq('id', STUDENT_ID)
+      expect(own.error).not.toBeNull()
+    })
+
+    // Proves an administrator is not offered programmes to join, and cannot join one.
+    it('offers nothing to an administrator', async () => {
+      const service = createSupabaseEnrolmentService({ client: admin })
+
+      await expect(service.listJoinableProgrammes()).resolves.toEqual([])
+      await expect(service.joinProgramme(PROG_OPEN)).rejects.toMatchObject({ kind: 'forbidden' })
+    })
   })
 
   describe('beyond the contract', () => {

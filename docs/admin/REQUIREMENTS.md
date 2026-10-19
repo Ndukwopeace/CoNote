@@ -186,6 +186,8 @@ The teacher portal may add `summary_versions` and `summary_reviews` for draft hi
 | `/admin/users/:userId` | User details |
 | `/admin/courses` | Courses |
 | `/admin/courses/:courseId` | Course details (Overview / Students / Classes / Resources tabs) |
+| `/admin/programmes` | Programmes |
+| `/admin/programmes/import` | Import a timetable |
 | `/admin/classes` | Classes |
 | `/admin/classes/:classId` | Class details |
 | `/admin/resources` | Resources |
@@ -425,6 +427,19 @@ Removing a teacher leaves the course unassigned, and that raises the "course wit
 - **Users page:** teachers have an "Assign to course" row action and details button, which picks a course in use.
 - **Audit:** `course.created`, `course.updated`, `course.archived`, `course.restored`, `course.teacher_assigned`, `course.teacher_removed`, `course.deleted`, `enrollment.added` (one per student) and `enrollment.removed`, all with the course as the entity.
 - **Demo persistence:** courses, resources, enrolments and the audit log are saved with the users under `conote-admin-demo:platform`.
+
+---
+
+## 12a. Programmes and timetable import (D105)
+
+**Programmes list:** code, name, courses, students who joined, and whether joining is open. An administrator opens or closes joining with a switch; closed programmes are not offered to students.
+
+**Import a timetable** (`/admin/programmes/import`, also linked from Courses):
+1. **Choose.** One or more timetable PDFs (up to 60 pages each), the term's first and last day, and the time zone (default `Africa/Douala`). A file that is not a PDF, or has no readable timetable, is refused with a reason.
+2. **Review.** The PDF is read in the browser; nothing is sent yet. The page lists each programme, the courses found (code, title, weekly slots, number of classes), warnings (a code with two titles or teachers), and the cells that were ignored. The administrator picks a teacher for every course (suggested by name) and runs a dry run, which the database answers without saving.
+3. **Import.** One all-or-nothing call. Courses that already exist keep their title and teacher; a class that already starts at the same time is skipped; counts of what was created and skipped are shown.
+
+**Rules:** administrators only; a teacher must be active; limits of 200 courses, 50 programmes and 500 sessions per course; the audit log records counts only. Nothing is guessed from the PDF: what cannot be read is shown, not invented.
 
 ---
 

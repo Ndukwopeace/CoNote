@@ -15,6 +15,9 @@ export const ADMIN_ROUTES = {
   users: '/admin/users',
   // Courses, teacher assignment and enrolment.
   courses: '/admin/courses',
+  // Programmes (courses students take together), and the timetable import that creates them.
+  programmes: '/admin/programmes',
+  importTimetable: '/admin/programmes/import',
   // Class sessions.
   classes: '/admin/classes',
   // Files and links attached to courses and classes.
@@ -29,11 +32,12 @@ export const ADMIN_ROUTES = {
   settings: '/admin/settings',
 } as const
 
-/** The sidebar's destinations, in the order the admin brief lists them. */
+/** The sidebar's destinations, in the order the admin brief lists them, plus Programmes (D105). */
 export const NAV_ROUTES = [
   ADMIN_ROUTES.dashboard,
   ADMIN_ROUTES.users,
   ADMIN_ROUTES.courses,
+  ADMIN_ROUTES.programmes,
   ADMIN_ROUTES.classes,
   ADMIN_ROUTES.resources,
   ADMIN_ROUTES.aiSummaries,

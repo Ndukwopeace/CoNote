@@ -612,6 +612,30 @@ export function createPlatformSeed(now: Date): PlatformData {
     users,
     enrollments,
     enrollmentRequests: buildEnrollmentRequests(users, enrollments, clock),
+    // Two programmes over the demo courses (D105). Nobody has joined one in this demo: students
+    // join in the student app, which is a separate demo.
+    programmes: [
+      {
+        id: 'programme-swe-y3',
+        code: 'SWE-Y3',
+        name: 'Software Engineering · Year 3',
+        openEnrolment: true,
+        createdAt: clock.ago(40 * 24 * HOUR),
+      },
+      {
+        id: 'programme-bms-y1',
+        code: 'BMS-Y1',
+        name: 'Business Management · Year 1',
+        openEnrolment: false,
+        createdAt: clock.ago(40 * 24 * HOUR),
+      },
+    ],
+    programmeCourses: [
+      { programmeId: 'programme-swe-y3', courseId: 'swe-311' },
+      { programmeId: 'programme-swe-y3', courseId: 'eng-201' },
+      { programmeId: 'programme-bms-y1', courseId: 'bus-207' },
+    ],
+    programmeMembers: [],
     auditLog: buildAuditLog(users, clock),
     courses,
     resources: buildResources(courses, clock),

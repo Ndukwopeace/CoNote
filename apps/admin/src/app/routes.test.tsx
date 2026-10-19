@@ -89,6 +89,7 @@ describe('admin layout', () => {
       'Dashboard',
       'Users',
       'Courses',
+      'Programmes',
       'Classes',
       'Resources',
       'AI & Summaries',

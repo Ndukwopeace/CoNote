@@ -13,6 +13,7 @@ import type {
   ClassSession,
   Course,
   JoinableCourse,
+  JoinableProgramme,
   JoinRequest,
   Note,
   NotificationPrefs,
@@ -114,6 +115,15 @@ export interface EnrolmentService {
   requestToJoin(courseId: string): Promise<JoinRequest>
   /** Withdraws a pending request. Rejects with not_found for an unknown ID, and conflict once decided. */
   cancelJoinRequest(requestId: string): Promise<void>
+  /** The programmes open to join (D105), by code. */
+  listJoinableProgrammes(): Promise<JoinableProgramme[]>
+  /**
+   * Joins a programme: the student is enrolled at once in every course in use it holds, with no
+   * request to approve, because an administrator set the programme up. Returns how many courses
+   * were newly joined; joining again adds none. Rejects with validation for a programme that is
+   * closed, archived or unknown ("This programme isn't open.").
+   */
+  joinProgramme(programmeId: string): Promise<number>
 }
 
 /** Class sessions (FR-CLS). Unknown IDs reject with a not_found AppError. */

@@ -24,6 +24,8 @@ export const queryKeys = {
     joinable: (query: string) => [...queryKeys.enrolment.all, 'joinable', query] as const,
     // The student's pending and declined requests.
     requests: () => [...queryKeys.enrolment.all, 'requests'] as const,
+    // The programmes the student could join (D105).
+    programmes: () => [...queryKeys.enrolment.all, 'programmes'] as const,
   },
   classes: {
     // Every class query.

@@ -15,6 +15,8 @@ import { createSupabaseHealthService } from './supabaseHealthService'
 // The class and course services.
 import { createSupabaseClassService } from './supabaseClassService'
 import { createSupabaseCourseService } from './supabaseCourseService'
+// The programme service.
+import { createSupabaseProgrammeService } from './supabaseProgrammeService'
 // The user service.
 import { createSupabaseUserService } from './supabaseUserService'
 // The staff sign-in service, shared with the teacher portal.
@@ -80,5 +82,7 @@ export function createSupabaseServices({
     courses: createSupabaseCourseService({ client }),
     // Classes, with their summary stage and AI job history.
     classes: createSupabaseClassService({ client }),
+    // Programmes, and the timetable import (one database function).
+    programmes: createSupabaseProgrammeService({ client }),
   }
 }

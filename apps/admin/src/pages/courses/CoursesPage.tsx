@@ -3,12 +3,12 @@
  * archived view kept in the address, and the create form.
  */
 
-// The create icon.
-import { Plus } from 'lucide-react'
+// The create and import icons.
+import { FileUp, Plus } from 'lucide-react'
 // Dialog state and a stable change handler.
 import { useCallback, useState } from 'react'
-// The address's query.
-import { useSearchParams } from 'react-router'
+// The address's query, and a link to the import.
+import { Link, useSearchParams } from 'react-router'
 
 // Buttons and the tab title.
 import { Button } from '@conote/ui/button'
@@ -17,6 +17,8 @@ import { PageTitle } from '@conote/ui/common/PageTitle'
 // The create form and the list.
 import { CourseFormDialog } from '@/features/courses/CourseFormDialog'
 import { CourseList } from '@/features/courses/CourseList'
+// Where the import lives.
+import { ADMIN_ROUTES } from '@/lib/routes'
 // Reading and writing the filter in the address.
 import { readCourseFilter, writeCourseFilter } from '@/lib/courseFilters'
 // The filter shape.
@@ -56,15 +58,24 @@ export function CoursesPage() {
       {/* Heading and the create button. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Courses</h1>
-        <Button
-          type="button"
-          onClick={() => {
-            setCreating(true)
-          }}
-        >
-          <Plus aria-hidden="true" />
-          Create course
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* Courses can also come from a school timetable (D105). */}
+          <Button asChild variant="outline">
+            <Link to={ADMIN_ROUTES.importTimetable}>
+              <FileUp aria-hidden="true" />
+              Import timetable
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              setCreating(true)
+            }}
+          >
+            <Plus aria-hidden="true" />
+            Create course
+          </Button>
+        </div>
       </div>
       {/* The list. */}
       <CourseList

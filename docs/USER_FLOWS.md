@@ -392,6 +392,17 @@ flowchart TD
 
 ---
 
+### F13 — Join your programme (D105)
+
+1. A student with no courses lands on Home; the join dialog opens (or **Find courses** on My Courses).
+2. Under **Join your programme** they see the open programmes, each with the codes of its courses.
+3. **Join programme** enrols them in all of those courses. A toast says how many were added.
+4. Home shows their courses. Single courses can still be requested below the programmes and need approval.
+
+**Admin side:** an administrator imports the school's timetable PDF (Courses → Import timetable), sets the term and teachers, checks the dry run and imports. Programmes then appear for students; the administrator can close one at any time.
+
+---
+
 ## Part 3 — User journeys
 
 ### Persona

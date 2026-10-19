@@ -28,6 +28,10 @@ import type {
   EnrollmentRequest,
   RequestDecision,
 } from '@/types/courses'
+// The timetable import's payload.
+import type { ImportPayload } from '@/lib/timetable/payload'
+// Programme shapes.
+import type { ImportOutcome, ProgrammeListItem } from '@/types/programmes'
 // Dashboard shapes.
 import type {
   ActivityPoint,
@@ -173,6 +177,28 @@ export interface ClassService {
   archiveClass(classId: string): Promise<ClassDetails>
 }
 
+/**
+ * Programmes, and creating courses and classes from the school's timetable (D105). Every real
+ * import writes an audit entry. Nothing that exists is overwritten.
+ */
+export interface ProgrammeService {
+  /** Every programme with its counts, A to Z by code. */
+  listProgrammes(): Promise<ProgrammeListItem[]>
+  /**
+   * Opens or closes a programme to students joining it themselves. Rejects with not_found for an
+   * unknown ID.
+   */
+  setEnrolmentOpen(programmeId: string, open: boolean): Promise<ProgrammeListItem>
+  /**
+   * Creates the programmes, courses and classes a timetable describes, all or nothing. Courses are
+   * matched by code, so an existing course keeps its title and teacher (a teacher is filled in
+   * only where there is none), and a class that already starts at the same moment is skipped.
+   * With `dryRun` nothing is saved and the answer says what would happen. Rejects with validation
+   * for a payload that breaks the rules, an unknown time zone or a teacher who is not active.
+   */
+  importTimetable(payload: ImportPayload, options: { dryRun: boolean }): Promise<ImportOutcome>
+}
+
 /** Every service the admin app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
@@ -182,4 +208,5 @@ export interface Services {
   users: UserService
   courses: CourseService
   classes: ClassService
+  programmes: ProgrammeService
 }

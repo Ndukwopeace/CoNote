@@ -32,6 +32,7 @@ describe('createServices', () => {
       'classes',
       'courses',
       'health',
+      'programmes',
       'users',
     ])
   })

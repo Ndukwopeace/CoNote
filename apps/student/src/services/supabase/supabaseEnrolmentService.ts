@@ -12,10 +12,12 @@ import { z } from 'zod'
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
 // Refuses IDs that are not UUIDs before they reach a query.
+import { databaseCode } from '@conote/supabase/databaseErrors'
+import { fromSupabaseError } from '@conote/supabase/errors'
 import { isUuid } from '@conote/supabase/ids'
 
 // The shapes the service returns.
-import type { JoinableCourse, JoinRequest } from '@/types/domain'
+import type { JoinableCourse, JoinableProgramme, JoinRequest } from '@/types/domain'
 
 // The interface this implementation must satisfy.
 import type { EnrolmentService } from '../types'
@@ -46,12 +48,25 @@ const requestRow = z.object({
   status: z.enum(['pending', 'approved', 'declined', 'cancelled']),
   created_at: z.string(),
 })
+// One row of the view of programmes open to join.
+const programmeRow = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  course_count: z.number().int(),
+  course_codes: z.array(z.string()),
+  is_mine: z.boolean(),
+})
+// How many courses joining a programme added.
+const countRow = z.number().int().nonnegative()
 // What cancelling reads back.
 const idRow = z.object({ id: z.string() })
 
 // Shown for a course that cannot take a request, whatever the reason (unknown, archived or
 // completed), so the answer reveals nothing about which course IDs exist.
 const NOT_OPEN = "This course isn't open for requests."
+// Shown for a programme that cannot be joined, whatever the reason.
+const PROGRAMME_NOT_OPEN = "This programme isn't open."
 // Shown when the student asks for a course they already asked for.
 const ALREADY_ASKED = "You've already asked to join this course."
 // Shown for a course the student is already in.
@@ -199,6 +214,47 @@ export function createSupabaseEnrolmentService({
         }
         throw error
       }
+    },
+
+    async listJoinableProgrammes() {
+      const rows = await readRows(
+        client
+          .from('joinable_programmes')
+          .select('id, code, name, course_count, course_codes, is_mine')
+          .order('code'),
+        programmeRow,
+      )
+      return rows.map((row): JoinableProgramme => ({
+        id: row.id,
+        code: row.code,
+        name: row.name,
+        courseCount: row.course_count,
+        courseCodes: row.course_codes,
+        isMine: row.is_mine,
+      }))
+    },
+
+    async joinProgramme(programmeId) {
+      // SECURITY: an ID that is not a UUID is turned away before it reaches the database.
+      if (!isUuid(programmeId)) throw new AppError('validation', PROGRAMME_NOT_OPEN)
+      // SECURITY: the function checks the caller is a student and the programme is open, and
+      // enrols only the caller. Nothing about who to enrol is sent from here.
+      const { data, error } = (await client.rpc('join_programme', {
+        p_programme: programmeId,
+      })) as { data: unknown; error: unknown }
+      if (error) {
+        // An unknown, closed or archived programme all answer the same.
+        if (databaseCode(error) === 'P0002') {
+          throw new AppError('validation', PROGRAMME_NOT_OPEN, { cause: error })
+        }
+        throw fromSupabaseError(error)
+      }
+      // SECURITY: the answer is checked like any row.
+      const parsed = countRow.safeParse(data)
+      if (!parsed.success) {
+        throw fromSupabaseError({ message: 'Malformed row', cause: parsed.error })
+      }
+      return parsed.data
     },
 
     async cancelJoinRequest(requestId) {

@@ -24,6 +24,8 @@ import { LoadError } from '@/components/common/LoadError'
 import { useCancelJoinRequest, useJoinableCourses, useRequestToJoin } from '@/hooks/useEnrolment'
 // Words for a refused request.
 import { joinMessage } from './joinMessage'
+// The programmes above the course search.
+import { ProgrammePicker } from './ProgrammePicker'
 // Shapes.
 import type { JoinableCourse } from '@/types/domain'
 
@@ -113,9 +115,12 @@ export function JoinCoursesDialog({ open, onOpenChange }: Readonly<JoinCoursesDi
         {/* The title names the dialog. */}
         <DialogTitle>Join your courses</DialogTitle>
         <DialogDescription className="text-sm text-muted-foreground">
-          Search for your courses and ask to join. An administrator approves each request.
+          Join your programme, or search for single courses and ask to join. An administrator
+          approves each course request.
         </DialogDescription>
-        {/* Search by code or title. */}
+        {/* The programmes: one tap joins every course of a year (D105). */}
+        <ProgrammePicker />
+        {/* Or one course at a time: search by code or title. */}
         <Input
           type="search"
           aria-label="Search courses to join"

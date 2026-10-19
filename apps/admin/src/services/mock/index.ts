@@ -14,6 +14,7 @@ import { createMockAuthService, readStoredSession } from './mockAuthService'
 import { createMockClassService } from './mockClassService'
 import { createMockCourseService } from './mockCourseService'
 import { createMockHealthService } from './mockHealthService'
+import { createMockProgrammeService } from './mockProgrammeService'
 import { createMockUserService } from './mockUserService'
 // Saving and restoring the platform's changes.
 import { loadPlatform, savePlatform } from './platformStore'
@@ -62,6 +63,16 @@ export function createMockServices(): Services {
     }),
     // Courses and enrolment, changed as the signed-in administrator and saved after every change.
     courses: createMockCourseService({
+      data,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: DEMO_LATENCY_MS,
+      onChange: () => {
+        savePlatform(window.localStorage, data)
+      },
+    }),
+    // Programmes and the timetable import, changed as the signed-in administrator and saved.
+    programmes: createMockProgrammeService({
       data,
       now,
       actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,

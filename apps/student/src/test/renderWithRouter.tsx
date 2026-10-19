@@ -62,6 +62,7 @@ export function createTestServices(overrides: Partial<Services> = {}): Services 
   const seed = createSeed(new Date())
   const enrolment = createMockEnrolment({
     catalog: seed.catalog,
+    programmes: seed.programmes,
     initialEnrolledIds: seed.courses.map((course) => course.id),
     latencyMs: 0,
     store: window.localStorage,

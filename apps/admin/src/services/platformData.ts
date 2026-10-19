@@ -103,6 +103,29 @@ export interface ResourceRecord {
   createdAt: string
 }
 
+/** A programme (`programmes`, D105): courses students take together, such as Software Engineering Year 1. */
+export interface ProgrammeRecord {
+  id: string
+  // Unique in any letter case, e.g. "SWE-Y1".
+  code: string
+  name: string
+  // Whether a student may join it themselves.
+  openEnrolment: boolean
+  createdAt: string
+}
+
+/** A course a programme holds (`programme_courses`). */
+export interface ProgrammeCourseRecord {
+  programmeId: string
+  courseId: string
+}
+
+/** A student who joined a programme (`profiles.programme_id`). */
+export interface ProgrammeMemberRecord {
+  programmeId: string
+  studentId: string
+}
+
 /** A class (`class_sessions`). */
 export interface ClassRecord {
   id: string
@@ -186,6 +209,10 @@ export interface PlatformData {
   enrollments: EnrollmentRecord[]
   // Students' requests to join courses.
   enrollmentRequests: EnrollmentRequestRecord[]
+  // Programmes, the courses they hold and the students in them (D105).
+  programmes: ProgrammeRecord[]
+  programmeCourses: ProgrammeCourseRecord[]
+  programmeMembers: ProgrammeMemberRecord[]
   auditLog: AuditEntry[]
   courses: CourseRecord[]
   resources: ResourceRecord[]
@@ -205,6 +232,9 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     users: [],
     enrollments: [],
     enrollmentRequests: [],
+    programmes: [],
+    programmeCourses: [],
+    programmeMembers: [],
     auditLog: [],
     courses: [],
     resources: [],
@@ -252,6 +282,19 @@ export function courseRecord(
     teacherId: null,
     createdAt: '2026-08-15T09:00:00.000Z',
     archivedAt: null,
+    ...overrides,
+  }
+}
+
+/** A programme with sensible defaults, for tests to override only what they check. */
+export function programmeRecord(
+  overrides: Partial<ProgrammeRecord> & Pick<ProgrammeRecord, 'id'>,
+): ProgrammeRecord {
+  return {
+    code: overrides.id.toUpperCase(),
+    name: overrides.id,
+    openEnrolment: true,
+    createdAt: '2026-08-15T09:00:00.000Z',
     ...overrides,
   }
 }

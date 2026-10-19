@@ -37,7 +37,8 @@ test('a new student asks to join courses, and the requests wait for approval', a
 
   // Search, then ask for two courses and withdraw one.
   await dialog.getByRole('searchbox', { name: 'Search courses to join' }).fill('mth')
-  await expect(dialog.getByText('Software Engineering')).toHaveCount(0)
+  // The programme above names "Software Engineering, Year 3", so match the course title exactly.
+  await expect(dialog.getByText('Software Engineering', { exact: true })).toHaveCount(0)
   await dialog.getByRole('button', { name: 'Request to join MTH 202' }).click()
   await expect(dialog.getByText('Requested')).toBeVisible()
   await dialog.getByRole('searchbox').fill('')

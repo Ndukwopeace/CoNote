@@ -17,7 +17,15 @@ type Catalog = Pick<Services, 'courses' | 'classes' | 'notes' | 'summaries' | 'n
 export function emptyCatalog(): Catalog {
   // The real mock over an empty seed, so not-found behaviour stays real.
   return createMockCatalog({
-    seed: { courses: [], classes: [], notes: [], summaries: [], notifications: [], catalog: [] },
+    seed: {
+      courses: [],
+      classes: [],
+      notes: [],
+      summaries: [],
+      notifications: [],
+      catalog: [],
+      programmes: [],
+    },
     latencyMs: 0,
   })
 }
