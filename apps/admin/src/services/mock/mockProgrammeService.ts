@@ -241,6 +241,22 @@ function buildDraft(data: PlatformData, payload: ImportPayload, nowIso: string):
   return draft
 }
 
+/** Enrols a student in every course of the programme in use; a course already joined is skipped. */
+function enrolInProgramme(data: PlatformData, request: { programmeId: string; studentId: string }) {
+  for (const link of data.programmeCourses.filter(
+    (candidate) => candidate.programmeId === request.programmeId,
+  )) {
+    const course = data.courses.find((candidate) => candidate.id === link.courseId)
+    const joined = data.enrollments.some(
+      (enrollment) =>
+        enrollment.courseId === link.courseId && enrollment.studentId === request.studentId,
+    )
+    if (course?.archivedAt === null && course.status !== 'completed' && !joined) {
+      data.enrollments.push({ courseId: link.courseId, studentId: request.studentId })
+    }
+  }
+}
+
 /** Builds the demo ProgrammeService over `data`. */
 export function createMockProgrammeService({
   data,
@@ -338,19 +354,7 @@ export function createMockProgrammeService({
         if (current && current.programmeId !== request.programmeId) {
           throw new AppError('conflict', 'This student is already in a programme.')
         }
-        // Enrol in every course of the programme in use; a course already joined is skipped.
-        for (const link of data.programmeCourses.filter(
-          (candidate) => candidate.programmeId === request.programmeId,
-        )) {
-          const course = data.courses.find((candidate) => candidate.id === link.courseId)
-          const joined = data.enrollments.some(
-            (enrollment) =>
-              enrollment.courseId === link.courseId && enrollment.studentId === request.studentId,
-          )
-          if (course?.archivedAt === null && course.status !== 'completed' && !joined) {
-            data.enrollments.push({ courseId: link.courseId, studentId: request.studentId })
-          }
-        }
+        enrolInProgramme(data, request)
         if (!current) {
           data.programmeMembers.push({
             programmeId: request.programmeId,
