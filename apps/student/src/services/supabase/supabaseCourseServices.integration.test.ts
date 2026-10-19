@@ -39,6 +39,14 @@ const PROG_OTHER = '60000000-0000-0000-0000-000000000004'
 // Every programme this suite creates.
 const PROGRAMMES = [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED, PROG_OTHER]
 
+/** Puts the student back in the course the seed gives them, which removing them from a programme
+ *  that holds it takes away. The note and summary suites that run next depend on it. */
+async function restoreSeedEnrolment(server: SupabaseClient) {
+  await server
+    .from('enrollments')
+    .upsert([{ course_id: MTH, student_id: STUDENT_ID }], { ignoreDuplicates: true })
+}
+
 describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   // The signed-in student, the signed-in administrator, and the server (which bypasses RLS).
   let student: SupabaseClient
@@ -76,6 +84,9 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   afterAll(async () => {
     // Removing the programmes removes their links; students keep the courses they joined.
     await server.from('programmes').delete().in('id', PROGRAMMES)
+    await restoreSeedEnrolment(server)
+    await server.from('programme_requests').delete().eq('student_id', STUDENT_ID)
+    await server.from('profiles').update({ programme_id: null }).eq('id', STUDENT_ID)
     await student.auth.signOut()
     await admin.auth.signOut()
   })
@@ -88,6 +99,7 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
       .delete()
       .eq('student_id', STUDENT_ID)
       .in('course_id', [CHM, PHY])
+    await restoreSeedEnrolment(server)
     // No programme joined yet, and no request for one.
     await server.from('programme_requests').delete().eq('student_id', STUDENT_ID)
     await server.from('profiles').update({ programme_id: null }).eq('id', STUDENT_ID)
