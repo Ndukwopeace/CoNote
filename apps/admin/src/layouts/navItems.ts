@@ -9,6 +9,7 @@ import {
   BookOpen,
   CalendarDays,
   FolderOpen,
+  GraduationCap,
   LayoutDashboard,
   ScrollText,
   Settings,
@@ -27,11 +28,12 @@ export interface NavItem {
   icon: LucideIcon
 }
 
-/** The nine sections (admin brief, "Admin navigation"). */
+/** The nine sections (admin brief, "Admin navigation"), and Programmes after Courses (D105). */
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Dashboard', to: ADMIN_ROUTES.dashboard, icon: LayoutDashboard },
   { label: 'Users', to: ADMIN_ROUTES.users, icon: Users },
   { label: 'Courses', to: ADMIN_ROUTES.courses, icon: BookOpen },
+  { label: 'Programmes', to: ADMIN_ROUTES.programmes, icon: GraduationCap },
   { label: 'Classes', to: ADMIN_ROUTES.classes, icon: CalendarDays },
   { label: 'Resources', to: ADMIN_ROUTES.resources, icon: FolderOpen },
   { label: 'AI & Summaries', to: ADMIN_ROUTES.aiSummaries, icon: Sparkles },

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 // The shared contract and its fixture IDs.
 import { FIXTURE, runEnrolmentServiceContract } from '../contracts/enrolmentService.contract'
+import { runProgrammeContract } from '../contracts/programmeEnrolment.contract'
 
 // The unit under test.
 import {
@@ -14,6 +15,7 @@ import {
   MOCK_ENROLMENT_KEY,
   startNewStudent,
   type CatalogCourse,
+  type CatalogProgramme,
 } from './mockEnrolment'
 
 /** The platform's courses for the tests. */
@@ -23,6 +25,41 @@ const CATALOG: CatalogCourse[] = [
   course(FIXTURE.completed, 'MTH 101', 'Calculus I', 'completed'),
   { ...course(FIXTURE.archived, 'OLD 100', 'Old Course', 'ongoing'), archived: true },
   course(FIXTURE.enrolled, 'SWE 311', 'Software Engineering', 'ongoing'),
+]
+
+/** The platform's programmes for the tests. */
+const PROGRAMMES: CatalogProgramme[] = [
+  {
+    id: 'prog-open',
+    code: 'SWE-Y3',
+    name: 'Software Engineering, Year 3',
+    openEnrolment: true,
+    archived: false,
+    // In use, in use, in use (already in), completed, archived.
+    courseIds: [
+      FIXTURE.open,
+      FIXTURE.upcoming,
+      FIXTURE.enrolled,
+      FIXTURE.completed,
+      FIXTURE.archived,
+    ],
+  },
+  {
+    id: 'prog-closed',
+    code: 'BMS-Y1',
+    name: 'Biomedical Sciences, Year 1',
+    openEnrolment: false,
+    archived: false,
+    courseIds: [FIXTURE.open],
+  },
+  {
+    id: 'prog-archived',
+    code: 'OLD-Y1',
+    name: 'Old programme',
+    openEnrolment: true,
+    archived: true,
+    courseIds: [FIXTURE.open],
+  },
 ]
 
 /** A catalog course that is not archived. */
@@ -39,6 +76,7 @@ function course(
 function create(store?: Storage) {
   return createMockEnrolment({
     catalog: CATALOG,
+    programmes: PROGRAMMES,
     initialEnrolledIds: [FIXTURE.enrolled],
     latencyMs: 0,
     ...(store ? { store } : {}),
@@ -50,6 +88,20 @@ runEnrolmentServiceContract('mock', {
     const { service, decide } = create()
     return { service, decide }
   },
+})
+
+runProgrammeContract('mock', {
+  fixture: {
+    open: 'prog-open',
+    closed: 'prog-closed',
+    archived: 'prog-archived',
+    // MTH 202, PHY 101 and SWE 311 are in use.
+    openCodes: ['MTH 202', 'PHY 101', 'SWE 311'],
+    newCourses: [FIXTURE.open, FIXTURE.upcoming],
+    completedCourse: FIXTURE.completed,
+    archivedCourse: FIXTURE.archived,
+  },
+  create: () => ({ service: create().service }),
 })
 
 describe('mock enrolment', () => {
@@ -66,6 +118,34 @@ describe('mock enrolment', () => {
     const second = create(window.localStorage)
 
     await expect(second.service.listMyJoinRequests()).resolves.toEqual([request])
+  })
+
+  // Proves a joined programme and its courses survive a new service, as a reload would, and an
+  // approved request does not forget the programme.
+  it('keeps a joined programme across services', async () => {
+    const first = create(window.localStorage)
+    await first.service.joinProgramme('prog-open')
+    const request = await first.service.requestToJoin(FIXTURE.completed).catch(() => null)
+    expect(request).toBeNull()
+
+    const second = create(window.localStorage)
+
+    expect([...second.enrolledIds()].sort()).toEqual(
+      [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort(),
+    )
+    const programmes = await second.service.listJoinableProgrammes()
+    expect(programmes.find((programme) => programme.id === 'prog-open')?.isMine).toBe(true)
+  })
+
+  // Proves a new student has joined no programme.
+  it('starts a new student with no programme', async () => {
+    const enrolment = create(window.localStorage)
+    await enrolment.service.joinProgramme('prog-open')
+
+    startNewStudent(window.localStorage)
+
+    const programmes = await enrolment.service.listJoinableProgrammes()
+    expect(programmes.some((programme) => programme.isMine)).toBe(false)
   })
 
   // Proves signing up starts a student in no courses, even in services made earlier.

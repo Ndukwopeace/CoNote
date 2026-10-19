@@ -18,12 +18,14 @@ describe('ADMIN_ROUTES', () => {
 })
 
 describe('NAV_ROUTES', () => {
-  // Proves the sidebar lists the nine sections of the admin brief, in its order.
-  it('lists the nine sections in order', () => {
+  // Proves the sidebar lists the admin brief's nine sections in its order, with Programmes after
+  // Courses (D105).
+  it('lists the sections in order', () => {
     expect(NAV_ROUTES).toEqual([
       ADMIN_ROUTES.dashboard,
       ADMIN_ROUTES.users,
       ADMIN_ROUTES.courses,
+      ADMIN_ROUTES.programmes,
       ADMIN_ROUTES.classes,
       ADMIN_ROUTES.resources,
       ADMIN_ROUTES.aiSummaries,

@@ -85,6 +85,7 @@ export function createMockCatalog({
       // The demo's notifications are about its enrolled courses; a student in none has none.
       notifications: enrolled.size > 0 ? seed.notifications : [],
       catalog: seed.catalog,
+      programmes: seed.programmes,
     }
   }
 

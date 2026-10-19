@@ -98,6 +98,15 @@ const enrollmentRequestSchema = z.object({
   decidedBy: z.string().nullable(),
 })
 
+/** What a saved programme must look like. */
+const programmeSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  openEnrolment: z.boolean(),
+  createdAt: z.string(),
+})
+
 /** What the saved records must look like. Courses and resources are optional so that records
  *  saved before the Courses milestone still load. */
 const storedSchema = z.object({
@@ -109,6 +118,9 @@ const storedSchema = z.object({
   aiJobs: z.array(aiJobSchema).optional(),
   // Requests to join courses; absent in a save made before they existed.
   enrollmentRequests: z.array(enrollmentRequestSchema).optional(),
+  // Programmes and the courses they hold; absent in a save made before they existed (D105).
+  programmes: z.array(programmeSchema).optional(),
+  programmeCourses: z.array(z.object({ programmeId: z.string(), courseId: z.string() })).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -134,8 +146,17 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
     const parsed = storedSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) return seed
     // Courses and resources saved by an older version are absent: keep the seed's.
-    const { courses, resources, classes, summaries, aiJobs, enrollmentRequests, ...saved } =
-      parsed.data
+    const {
+      courses,
+      resources,
+      classes,
+      summaries,
+      aiJobs,
+      enrollmentRequests,
+      programmes,
+      programmeCourses,
+      ...saved
+    } = parsed.data
     // Classes, summaries and jobs describe one another, so they are taken from the save together.
     const savedClasses = classes && summaries && aiJobs
     return {
@@ -147,6 +168,9 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       summaries: savedClasses ? summaries : seed.summaries,
       aiJobs: savedClasses ? aiJobs : seed.aiJobs,
       enrollmentRequests: enrollmentRequests ?? seed.enrollmentRequests,
+      // Programmes and their courses describe one another, so they come from the save together.
+      programmes: programmes && programmeCourses ? programmes : seed.programmes,
+      programmeCourses: programmes && programmeCourses ? programmeCourses : seed.programmeCourses,
     }
   } catch {
     // Not JSON.
@@ -166,6 +190,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
     aiJobs,
     enrollments,
     enrollmentRequests,
+    programmes,
+    programmeCourses,
     auditLog,
   } = data
   store.setItem(
@@ -179,6 +205,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
       aiJobs,
       enrollments,
       enrollmentRequests,
+      programmes,
+      programmeCourses,
       auditLog,
     }),
   )

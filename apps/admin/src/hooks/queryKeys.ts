@@ -34,6 +34,12 @@ export const queryKeys = {
     // The filter and form choices.
     filterOptions: () => [...queryKeys.classes.all, 'filter-options'] as const,
   },
+  programmes: {
+    // Every programme query; cleared after any change to a programme or an import.
+    all: ['programmes'] as const,
+    // The list.
+    list: () => [...queryKeys.programmes.all, 'list'] as const,
+  },
   courses: {
     // Every course query; cleared after any change to a course or its students.
     all: ['courses'] as const,

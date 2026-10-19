@@ -9,7 +9,7 @@ import type { AppNotification, ClassSession, Course, Note, Summary, Teacher } fr
 // The demo student every note belongs to (the same ID the demo sign-in uses).
 import { DEMO_STUDENT_ID } from './constants'
 // The shape of a course on the platform.
-import type { CatalogCourse } from '../mockEnrolment'
+import type { CatalogCourse, CatalogProgramme } from '../mockEnrolment'
 
 /** The four preset note tags (FR-NTE-3), re-exported for the seed tests. */
 export { PRESET_TAGS } from '@/lib/notes'
@@ -29,6 +29,8 @@ export interface Seed {
   // Every course on the platform, which the join dialog lists (FR-ENR, D76): the enrolled ones
   // and others, including one completed and one archived that are never open for requests.
   catalog: CatalogCourse[]
+  // The programmes students can join (D105).
+  programmes: CatalogProgramme[]
 }
 
 /** Milliseconds in a minute and a day. */
@@ -652,6 +654,36 @@ function buildCatalog(enrolled: readonly Course[]): CatalogCourse[] {
   ]
 }
 
+/** The demo programmes (D105): one open, one closed, one archived, so each state is seen. */
+const PROGRAMMES: readonly CatalogProgramme[] = [
+  {
+    id: 'swe-y3',
+    code: 'SWE-Y3',
+    name: 'Software Engineering, Year 3',
+    openEnrolment: true,
+    archived: false,
+    // Three of the student's own courses; the last two are completed and archived, so not joined.
+    courseIds: ['swe-311', 'cse-205', 'bus-207', 'mth-101', 'gst-111'],
+  },
+  {
+    id: 'bms-y1',
+    code: 'BMS-Y1',
+    name: 'Biomedical Sciences, Year 1',
+    openEnrolment: true,
+    archived: false,
+    courseIds: ['eng-201'],
+  },
+  // Not open to joining yet.
+  {
+    id: 'law-y1',
+    code: 'LAW-Y1',
+    name: 'Law, Year 1',
+    openEnrolment: false,
+    archived: false,
+    courseIds: ['phy-101'],
+  },
+]
+
 /** The whole demo data set, relative to `now`. */
 export function createSeed(now: Date): Seed {
   // Classes first, because the courses count them.
@@ -664,6 +696,7 @@ export function createSeed(now: Date): Seed {
     summaries: buildSummaries(now),
     notifications: buildNotifications(now),
     catalog: buildCatalog(courses),
+    programmes: [...PROGRAMMES],
   }
 }
 

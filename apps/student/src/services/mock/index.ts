@@ -38,6 +38,7 @@ export function createMockServices(): Services {
   // in the seeded courses; signing up starts a new student in none.
   const enrolment = createMockEnrolment({
     catalog: seed.catalog,
+    programmes: seed.programmes,
     initialEnrolledIds: seed.courses.map((course) => course.id),
     latencyMs: DEMO_LATENCY_MS,
     store: window.localStorage,

@@ -54,6 +54,18 @@ const consolePages: RouteObject[] = [
     }),
   },
   {
+    path: ADMIN_ROUTES.programmes,
+    lazy: async () => ({
+      Component: (await import('@/pages/programmes/ProgrammesPage')).ProgrammesPage,
+    }),
+  },
+  {
+    path: ADMIN_ROUTES.importTimetable,
+    lazy: async () => ({
+      Component: (await import('@/pages/programmes/ImportTimetablePage')).ImportTimetablePage,
+    }),
+  },
+  {
     path: ADMIN_ROUTES.classes,
     lazy: async () => ({ Component: (await import('@/pages/classes/ClassesPage')).ClassesPage }),
   },
