@@ -21,6 +21,11 @@ export async function expectNoAxeViolations(page: Page) {
   // A drawer that is still sliding shut keeps the page behind it hidden from screen readers, so
   // let it finish before scanning.
   await expect(page.locator('[role="dialog"][data-state="closed"]')).toHaveCount(0)
+  // Colours fade between themes (and on hover); axe would measure a half-faded colour and report
+  // a contrast failure that is not there once settled, so wait for every colour transition to end.
+  await page.waitForFunction(() =>
+    document.getAnimations().every((animation) => !(animation instanceof CSSTransition)),
+  )
   // Then scan.
   await expectNoAxeViolationsOnPage(page)
 }
