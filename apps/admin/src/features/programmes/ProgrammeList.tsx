@@ -53,15 +53,14 @@ const COLUMNS: DataColumn<ProgrammeListItem, never>[] = [
   },
 ]
 
-/** The list. */
-export function ProgrammeList() {
-  // The programmes, the change, and the toasts that report it.
-  const { data, isPending, isError, refetch } = useProgrammes()
+/** The button that opens or closes one programme, and says so. */
+function EnrolmentToggle({ programme }: Readonly<{ programme: ProgrammeListItem }>) {
+  // The change, and the toasts that report it.
   const change = useSetEnrolmentOpen()
   const toast = useToast()
 
   /** Opens or closes `programme` to students joining it themselves, and says so. */
-  function toggle(programme: ProgrammeListItem) {
+  function toggle() {
     const open = !programme.openEnrolment
     change.mutate(
       { programmeId: programme.id, open },
@@ -77,6 +76,23 @@ export function ProgrammeList() {
       },
     )
   }
+
+  return (
+    <Button type="button" variant="outline" size="sm" disabled={change.isPending} onClick={toggle}>
+      {programme.openEnrolment ? 'Close enrolment' : 'Open enrolment'}
+    </Button>
+  )
+}
+
+/** The row action for one programme, defined once outside the component. */
+function renderActions(programme: ProgrammeListItem) {
+  return <EnrolmentToggle programme={programme} />
+}
+
+/** The list. */
+export function ProgrammeList() {
+  // The programmes, the change, and the toasts that report it.
+  const { data, isPending, isError, refetch } = useProgrammes()
 
   // Failed: the message and a retry.
   if (isError) return <ErrorState thing="programmes" onRetry={() => void refetch()} />
@@ -110,19 +126,7 @@ export function ProgrammeList() {
       rows={data}
       rowKey={(programme) => programme.id}
       columns={COLUMNS}
-      actions={(programme) => (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={change.isPending}
-          onClick={() => {
-            toggle(programme)
-          }}
-        >
-          {programme.openEnrolment ? 'Close enrolment' : 'Open enrolment'}
-        </Button>
-      )}
+      actions={renderActions}
     />
   )
 }

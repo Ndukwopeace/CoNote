@@ -53,6 +53,56 @@ interface ImportReviewProps {
   onImported: (outcome: ImportOutcome) => void
 }
 
+/** What the courses' columns need to show and change each course's teacher. */
+interface ColumnInput {
+  teachers: TeacherAccount[]
+  // The chosen teacher's ID for each course code.
+  selected: Record<string, string | null>
+  // The notes that came with each course's suggested teacher.
+  suggestions: Map<string, ReturnType<typeof suggestTeacher>>
+  onChoose: (code: string, teacherId: string | null) => void
+}
+
+/** The courses' columns: code, title, when it meets and who teaches it. */
+function columnsFor({
+  teachers,
+  selected,
+  suggestions,
+  onChoose,
+}: ColumnInput): DataColumn<PlannedCourse, never>[] {
+  return [
+    { heading: 'Code', cell: (course) => course.code },
+    { heading: 'Title', cell: (course) => course.title },
+    { heading: 'Weekly', cell: (course) => describeSlots(course.slots) },
+    {
+      heading: 'Teacher',
+      cell: (course) => (
+        <span className="min-w-0 space-y-1">
+          <NativeSelect
+            aria-label={`Teacher for ${course.code}`}
+            value={selected[course.code] ?? ''}
+            onChange={(event) => {
+              onChoose(course.code, event.target.value || null)
+            }}
+          >
+            <option value="">No teacher</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.fullName}
+              </option>
+            ))}
+          </NativeSelect>
+          {suggestions.get(course.code)?.notes.map((note) => (
+            <span key={note} className="block text-xs text-muted-foreground">
+              {note}
+            </span>
+          ))}
+        </span>
+      ),
+    },
+  ]
+}
+
 /** The review. */
 export function ImportReview({
   plan,
@@ -96,38 +146,14 @@ export function ImportReview({
     runPreview(previewPayload)
   }, [runPreview, previewPayload])
 
-  /** The courses' columns: code, title, when it meets and who teaches it. */
-  const courseColumns: DataColumn<PlannedCourse, never>[] = [
-    { heading: 'Code', cell: (course) => course.code },
-    { heading: 'Title', cell: (course) => course.title },
-    { heading: 'Weekly', cell: (course) => describeSlots(course.slots) },
-    {
-      heading: 'Teacher',
-      cell: (course) => (
-        <span className="min-w-0 space-y-1">
-          <NativeSelect
-            aria-label={`Teacher for ${course.code}`}
-            value={selected[course.code] ?? ''}
-            onChange={(event) => {
-              setSelected({ ...selected, [course.code]: event.target.value || null })
-            }}
-          >
-            <option value="">No teacher</option>
-            {teachers.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>
-                {teacher.fullName}
-              </option>
-            ))}
-          </NativeSelect>
-          {suggestions.get(course.code)?.notes.map((note) => (
-            <span key={note} className="block text-xs text-muted-foreground">
-              {note}
-            </span>
-          ))}
-        </span>
-      ),
+  const courseColumns = columnsFor({
+    teachers,
+    selected,
+    suggestions,
+    onChoose: (code, teacherId) => {
+      setSelected({ ...selected, [code]: teacherId })
     },
-  ]
+  })
   /** The programmes' columns. */
   const programmeColumns: DataColumn<PlannedProgramme, never>[] = [
     { heading: 'Code', cell: (programme) => programme.code },

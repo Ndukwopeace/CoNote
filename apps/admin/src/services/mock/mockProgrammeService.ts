@@ -51,6 +51,196 @@ function refuse(reason: string): never {
   throw new AppError('validation', `${PAYLOAD_MESSAGE}${reason}`)
 }
 
+/** Everything an import would change, worked out before anything is saved. */
+interface Draft {
+  outcome: ImportOutcome
+  newCourses: CourseRecord[]
+  newClasses: ClassRecord[]
+  newProgrammes: ProgrammeRecord[]
+  newLinks: { programmeId: string; courseId: string }[]
+  // Teachers to fill in on courses that exist and have none.
+  teacherFills: Map<string, string>
+}
+
+/** A course by code: one that exists, or one this import has made. */
+function courseByCode(data: PlatformData, draft: Draft, code: string) {
+  return [...data.courses, ...draft.newCourses].find(
+    (course) => normalizeCourseCode(course.code) === code,
+  )
+}
+
+/** A new course is upcoming before its first class and completed after its last. */
+function courseStatus(starts: string[], ends: string[], nowIso: string): CourseRecord['status'] {
+  if (starts.every((start) => nowIso < start)) return 'upcoming'
+  if (ends.every((end) => nowIso > end)) return 'completed'
+  return 'ongoing'
+}
+
+/** Refuses a teacher who is not an active teacher. */
+function checkTeacher(data: PlatformData, teacherId: string | null) {
+  if (teacherId === null) return
+  const teacher = data.users.find((user) => user.id === teacherId)
+  if (teacher?.role !== 'teacher' || teacher.status !== 'active') {
+    throw new AppError('validation', TEACHER_MESSAGE)
+  }
+}
+
+/** Adds a course that exists already (keeping its details) or makes a new one. */
+function addCourse(
+  data: PlatformData,
+  draft: Draft,
+  entry: ImportPayload['courses'][number],
+  code: string,
+  title: string,
+  options: { timezone: string; nowIso: string },
+): CourseRecord {
+  const existing = courseByCode(data, draft, code)
+  if (existing) {
+    draft.outcome.coursesExisting += 1
+    // A teacher is filled in only where the course has none.
+    if (
+      entry.teacherId !== null &&
+      existing.teacherId === null &&
+      !draft.teacherFills.has(existing.id)
+    ) {
+      draft.teacherFills.set(existing.id, entry.teacherId)
+      draft.outcome.teachersAssigned += 1
+    }
+    return existing
+  }
+  const starts = entry.sessions.map((session) => localToIso(session.start, options.timezone))
+  const ends = entry.sessions.map((session) => localToIso(session.end, options.timezone))
+  const course: CourseRecord = {
+    id: `course-${crypto.randomUUID()}`,
+    code,
+    title,
+    description: '',
+    department: null,
+    status: courseStatus(starts, ends, options.nowIso),
+    teacherId: entry.teacherId,
+    createdAt: options.nowIso,
+    archivedAt: null,
+  }
+  draft.newCourses.push(course)
+  draft.outcome.coursesCreated += 1
+  if (entry.teacherId !== null) draft.outcome.teachersAssigned += 1
+  return course
+}
+
+/** Adds a course's classes; one that already starts at the same moment is left as it is. */
+function addSessions(
+  data: PlatformData,
+  draft: Draft,
+  course: CourseRecord,
+  sessions: ImportPayload['courses'][number]['sessions'],
+  timezone: string,
+) {
+  for (const session of sessions) {
+    const startsAt = localToIso(session.start, timezone)
+    const endsAt = localToIso(session.end, timezone)
+    const name = session.title.trim()
+    if (endsAt <= startsAt || name === '' || name.length > 150) {
+      refuse(`a class of ${course.code} needs a title and must end after it starts.`)
+    }
+    const known = [...data.classes, ...draft.newClasses].filter(
+      (item) => item.courseId === course.id,
+    )
+    if (known.some((item) => item.startsAt === startsAt)) {
+      draft.outcome.classesSkipped += 1
+      continue
+    }
+    // Numbered after the course's last class, archived ones counted.
+    const last = Math.max(0, ...known.map((item) => item.number))
+    draft.newClasses.push({
+      id: `class-${crypto.randomUUID()}`,
+      courseId: course.id,
+      number: last + 1,
+      title: name,
+      description: '',
+      startsAt,
+      endsAt,
+      noteCount: 0,
+      archivedAt: null,
+    })
+    draft.outcome.classesCreated += 1
+  }
+}
+
+/** Adds a programme, or finds it, and links the courses it names. */
+function addProgramme(
+  data: PlatformData,
+  draft: Draft,
+  entry: ImportPayload['programmes'][number],
+  nowIso: string,
+) {
+  const code = entry.code.trim()
+  const name = entry.name.trim()
+  if (!PROGRAMME_CODE_PATTERN.test(code) || name === '' || name.length > 100) {
+    refuse('a programme needs a code and a name.')
+  }
+  let programme = [...data.programmes, ...draft.newProgrammes].find(
+    (candidate) => candidate.code.toLowerCase() === code.toLowerCase(),
+  )
+  if (programme) {
+    draft.outcome.programmesExisting += 1
+  } else {
+    programme = {
+      id: `programme-${crypto.randomUUID()}`,
+      code,
+      name,
+      openEnrolment: true,
+      createdAt: nowIso,
+    }
+    draft.newProgrammes.push(programme)
+    draft.outcome.programmesCreated += 1
+  }
+  for (const courseCode of entry.courseCodes) {
+    const course = courseByCode(data, draft, normalizeCourseCode(courseCode))
+    if (!course) refuse('a programme names a course that does not exist.')
+    const programmeId = programme.id
+    const linked = [...data.programmeCourses, ...draft.newLinks].some(
+      (link) => link.programmeId === programmeId && link.courseId === course.id,
+    )
+    if (!linked) draft.newLinks.push({ programmeId, courseId: course.id })
+  }
+}
+
+/** Works out what `payload` would change, refusing it whole if any rule breaks. */
+function buildDraft(data: PlatformData, payload: ImportPayload, nowIso: string): Draft {
+  if (!isValidTimeZone(payload.timezone)) refuse('the time zone is not known.')
+  const draft: Draft = {
+    outcome: {
+      programmesCreated: 0,
+      programmesExisting: 0,
+      coursesCreated: 0,
+      coursesExisting: 0,
+      classesCreated: 0,
+      classesSkipped: 0,
+      teachersAssigned: 0,
+    },
+    newCourses: [],
+    newClasses: [],
+    newProgrammes: [],
+    newLinks: [],
+    teacherFills: new Map(),
+  }
+  for (const entry of payload.courses) {
+    const code = normalizeCourseCode(entry.code)
+    const title = entry.title.trim()
+    if (!CODE_PATTERN.test(code)) refuse(`"${entry.code}" is not a course code like SWE 311.`)
+    if (title === '' || title.length > 150) refuse(`${code} needs a title.`)
+    checkTeacher(data, entry.teacherId)
+    const course = addCourse(data, draft, entry, code, title, {
+      timezone: payload.timezone,
+      nowIso,
+    })
+    addSessions(data, draft, course, entry.sessions, payload.timezone)
+  }
+  // Programmes, once their courses exist.
+  for (const entry of payload.programmes) addProgramme(data, draft, entry, nowIso)
+  return draft
+}
+
 /** Builds the demo ProgrammeService over `data`. */
 export function createMockProgrammeService({
   data,
@@ -100,160 +290,21 @@ export function createMockProgrammeService({
     async importTimetable(payload: ImportPayload, { dryRun }) {
       await simulateLatency(latencyMs)
       const actor = requireActor()
-      // Everything is worked out on copies and collections of new records, and only saved at the
-      // end, so a refused file leaves nothing behind.
-      if (!isValidTimeZone(payload.timezone)) refuse('the time zone is not known.')
-      const outcome: ImportOutcome = {
-        programmesCreated: 0,
-        programmesExisting: 0,
-        coursesCreated: 0,
-        coursesExisting: 0,
-        classesCreated: 0,
-        classesSkipped: 0,
-        teachersAssigned: 0,
-      }
-      const newCourses: CourseRecord[] = []
-      const newClasses: ClassRecord[] = []
-      const newProgrammes: ProgrammeRecord[] = []
-      const newLinks: { programmeId: string; courseId: string }[] = []
-      // Teachers to fill in on courses that exist and have none.
-      const teacherFills = new Map<string, string>()
-      /** A course by code: one that exists, or one this import has made. */
-      const courseByCode = (code: string) =>
-        [...data.courses, ...newCourses].find((course) => normalizeCourseCode(course.code) === code)
-
-      for (const entry of payload.courses) {
-        const code = normalizeCourseCode(entry.code)
-        const title = entry.title.trim()
-        if (!CODE_PATTERN.test(code)) refuse(`"${entry.code}" is not a course code like SWE 311.`)
-        if (title === '' || title.length > 150) refuse(`${code} needs a title.`)
-        if (entry.teacherId !== null) {
-          const teacher = data.users.find((user) => user.id === entry.teacherId)
-          if (teacher?.role !== 'teacher' || teacher.status !== 'active') {
-            throw new AppError('validation', TEACHER_MESSAGE)
-          }
-        }
-        let course = courseByCode(code)
-        if (course) {
-          outcome.coursesExisting += 1
-          // A teacher is filled in only where the course has none.
-          if (
-            entry.teacherId !== null &&
-            course.teacherId === null &&
-            !teacherFills.has(course.id)
-          ) {
-            teacherFills.set(course.id, entry.teacherId)
-            outcome.teachersAssigned += 1
-          }
-        } else {
-          // A new course is upcoming before its first class, completed after its last.
-          const starts = entry.sessions.map((session) =>
-            localToIso(session.start, payload.timezone),
-          )
-          const ends = entry.sessions.map((session) => localToIso(session.end, payload.timezone))
-          const nowIso = now().toISOString()
-          let status: CourseRecord['status'] = 'ongoing'
-          if (starts.length === 0 || nowIso < starts.reduce((a, b) => (a < b ? a : b))) {
-            status = 'upcoming'
-          } else if (nowIso > ends.reduce((a, b) => (a > b ? a : b))) {
-            status = 'completed'
-          }
-          course = {
-            id: `course-${crypto.randomUUID()}`,
-            code,
-            title,
-            description: '',
-            department: null,
-            status,
-            teacherId: entry.teacherId,
-            createdAt: nowIso,
-            archivedAt: null,
-          }
-          newCourses.push(course)
-          outcome.coursesCreated += 1
-          if (entry.teacherId !== null) outcome.teachersAssigned += 1
-        }
-        // The classes: one that already starts at the same moment is left as it is.
-        for (const session of entry.sessions) {
-          const startsAt = localToIso(session.start, payload.timezone)
-          const endsAt = localToIso(session.end, payload.timezone)
-          const name = session.title.trim()
-          if (endsAt <= startsAt || name === '' || name.length > 150) {
-            refuse(`a class of ${code} needs a title and must end after it starts.`)
-          }
-          const courseId = course.id
-          const exists = [...data.classes, ...newClasses].some(
-            (item) => item.courseId === courseId && item.startsAt === startsAt,
-          )
-          if (exists) {
-            outcome.classesSkipped += 1
-            continue
-          }
-          // Numbered after the course's last class, archived ones counted.
-          const last = [...data.classes, ...newClasses]
-            .filter((item) => item.courseId === courseId)
-            .reduce((highest, item) => Math.max(highest, item.number), 0)
-          newClasses.push({
-            id: `class-${crypto.randomUUID()}`,
-            courseId,
-            number: last + 1,
-            title: name,
-            description: '',
-            startsAt,
-            endsAt,
-            noteCount: 0,
-            archivedAt: null,
-          })
-          outcome.classesCreated += 1
-        }
-      }
-
-      // Programmes, once their courses exist.
-      for (const entry of payload.programmes) {
-        const code = entry.code.trim()
-        const name = entry.name.trim()
-        if (!PROGRAMME_CODE_PATTERN.test(code) || name === '' || name.length > 100) {
-          refuse('a programme needs a code and a name.')
-        }
-        let programme = [...data.programmes, ...newProgrammes].find(
-          (candidate) => candidate.code.toLowerCase() === code.toLowerCase(),
-        )
-        if (programme) {
-          outcome.programmesExisting += 1
-        } else {
-          programme = {
-            id: `programme-${crypto.randomUUID()}`,
-            code,
-            name,
-            openEnrolment: true,
-            createdAt: now().toISOString(),
-          }
-          newProgrammes.push(programme)
-          outcome.programmesCreated += 1
-        }
-        for (const courseCode of entry.courseCodes) {
-          const course = courseByCode(normalizeCourseCode(courseCode))
-          if (!course) refuse('a programme names a course that does not exist.')
-          const programmeId = programme.id
-          const linked = [...data.programmeCourses, ...newLinks].some(
-            (link) => link.programmeId === programmeId && link.courseId === course.id,
-          )
-          if (!linked) newLinks.push({ programmeId, courseId: course.id })
-        }
-      }
-
+      // Everything is worked out first and only saved at the end, so a refused file leaves
+      // nothing behind.
+      const draft = buildDraft(data, payload, now().toISOString())
       // A dry run ends here with nothing changed.
-      if (dryRun) return outcome
+      if (dryRun) return draft.outcome
 
       // Every rule held: save it all, and record it with counts only.
-      for (const [courseId, teacherId] of teacherFills) {
+      for (const [courseId, teacherId] of draft.teacherFills) {
         const course = data.courses.find((candidate) => candidate.id === courseId)
         if (course) course.teacherId = teacherId
       }
-      data.courses.push(...newCourses)
-      data.classes.push(...newClasses)
-      data.programmes.push(...newProgrammes)
-      data.programmeCourses.push(...newLinks)
+      data.courses.push(...draft.newCourses)
+      data.classes.push(...draft.newClasses)
+      data.programmes.push(...draft.newProgrammes)
+      data.programmeCourses.push(...draft.newLinks)
       data.auditLog.push({
         id: `audit-${crypto.randomUUID()}`,
         at: now().toISOString(),
@@ -262,11 +313,11 @@ export function createMockProgrammeService({
         entityType: 'timetable',
         entityId: 'timetable',
         metadata: Object.fromEntries(
-          Object.entries(outcome).map(([key, value]) => [key, String(value)]),
+          Object.entries(draft.outcome).map(([key, value]) => [key, String(value)]),
         ),
       })
       onChange?.()
-      return outcome
+      return draft.outcome
     },
   }
 }

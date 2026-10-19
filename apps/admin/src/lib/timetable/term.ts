@@ -70,7 +70,7 @@ export function parseDateList(text: string): { dates: string[]; invalid: string[
     if (toMoment(word) === null) invalid.push(word)
     else dates.add(word)
   }
-  return { dates: [...dates].sort(), invalid }
+  return { dates: [...dates].sort((a, b) => a.localeCompare(b)), invalid }
 }
 
 /**

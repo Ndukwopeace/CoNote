@@ -130,7 +130,7 @@ export function buildPlan(pages: readonly ParsedPage[]): TimetablePlan {
     ([code, programme]) => ({
       code,
       name: programme.name,
-      courseCodes: [...programme.codes].sort(),
+      courseCodes: [...programme.codes].sort((a, b) => a.localeCompare(b)),
     }),
   )
   return {

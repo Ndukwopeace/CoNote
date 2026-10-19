@@ -4,9 +4,6 @@
  * administrator set the programme up; single courses below still need approval.
  */
 
-// A stable ID for the heading that names the group.
-import { useId } from 'react'
-
 // Badge, button and loading block.
 import { Badge } from '@conote/ui/badge'
 import { Button } from '@conote/ui/button'
@@ -25,8 +22,6 @@ import type { JoinableProgramme } from '@/types/domain'
 
 /** The programme section. */
 export function ProgrammePicker() {
-  // A label ties the heading to the group.
-  const headingId = useId()
   // The programmes, and the join.
   const programmes = useJoinableProgrammes()
   const join = useJoinProgramme()
@@ -43,10 +38,8 @@ export function ProgrammePicker() {
   if (programmes.data.length === 0) return null
 
   return (
-    <div role="group" aria-labelledby={headingId} className="space-y-2">
-      <h3 id={headingId} className="text-sm font-semibold">
-        Join your programme
-      </h3>
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-semibold">Join your programme</legend>
       <p className="text-xs text-muted-foreground">
         Join the year you study in and you are added to all of its courses.
       </p>
@@ -64,7 +57,7 @@ export function ProgrammePicker() {
           />
         ))}
       </ul>
-    </div>
+    </fieldset>
   )
 }
 

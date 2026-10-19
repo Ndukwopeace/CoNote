@@ -35,7 +35,7 @@ const WEEKDAYS: Record<string, Weekday> = {
 }
 
 /** "Weekly Class Schedule - Software Engineering (SWE)": captures the name and the short code. */
-const HEADING = /^Weekly Class Schedule\s*[-–—]\s*(.+?)\s*\(([A-Za-z0-9 ]{2,10})\)\s*$/i
+const HEADING = /^Weekly Class Schedule\s*[-–—]([^()]*)\(([A-Z0-9 ]{2,10})\)\s*$/i
 /** "Year 3 - Trimester 1, October 2026": captures the year and the trimester. */
 const YEAR_LINE = /^Year\s+(\d+)\s*[-–—]\s*Trimester\s+(\d+)/i
 /** A time label's first line: "8:00 AM -". */
@@ -45,7 +45,7 @@ const TIME_END = /^\d{1,2}:\d{2}\s*(?:AM|PM)$/i
 /** A whole time range: "8:00 AM - 10:00 AM". */
 const TIME_RANGE = /(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i
 /** A course cell: a code such as "MATH 101" or "CERT 301", then the rest. */
-const COURSE_CELL = /^([A-Z]{2,5})\s?(\d{3}[A-Z]?)\s+(.+)$/
+const COURSE_CELL = /^([A-Z]{2,5}) ?(\d{3}[A-Z]?)\s(\S.*)$/
 
 /** Collapses runs of whitespace into single spaces and trims the ends. */
 function tidy(text: string): string {
@@ -163,30 +163,84 @@ function rowSplits(items: readonly TextItem[], rows: number): number[] | null {
     gaps.push({ size: above - below, middle: (above + below) / 2 })
   }
   return gaps
-    .sort((a, b) => b.size - a.size)
+    .toSorted((a, b) => b.size - a.size)
     .slice(0, rows - 1)
     .map((gap) => gap.middle)
 }
 
-/** Reads one page, or says what is wrong with it. */
-function parsePage(page: PageText, pageNumber: number): ParsedPage | PageProblem {
-  const items = realItems(page.items)
-  const lines = linesOf(items)
+/** What `readBlocks` needs from a page. */
+interface BlockInput {
+  // The first line of each time label, top to bottom.
+  starts: readonly TextItem[]
+  // Everything left of the first day.
+  timeItems: readonly TextItem[]
+  // Everything under the weekday names and right of the times.
+  cellItems: readonly TextItem[]
+  // Where each weekday's column starts.
+  columns: readonly { x: number; weekday: Weekday }[]
+  // Which row a height falls in.
+  rowOf: (y: number) => number
+}
 
+/** Reads one row's time range from its label, or says what could not be read. */
+function readRowTime(start: TextItem, timeItems: readonly TextItem[]) {
+  // The time range is the label's first line and the line just below it.
+  const end = timeItems
+    .filter(
+      (item) => item.y < start.y && start.y - item.y <= LABEL_REACH && TIME_END.test(item.text),
+    )
+    .toSorted((a, b) => b.y - a.y)[0]
+  const range = TIME_RANGE.exec(`${start.text} ${end?.text ?? ''}`)
+  if (!range) return null
+  return {
+    from: to24Hour(range[1] ?? '', range[2] ?? '', range[3] ?? ''),
+    to: to24Hour(range[4] ?? '', range[5] ?? '', range[6] ?? ''),
+  }
+}
+
+/** Reads every day's cell of every row into class blocks, and lists the cells that are not classes. */
+function readBlocks({ starts, timeItems, cellItems, columns, rowOf }: BlockInput) {
+  const blocks: ClassBlock[] = []
+  const ignored = new Set<string>()
+  for (const [index, start] of starts.entries()) {
+    const time = readRowTime(start, timeItems)
+    if (!time) return { message: `Can't read the time of the row at "${start.text}".` }
+    // Each day's cell: the items of this row in that column.
+    for (const [columnIndex, column] of columns.entries()) {
+      const right = columns[columnIndex + 1]?.x ?? Infinity
+      const inCell = cellItems.filter(
+        (item) => rowOf(item.y) === index && item.x >= column.x && item.x < right,
+      )
+      const cell = readCell(textOf(inCell))
+      if (cell.kind === 'other') ignored.add(cell.text)
+      if (cell.kind === 'course') {
+        blocks.push({
+          weekday: column.weekday,
+          start: time.from,
+          end: time.to,
+          courseCode: cell.code,
+          courseTitle: cell.title,
+          teacherName: cell.teacher,
+        })
+      }
+    }
+  }
+  return { blocks, ignored }
+}
+
+/** What the top of a page says: which programme, year, trimester and track. */
+function readHead(lines: readonly { y: number; text: string }[]) {
   // The heading: which programme this is.
   const headingLine = lines.find((line) => HEADING.test(line.text))
   const heading = headingLine ? HEADING.exec(headingLine.text) : null
   if (!headingLine || !heading) {
-    return {
-      pageNumber,
-      message: 'Can\'t find the programme heading ("Weekly Class Schedule - …").',
-    }
+    return { message: 'Can\'t find the programme heading ("Weekly Class Schedule - …").' }
   }
   // The year line, below the heading.
   const yearLine = lines.find((line) => line.y < headingLine.y && YEAR_LINE.test(line.text))
   const year = yearLine ? YEAR_LINE.exec(yearLine.text) : null
   if (!yearLine || !year) {
-    return { pageNumber, message: 'Can\'t find the year and trimester ("Year 1 - Trimester 1").' }
+    return { message: 'Can\'t find the year and trimester ("Year 1 - Trimester 1").' }
   }
   // Whatever sits between the heading and the year is the specialisation (a track).
   const track =
@@ -194,7 +248,17 @@ function parsePage(page: PageText, pageNumber: number): ParsedPage | PageProblem
       .filter((line) => line.y < headingLine.y && line.y > yearLine.y)
       .map((line) => line.text)
       .join(' ') || null
+  return { heading, year, yearLine, track }
+}
 
+/** Reads one page, or says what is wrong with it. */
+function parsePage(page: PageText, pageNumber: number): ParsedPage | PageProblem {
+  const items = realItems(page.items)
+  const lines = linesOf(items)
+
+  const head = readHead(lines)
+  if ('message' in head) return { pageNumber, message: head.message }
+  const { heading, year, yearLine, track } = head
   // The header row: one item per weekday, left to right. Its left edges are the columns'.
   const dayItems = items
     .filter((item) => item.y < yearLine.y && WEEKDAYS[item.text.toLowerCase()] !== undefined)
@@ -221,42 +285,15 @@ function parsePage(page: PageText, pageNumber: number): ParsedPage | PageProblem
   // Which row (0 for the first) a height falls in: how many splits lie above it.
   const rowOf = (y: number) => splits.filter((split) => y < split).length
 
-  const blocks: ClassBlock[] = []
-  const ignored = new Set<string>()
-  for (const [index, start] of starts.entries()) {
-    // The time range is the label's first line and the line just below it.
-    const end = timeItems
-      .filter(
-        (item) => item.y < start.y && start.y - item.y <= LABEL_REACH && TIME_END.test(item.text),
-      )
-      .sort((a, b) => b.y - a.y)[0]
-    const range = TIME_RANGE.exec(`${start.text} ${end?.text ?? ''}`)
-    if (!range) {
-      return { pageNumber, message: `Can't read the time of the row at "${start.text}".` }
-    }
-    const from = to24Hour(range[1] ?? '', range[2] ?? '', range[3] ?? '')
-    const to = to24Hour(range[4] ?? '', range[5] ?? '', range[6] ?? '')
-
-    // Each day's cell: the items of this row in that column.
-    for (const [columnIndex, column] of columns.entries()) {
-      const right = columns[columnIndex + 1]?.x ?? Infinity
-      const inCell = cellItems.filter(
-        (item) => rowOf(item.y) === index && item.x >= column.x && item.x < right,
-      )
-      const cell = readCell(textOf(inCell))
-      if (cell.kind === 'other') ignored.add(cell.text)
-      if (cell.kind === 'course') {
-        blocks.push({
-          weekday: column.weekday,
-          start: from,
-          end: to,
-          courseCode: cell.code,
-          courseTitle: cell.title,
-          teacherName: cell.teacher,
-        })
-      }
-    }
-  }
+  const read = readBlocks({
+    starts,
+    timeItems,
+    cellItems,
+    columns,
+    rowOf,
+  })
+  if ('message' in read) return { pageNumber, message: read.message }
+  const { blocks, ignored } = read
   if (blocks.length === 0) return { pageNumber, message: 'No course found on this page.' }
 
   // Joining must keep each day's classes together and in time order.

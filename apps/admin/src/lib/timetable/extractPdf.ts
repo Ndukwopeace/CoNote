@@ -71,19 +71,21 @@ export async function extractPages(data: ArrayBuffer, pdfjs?: PdfJs): Promise<Pa
       `This file has too many pages (more than ${String(MAX_PAGES)}) to be a timetable.`,
     )
   }
-  const pages: PageText[] = []
-  for (let number = 1; number <= document.numPages; number += 1) {
-    const content = await (await document.getPage(number)).getTextContent()
-    pages.push({
-      items: content.items
-        .filter(isTextEntry)
-        // The transform's last two numbers are where the text starts.
-        .map((entry) => ({
-          text: entry.str,
-          x: entry.transform[4] ?? 0,
-          y: entry.transform[5] ?? 0,
-        })),
-    })
-  }
-  return pages
+  // The pages are read together (there are at most MAX_PAGES), and kept in order.
+  const doc = document
+  return Promise.all(
+    Array.from({ length: doc.numPages }, async (_, index): Promise<PageText> => {
+      const content = await (await doc.getPage(index + 1)).getTextContent()
+      return {
+        items: content.items
+          .filter(isTextEntry)
+          // The transform's last two numbers are where the text starts.
+          .map((entry) => ({
+            text: entry.str,
+            x: entry.transform[4] ?? 0,
+            y: entry.transform[5] ?? 0,
+          })),
+      }
+    }),
+  )
 }
