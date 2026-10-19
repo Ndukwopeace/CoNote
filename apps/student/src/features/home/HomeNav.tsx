@@ -1,19 +1,17 @@
 /**
  * Home's navigation (D103, D104): the shared navigation with Home's own section above the links,
- * the classes of today and earlier (choosing one files the next notes under it).
+ * the classes of today and the two days before under "Today", "Yesterday" and the date (choosing one
+ * files the next notes under it; one that has not started cannot be chosen yet, D108).
  */
 
 // The navigation every page shares, and the look of its rows.
 import { AppNav, NAV_ROW } from '@/layouts/AppNav'
 // Class rules.
-import { groupClassesByDay } from '@/lib/classes'
+import { classesByDay, hasClassStarted } from '@/lib/classes'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
 // Shapes.
 import type { ClassSession, Course } from '@/types/domain'
-
-/** How many earlier classes the navigation lists. */
-const EARLIER_LIMIT = 4
 
 /** What the navigation shows and calls. */
 interface HomeNavProps {
@@ -38,9 +36,8 @@ export function HomeNav({
   newSummaries,
   onDone,
 }: Readonly<HomeNavProps>) {
-  // Today's classes and the ones before today (most recent first).
-  const groups = groupClassesByDay(classes, now)
-  const earlier = groups.past.slice(0, EARLIER_LIMIT)
+  // Today and the two days before, grouped by day.
+  const days = classesByDay(classes, now)
 
   /** One class row: choosing it files the next notes under it. */
   function classRow(session: ClassSession) {
@@ -50,11 +47,16 @@ export function HomeNav({
         <button
           type="button"
           aria-pressed={session.id === chosenId}
+          disabled={!hasClassStarted(session, now)}
           onClick={() => {
             onChoose(session.id)
             onDone?.()
           }}
-          className={cn(NAV_ROW, session.id === chosenId && 'bg-accent')}
+          className={cn(
+            NAV_ROW,
+            session.id === chosenId && 'bg-accent',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+          )}
         >
           {course?.code} · {session.title}
         </button>
@@ -65,22 +67,23 @@ export function HomeNav({
   return (
     // The shared navigation, with Home's classes above the links.
     <AppNav newSummaries={newSummaries} {...(onDone ? { onDone } : {})}>
-      <h2 className="px-2 pt-1.5 pb-1 text-xs tracking-wider text-muted-foreground uppercase">
-        Today
-      </h2>
-      {groups.today.length > 0 ? (
-        <ul>{groups.today.map(classRow)}</ul>
-      ) : (
-        <p className="px-3 py-2 text-sm text-muted-foreground">No classes today.</p>
+      {days.length === 0 && (
+        <p className="px-3 py-2 text-sm text-muted-foreground">No classes in the last 3 days.</p>
       )}
-      {earlier.length > 0 && (
-        <>
-          <h2 className="px-2 pt-3.5 pb-1 text-xs tracking-wider text-muted-foreground uppercase">
-            Earlier
+      {days.map((day, index) => (
+        <div key={day.label}>
+          {/* The day: Today, Yesterday, or the date. */}
+          <h2
+            className={cn(
+              'px-2 pb-1 text-xs tracking-wider text-muted-foreground uppercase',
+              index === 0 ? 'pt-1.5' : 'pt-3.5',
+            )}
+          >
+            {day.label}
           </h2>
-          <ul>{earlier.map(classRow)}</ul>
-        </>
-      )}
+          <ul>{day.classes.map(classRow)}</ul>
+        </div>
+      ))}
     </AppNav>
   )
 }

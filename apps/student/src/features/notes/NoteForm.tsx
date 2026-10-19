@@ -41,7 +41,7 @@ import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
 import { useCreateNote, useUpdateNote } from '@/hooks/useNoteMutations'
 // Relative times for the draft banner.
-import { defaultNoteClass, hasClassStarted } from '@/lib/classes'
+import { defaultNoteClass, hasClassStarted, isOpenForNotes } from '@/lib/classes'
 import { formatRelativeTime } from '@/lib/dates'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
@@ -272,10 +272,10 @@ function NoteFormFields({
     }
   }
 
-  // Classes of the course chosen in the picker, in number order. Only the ones that have started
-  // are offered (D107): a class still to come has nothing to write about yet.
+  // Classes of the course chosen in the picker, in number order. Only today's
+  // classes that have started are offered (D108).
   const pickerClasses = classes
-    .filter((c) => c.courseId === courseId && hasClassStarted(c, new Date()))
+    .filter((c) => c.courseId === courseId && isOpenForNotes(c, new Date()))
     .sort((a, b) => a.number - b.number)
   // The course of a class, for labels.
   const courseOf = (c: ClassSession | undefined) =>

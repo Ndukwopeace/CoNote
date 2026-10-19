@@ -3,6 +3,8 @@
  * live/upcoming/completed status is always worked out from the clock, never stored.
  */
 
+// How a day's date is written.
+import { formatClassDate } from '@/lib/dates'
 // The session shape.
 import type { ClassSession } from '@/types/domain'
 
@@ -90,31 +92,6 @@ export function adjacentClasses(
   return { ...(previous ? { previous } : {}), ...(next ? { next } : {}) }
 }
 
-/** How far back a class still counts as the one a new note is probably for. */
-const NOTE_CLASS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
-
-/**
- * The class a new note is most likely for: the latest class that has started, so the one on now,
- * or the one that just ended. Older than a week, or none started yet, and nothing is guessed.
- */
-export function defaultNoteClass(
-  sessions: readonly ClassSession[],
-  now: Date,
-): ClassSession | undefined {
-  // Milliseconds for easy comparison.
-  const time = now.getTime()
-  return (
-    sessions
-      // Started, and recently enough to still be the likely one.
-      .filter((session) => {
-        const start = Date.parse(session.startsAt)
-        return start <= time && time - start <= NOTE_CLASS_WINDOW_MS
-      })
-      // Latest start first.
-      .sort((a, b) => byStartAscending(b, a))[0]
-  )
-}
-
 /**
  * Whether a class has started, which is when a student may write about it: a class still to come
  * is not offered, and the services refuse it too (D107).
@@ -124,16 +101,104 @@ export function hasClassStarted(session: ClassSession, now: Date): boolean {
   return Date.parse(session.startsAt) <= now.getTime()
 }
 
+/** How many days before today a class can still be chosen (D108). */
+const RECENT_DAYS = 2
+
+/** Local midnight at the start of the first day a class can be chosen from (two days back). */
+function windowStart(now: Date): number {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - RECENT_DAYS).getTime()
+}
+
+/** Local midnight at the end of today. */
+function windowEnd(now: Date): number {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime()
+}
+
+/** Whether the class starts today or in the two days before, in local time. */
+function isInWindow(session: ClassSession, now: Date): boolean {
+  // The class's start, in milliseconds.
+  const start = Date.parse(session.startsAt)
+  // From two days back up to the end of today.
+  return start >= windowStart(now) && start < windowEnd(now)
+}
+
 /**
- * Every class a student can file a note under, for the class sheet: the ones that have started
- * (on now, or over), latest first. A class still to come is left out (D107).
+ * Whether a student may choose the class on Home and in the note form (D108): it has started, and
+ * it started today or in the two days before, by the student's own calendar. Older classes and
+ * classes still to come are not offered.
  */
-export function classesToChoose(sessions: readonly ClassSession[], now: Date): ClassSession[] {
+export function isOpenForNotes(session: ClassSession, now: Date): boolean {
+  // Started, and recent enough.
+  return hasClassStarted(session, now) && isInWindow(session, now)
+}
+
+/**
+ * The class a new note is most likely for: the latest class that is open for notes, so the one on
+ * now, or the one that just ended. None open, and nothing is guessed.
+ */
+export function defaultNoteClass(
+  sessions: readonly ClassSession[],
+  now: Date,
+): ClassSession | undefined {
   return (
     sessions
-      // Only the classes that have started.
-      .filter((session) => hasClassStarted(session, now))
+      // Open for notes.
+      .filter((session) => isOpenForNotes(session, now))
       // Latest start first.
-      .sort((a, b) => byStartAscending(b, a))
+      .sort((a, b) => byStartAscending(b, a))[0]
   )
+}
+
+/**
+ * The classes the class sheet and the navigation list, for the student to choose from (D108):
+ * today and the two days before. The ones that have started come first, latest first, then
+ * today's that are still to come, soonest first. Older days and later days are left out. A class
+ * that has not started is listed but cannot be chosen (`isOpenForNotes`).
+ */
+export function classesToChoose(sessions: readonly ClassSession[], now: Date): ClassSession[] {
+  // The last three days, whether or not the class has started.
+  const recent = sessions.filter((session) => isInWindow(session, now))
+  // Those that have started, latest first, then those still to come, soonest first.
+  const started = recent.filter((session) => hasClassStarted(session, now))
+  const coming = recent.filter((session) => !hasClassStarted(session, now))
+  return [...started.sort((a, b) => byStartAscending(b, a)), ...coming.sort(byStartAscending)]
+}
+
+/** One day's classes in the class sheet and the navigation (D108). */
+export interface ClassDay {
+  // "Today", "Yesterday", or the date ("Sat 26 Sep") for the day before that.
+  label: string
+  // The day's classes, in the order `classesToChoose` gives.
+  classes: ClassSession[]
+}
+
+/**
+ * The choosable classes grouped by day, today first: "Today", "Yesterday", then the date. A day
+ * with no classes has no group.
+ */
+export function classesByDay(sessions: readonly ClassSession[], now: Date): ClassDay[] {
+  // Local midnight today, to count whole days back from.
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  // The day a class starts on, as local midnight.
+  const dayOf = (session: ClassSession) => {
+    const start = new Date(session.startsAt)
+    return new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
+  }
+  // The label for a day's first class: how many days back it is.
+  const label = (session: ClassSession) => {
+    // Whole days between that day and today (rounded: a daylight-saving day is not 24 hours).
+    const back = Math.round((startOfToday - dayOf(session)) / (24 * 60 * 60 * 1000))
+    if (back <= 0) return 'Today'
+    if (back === 1) return 'Yesterday'
+    return formatClassDate(session.startsAt)
+  }
+  // Newest day first, each day's classes in `classesToChoose` order.
+  const days = new Map<number, ClassDay>()
+  for (const session of classesToChoose(sessions, now)) {
+    const key = dayOf(session)
+    const day = days.get(key) ?? { label: label(session), classes: [] }
+    day.classes.push(session)
+    days.set(key, day)
+  }
+  return [...days.entries()].sort((a, b) => b[0] - a[0]).map(([, day]) => day)
 }
