@@ -266,6 +266,9 @@ export function createMockProgrammeService({
       courseCount: data.programmeCourses.filter((link) => link.programmeId === programme.id).length,
       studentCount: data.programmeMembers.filter((member) => member.programmeId === programme.id)
         .length,
+      pendingRequestCount: data.programmeRequests.filter(
+        (request) => request.programmeId === programme.id && request.status === 'pending',
+      ).length,
     }
   }
 
@@ -285,6 +288,139 @@ export function createMockProgrammeService({
       programme.openEnrolment = open
       onChange?.()
       return toListItem(programme)
+    },
+
+    async listProgrammeRequests() {
+      await simulateLatency(latencyMs)
+      return data.programmeRequests
+        .filter((request) => request.status === 'pending')
+        .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .flatMap((request) => {
+          const programme = data.programmes.find(
+            (candidate) => candidate.id === request.programmeId,
+          )
+          const student = data.users.find((user) => user.id === request.studentId)
+          // A request whose programme or student is gone cannot be shown or acted on.
+          if (!programme || !student) return []
+          return [
+            {
+              id: request.id,
+              programmeId: programme.id,
+              programmeCode: programme.code,
+              programmeName: programme.name,
+              studentId: student.id,
+              studentName: student.fullName,
+              studentEmail: student.email,
+              createdAt: request.createdAt,
+            },
+          ]
+        })
+    },
+
+    async decideProgrammeRequest(requestId, decision) {
+      await simulateLatency(latencyMs)
+      const actor = requireActor()
+      const request = data.programmeRequests.find((candidate) => candidate.id === requestId)
+      if (!request) throw new AppError('not_found', 'Request not found.')
+      if (request.status !== 'pending') {
+        throw new AppError('conflict', 'This request has already been decided.')
+      }
+      if (decision === 'approved') {
+        const student = data.users.find((user) => user.id === request.studentId)
+        // SECURITY: only an active student can be enrolled, whatever the request says.
+        if (student?.role !== 'student' || student.status !== 'active') {
+          throw new AppError('validation', "This account can't join a programme.")
+        }
+        // One programme per student, checked at the moment of approval.
+        const current = data.programmeMembers.find(
+          (member) => member.studentId === request.studentId,
+        )
+        if (current && current.programmeId !== request.programmeId) {
+          throw new AppError('conflict', 'This student is already in a programme.')
+        }
+        // Enrol in every course of the programme in use; a course already joined is skipped.
+        for (const link of data.programmeCourses.filter(
+          (candidate) => candidate.programmeId === request.programmeId,
+        )) {
+          const course = data.courses.find((candidate) => candidate.id === link.courseId)
+          const joined = data.enrollments.some(
+            (enrollment) =>
+              enrollment.courseId === link.courseId && enrollment.studentId === request.studentId,
+          )
+          if (course?.archivedAt === null && course.status !== 'completed' && !joined) {
+            data.enrollments.push({ courseId: link.courseId, studentId: request.studentId })
+          }
+        }
+        if (!current) {
+          data.programmeMembers.push({
+            programmeId: request.programmeId,
+            studentId: request.studentId,
+          })
+        }
+      }
+      request.status = decision
+      data.auditLog.push({
+        id: `audit-${crypto.randomUUID()}`,
+        at: now().toISOString(),
+        actorId: actor,
+        action: 'programme_requests.update',
+        entityType: 'programme_requests',
+        entityId: request.id,
+        metadata: { changed: 'status' },
+      })
+      onChange?.()
+    },
+
+    async listProgrammeMembers(programmeId) {
+      await simulateLatency(latencyMs)
+      return data.programmeMembers
+        .filter((member) => member.programmeId === programmeId)
+        .flatMap((member) => {
+          const student = data.users.find((user) => user.id === member.studentId)
+          return student
+            ? [
+                {
+                  studentId: student.id,
+                  studentName: student.fullName,
+                  studentEmail: student.email,
+                },
+              ]
+            : []
+        })
+        .sort((a, b) => a.studentName.localeCompare(b.studentName))
+    },
+
+    async removeFromProgramme(studentId) {
+      await simulateLatency(latencyMs)
+      const actor = requireActor()
+      const member = data.programmeMembers.find((candidate) => candidate.studentId === studentId)
+      if (!member) throw new AppError('not_found', "This student isn't in a programme.")
+      // They leave the programme's courses; their notes are not touched.
+      const leaving = new Set(
+        data.programmeCourses
+          .filter((link) => link.programmeId === member.programmeId)
+          .map((link) => link.courseId),
+      )
+      const before = data.enrollments.length
+      data.enrollments = data.enrollments.filter(
+        (enrollment) => !(enrollment.studentId === studentId && leaving.has(enrollment.courseId)),
+      )
+      data.programmeMembers = data.programmeMembers.filter(
+        (candidate) => candidate.studentId !== studentId,
+      )
+      const removed = before - data.enrollments.length
+      // Recorded with a count and nothing else.
+      data.auditLog.push({
+        id: `audit-${crypto.randomUUID()}`,
+        at: now().toISOString(),
+        actorId: actor,
+        action: 'programme_members.remove',
+        entityType: 'programme_members',
+        entityId: studentId,
+        metadata: { coursesRemoved: String(removed) },
+      })
+      onChange?.()
+      return removed
     },
 
     async importTimetable(payload: ImportPayload, { dryRun }) {

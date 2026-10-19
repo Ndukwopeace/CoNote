@@ -69,3 +69,55 @@ export function useImportTimetable() {
     },
   })
 }
+
+/** The requests to join a programme that wait for a decision. */
+export function useProgrammeRequests() {
+  // The programme service.
+  const { programmes } = useServices()
+  return useQuery({
+    queryKey: queryKeys.programmes.requests(),
+    queryFn: () => appQuery(() => programmes.listProgrammeRequests()),
+  })
+}
+
+/**
+ * Approves or declines a request. Approving enrols the student in the programme's courses, so the
+ * course and user counts and the dashboard are refreshed along with the programmes.
+ */
+export function useDecideProgrammeRequest() {
+  // The programme service, and the cache to refresh.
+  const { programmes } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      decision,
+    }: {
+      requestId: string
+      decision: 'approved' | 'declined'
+    }) => appQuery(() => programmes.decideProgrammeRequest(requestId, decision)),
+    onSettled: () => queryClient.invalidateQueries(),
+  })
+}
+
+/** The students in one programme; nothing is read until a programme is chosen. */
+export function useProgrammeMembers(programmeId: string | null) {
+  // The programme service.
+  const { programmes } = useServices()
+  return useQuery({
+    queryKey: queryKeys.programmes.members(programmeId ?? ''),
+    queryFn: () => appQuery(() => programmes.listProgrammeMembers(programmeId ?? '')),
+    enabled: programmeId !== null,
+  })
+}
+
+/** Takes a student out of their programme and its courses, then refreshes what that changes. */
+export function useRemoveFromProgramme() {
+  // The programme service, and the cache to refresh.
+  const { programmes } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (studentId: string) => appQuery(() => programmes.removeFromProgramme(studentId)),
+    onSettled: () => queryClient.invalidateQueries(),
+  })
+}

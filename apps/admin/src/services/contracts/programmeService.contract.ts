@@ -61,6 +61,17 @@ function platform(): PlatformData {
       { programmeId: 'p1', courseId: 'c2' },
     ],
     programmeMembers: [{ programmeId: 'p1', studentId: 's1' }],
+    // Student 1 is in c1 (by their programme), and student 2 is waiting to join SWE-Y1.
+    enrollments: [{ courseId: 'c1', studentId: 's1' }],
+    programmeRequests: [
+      {
+        id: 'r1',
+        programmeId: 'p1',
+        studentId: 's2',
+        status: 'pending',
+        createdAt: '2026-10-19T08:00:00.000Z',
+      },
+    ],
   })
 }
 
@@ -111,6 +122,7 @@ export function describeProgrammeServiceContract(name: string, create: CreatePro
             openEnrolment: false,
             courseCount: 0,
             studentCount: 0,
+            pendingRequestCount: 0,
           },
           {
             id: 'id',
@@ -119,6 +131,7 @@ export function describeProgrammeServiceContract(name: string, create: CreatePro
             openEnrolment: true,
             courseCount: 2,
             studentCount: 1,
+            pendingRequestCount: 1,
           },
         ])
       })
@@ -152,6 +165,113 @@ export function describeProgrammeServiceContract(name: string, create: CreatePro
         await expect(
           service().setEnrolmentOpen('00000000-0000-0000-0000-000000000099', false),
         ).rejects.toMatchObject({ kind: 'not_found' })
+      })
+    })
+
+    describe('programme requests', () => {
+      // Proves the waiting requests are listed with who asked and for what.
+      it('lists the waiting requests', async () => {
+        const requests = await service().listProgrammeRequests()
+
+        expect(
+          requests.map((request) => ({ ...request, id: 'id', programmeId: 'p', studentId: 's' })),
+        ).toEqual([
+          {
+            id: 'id',
+            programmeId: 'p',
+            programmeCode: 'SWE-Y1',
+            programmeName: 'Software Engineering · Year 1',
+            studentId: 's',
+            studentName: 'Student 02',
+            studentEmail: expect.stringContaining('@') as string,
+            createdAt: expect.any(String) as string,
+          },
+        ])
+      })
+
+      // Proves approving enrols the student in the programme's courses and makes it theirs.
+      it('approves a request: the student joins the programme and its courses', async () => {
+        const data = platform()
+        const programmes = service(data)
+        const [request] = await programmes.listProgrammeRequests()
+
+        await programmes.decideProgrammeRequest(request?.id ?? '', 'approved')
+
+        expect(await programmes.listProgrammeRequests()).toEqual([])
+        const members = await programmes.listProgrammeMembers(request?.programmeId ?? '')
+        expect(members.map((member) => member.studentName)).toEqual(['Student 01', 'Student 02'])
+        expect((await programmes.listProgrammes()).find((p) => p.code === 'SWE-Y1')).toMatchObject({
+          studentCount: 2,
+          pendingRequestCount: 0,
+        })
+      })
+
+      // Proves declining enrols nobody and the request leaves the waiting list.
+      it('declines a request without enrolling anyone', async () => {
+        const programmes = service()
+        const [request] = await programmes.listProgrammeRequests()
+
+        await programmes.decideProgrammeRequest(request?.id ?? '', 'declined')
+
+        expect(await programmes.listProgrammeRequests()).toEqual([])
+        expect(
+          (await programmes.listProgrammes()).find((p) => p.code === 'SWE-Y1')?.studentCount,
+        ).toBe(1)
+      })
+
+      // Proves a request is decided once.
+      it('refuses to decide a request twice', async () => {
+        const programmes = service()
+        const [request] = await programmes.listProgrammeRequests()
+        await programmes.decideProgrammeRequest(request?.id ?? '', 'declined')
+
+        await expect(
+          programmes.decideProgrammeRequest(request?.id ?? '', 'approved'),
+        ).rejects.toMatchObject({ kind: 'conflict' })
+      })
+
+      // Proves an unknown request is not found.
+      it('rejects an unknown request', async () => {
+        await expect(
+          service().decideProgrammeRequest('00000000-0000-0000-0000-000000000099', 'approved'),
+        ).rejects.toMatchObject({ kind: 'not_found' })
+      })
+    })
+
+    describe('programme members', () => {
+      // Proves the members are listed with their names, and a programme with none lists none.
+      it('lists the students in a programme', async () => {
+        const programmes = service()
+        const swe = (await programmes.listProgrammes()).find((p) => p.code === 'SWE-Y1')
+        const bms = (await programmes.listProgrammes()).find((p) => p.code === 'BMS-Y1')
+
+        const members = await programmes.listProgrammeMembers(swe?.id ?? '')
+
+        expect(members.map((member) => member.studentName)).toEqual(['Student 01'])
+        expect(await programmes.listProgrammeMembers(bms?.id ?? '')).toEqual([])
+      })
+
+      // Proves removing takes the student out of the programme, and the programme's courses, and
+      // the list and counts follow.
+      it('removes a student from their programme and its courses', async () => {
+        const data = platform()
+        const programmes = service(data)
+
+        const left = await programmes.removeFromProgramme('s1')
+
+        expect(left).toBe(1)
+        expect(
+          (await programmes.listProgrammes()).find((p) => p.code === 'SWE-Y1')?.studentCount,
+        ).toBe(0)
+        const swe = (await programmes.listProgrammes()).find((p) => p.code === 'SWE-Y1')
+        expect(await programmes.listProgrammeMembers(swe?.id ?? '')).toEqual([])
+      })
+
+      // Proves a student who is not in a programme is not found.
+      it('rejects a student who is not in a programme', async () => {
+        await expect(service().removeFromProgramme('s2')).rejects.toMatchObject({
+          kind: 'not_found',
+        })
       })
     })
 

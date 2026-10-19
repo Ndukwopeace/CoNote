@@ -100,6 +100,8 @@ test('a timetable PDF is read, previewed and imported', async ({ page, context }
   await page.reload()
   await expect(page.getByRole('link', { name: 'SWE 101' })).toBeVisible()
   await page.goto('/admin/programmes')
-  await expect(page.getByRole('cell', { name: 'SWE-Y1' })).toBeVisible()
+  await expect(
+    page.getByRole('table', { name: 'Programmes' }).getByText('SWE-Y1', { exact: true }),
+  ).toBeVisible()
   expect(cspViolations).toEqual([])
 })

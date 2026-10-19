@@ -36,12 +36,12 @@ export function NoCourses() {
         title="No courses yet"
         action={
           <Button type="button" onClick={prompt.open}>
-            Find courses
+            Join programme
           </Button>
         }
       >
-        You&apos;re not enrolled in any courses yet. Find a course to request to join, or wait for
-        your teacher or administrator to add you.
+        You&apos;re not enrolled in any courses yet. Join your programme to get your courses, or
+        wait for your teacher or administrator to add you.
         {/* Requests already made, with the way to see them. */}
         {waiting > 0 && (
           <>

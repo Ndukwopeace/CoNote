@@ -206,6 +206,21 @@ export class Harness extends StackHarness<PlatformData> {
         'insert programme courses',
       )
     }
+    // The requests to join them. Only waiting ones are loaded; the one-waiting rule would refuse more.
+    if (data.programmeRequests.length > 0) {
+      ok(
+        await this.server.from('programme_requests').insert(
+          data.programmeRequests.map((request) => ({
+            id: id(request.id),
+            programme_id: id(request.programmeId),
+            student_id: id(request.studentId),
+            status: request.status,
+            created_at: request.createdAt,
+          })),
+        ),
+        'insert programme requests',
+      )
+    }
     for (const member of data.programmeMembers) {
       ok(
         await this.server

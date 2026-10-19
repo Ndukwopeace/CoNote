@@ -35,6 +35,9 @@ const ENG = '20000000-0000-0000-0000-000000000006'
 const PROG_OPEN = '60000000-0000-0000-0000-000000000001'
 const PROG_CLOSED = '60000000-0000-0000-0000-000000000002'
 const PROG_ARCHIVED = '60000000-0000-0000-0000-000000000003'
+const PROG_OTHER = '60000000-0000-0000-0000-000000000004'
+// Every programme this suite creates.
+const PROGRAMMES = [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED, PROG_OTHER]
 
 describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   // The signed-in student, the signed-in administrator, and the server (which bypasses RLS).
@@ -48,9 +51,10 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
     server = serverClient()
     // The programmes: the open one holds a course in use, one not started, one the student is
     // already in, a completed one and an archived one.
-    await server.from('programmes').delete().in('id', [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED])
+    await server.from('programmes').delete().in('id', PROGRAMMES)
     const created = await server.from('programmes').insert([
       { id: PROG_OPEN, code: 'TST-Y1', name: 'Test programme, open', open_enrolment: true },
+      { id: PROG_OTHER, code: 'TST-Y4', name: 'Test programme, other', open_enrolment: true },
       { id: PROG_CLOSED, code: 'TST-Y2', name: 'Test programme, closed', open_enrolment: false },
       {
         id: PROG_ARCHIVED,
@@ -71,7 +75,7 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
 
   afterAll(async () => {
     // Removing the programmes removes their links; students keep the courses they joined.
-    await server.from('programmes').delete().in('id', [PROG_OPEN, PROG_CLOSED, PROG_ARCHIVED])
+    await server.from('programmes').delete().in('id', PROGRAMMES)
     await student.auth.signOut()
     await admin.auth.signOut()
   })
@@ -84,7 +88,8 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
       .delete()
       .eq('student_id', STUDENT_ID)
       .in('course_id', [CHM, PHY])
-    // No programme joined yet.
+    // No programme joined yet, and no request for one.
+    await server.from('programme_requests').delete().eq('student_id', STUDENT_ID)
     await server.from('profiles').update({ programme_id: null }).eq('id', STUDENT_ID)
   })
 
@@ -120,6 +125,7 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
   runProgrammeContract('Supabase', {
     fixture: {
       open: PROG_OPEN,
+      other: PROG_OTHER,
       closed: PROG_CLOSED,
       archived: PROG_ARCHIVED,
       // CHM 110, MTH 202 and PHY 101 are in use.
@@ -129,12 +135,26 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
       completedCourse: CSC,
       archivedCourse: ENG,
     },
-    create: () => ({ service: createSupabaseEnrolmentService({ client: student }) }),
+    create: () => ({
+      service: createSupabaseEnrolmentService({ client: student }),
+      // The administrator's side: the functions the console calls.
+      decide: async (requestId, decision) => {
+        const { error } = await admin.rpc('decide_programme_request', {
+          p_request: requestId,
+          p_decision: decision,
+        })
+        if (error) throw new Error(`Could not ${decision} the request`)
+      },
+      remove: async () => {
+        const { error } = await admin.rpc('remove_from_programme', { p_student: STUDENT_ID })
+        if (error) throw new Error('Could not remove the student from the programme')
+      },
+    }),
   })
 
   describe('programmes beyond the contract', () => {
-    // Proves a student cannot read the tables behind the view, or choose a programme by writing
-    // their own profile: only join_programme sets it.
+    // Proves a student cannot read the tables behind the view, write a request or choose a
+    // programme by writing their own profile: only an administrator's approval sets it.
     it('keeps the programme tables and the profile column out of a student’s reach', async () => {
       const table = await student.from('programmes').select('id')
       expect(table.data ?? []).toEqual([])
@@ -147,14 +167,37 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
         .update({ programme_id: PROG_OPEN })
         .eq('id', STUDENT_ID)
       expect(own.error).not.toBeNull()
+
+      const forged = await student.from('programme_requests').insert({ programme_id: PROG_OPEN })
+      expect(forged.error).not.toBeNull()
+
+      // The old self-service function is gone.
+      const selfJoin = await student.rpc('join_programme', { p_programme: PROG_OPEN })
+      expect(selfJoin.error).not.toBeNull()
     })
 
-    // Proves an administrator is not offered programmes to join, and cannot join one.
+    // Proves a student cannot approve their own request, and an administrator is not offered
+    // programmes to join, and cannot ask.
     it('offers nothing to an administrator', async () => {
       const service = createSupabaseEnrolmentService({ client: admin })
 
       await expect(service.listJoinableProgrammes()).resolves.toEqual([])
-      await expect(service.joinProgramme(PROG_OPEN)).rejects.toMatchObject({ kind: 'forbidden' })
+      await expect(service.requestProgramme(PROG_OPEN)).rejects.toMatchObject({ kind: 'forbidden' })
+    })
+
+    it('refuses a student who tries to decide their own request', async () => {
+      const service = createSupabaseEnrolmentService({ client: student })
+      await service.requestProgramme(PROG_OPEN)
+      const requestId = (await service.listJoinableProgrammes()).find(
+        (p) => p.id === PROG_OPEN,
+      )?.requestId
+
+      const decided = await student.rpc('decide_programme_request', {
+        p_request: requestId,
+        p_decision: 'approved',
+      })
+
+      expect(decided.error).not.toBeNull()
     })
   })
 

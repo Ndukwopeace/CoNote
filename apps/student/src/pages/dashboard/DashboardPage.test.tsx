@@ -365,11 +365,11 @@ describe('DashboardPage: states', () => {
 
     expect(
       await screen.findByText(
-        /You're not enrolled in any courses yet\. Find a course to request to join, or wait for your teacher or administrator to add you\./,
+        /You're not enrolled in any courses yet\. Join your programme to get your courses, or wait for your teacher or administrator to add you\./,
       ),
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Find courses' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Join programme' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull()
   })
 

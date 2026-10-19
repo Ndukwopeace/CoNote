@@ -12,7 +12,7 @@ import { z } from 'zod'
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
 // Refuses IDs that are not UUIDs before they reach a query.
-import { databaseCode } from '@conote/supabase/databaseErrors'
+import { databaseCode, databaseMessage } from '@conote/supabase/databaseErrors'
 import { fromSupabaseError } from '@conote/supabase/errors'
 import { isUuid } from '@conote/supabase/ids'
 
@@ -55,10 +55,10 @@ const programmeRow = z.object({
   name: z.string(),
   course_count: z.number().int(),
   course_codes: z.array(z.string()),
-  is_mine: z.boolean(),
+  // The view knows all four standings: "declined" comes from the student's latest request.
+  membership: z.enum(['none', 'pending', 'enrolled', 'declined']),
+  request_id: z.string().nullable(),
 })
-// How many courses joining a programme added.
-const countRow = z.number().int().nonnegative()
 // What cancelling reads back.
 const idRow = z.object({ id: z.string() })
 
@@ -67,6 +67,10 @@ const idRow = z.object({ id: z.string() })
 const NOT_OPEN = "This course isn't open for requests."
 // Shown for a programme that cannot be joined, whatever the reason.
 const PROGRAMME_NOT_OPEN = "This programme isn't open."
+// Shown for a second programme: a student belongs to one.
+const ALREADY_IN_PROGRAMME = "You're already in a programme."
+// Shown when the student asks while another request waits.
+const PROGRAMME_ASKED = "You've already asked to join a programme."
 // Shown when the student asks for a course they already asked for.
 const ALREADY_ASKED = "You've already asked to join this course."
 // Shown for a course the student is already in.
@@ -220,7 +224,7 @@ export function createSupabaseEnrolmentService({
       const rows = await readRows(
         client
           .from('joinable_programmes')
-          .select('id, code, name, course_count, course_codes, is_mine')
+          .select('id, code, name, course_count, course_codes, membership, request_id')
           .order('code'),
         programmeRow,
       )
@@ -230,31 +234,47 @@ export function createSupabaseEnrolmentService({
         name: row.name,
         courseCount: row.course_count,
         courseCodes: row.course_codes,
-        isMine: row.is_mine,
+        membership: row.membership,
+        requestId: row.request_id,
       }))
     },
 
-    async joinProgramme(programmeId) {
+    async requestProgramme(programmeId) {
       // SECURITY: an ID that is not a UUID is turned away before it reaches the database.
       if (!isUuid(programmeId)) throw new AppError('validation', PROGRAMME_NOT_OPEN)
-      // SECURITY: the function checks the caller is a student and the programme is open, and
-      // enrols only the caller. Nothing about who to enrol is sent from here.
-      const { data, error } = (await client.rpc('join_programme', {
+      // SECURITY: only the programme is sent. The function checks the caller is a student, that
+      // the programme is open and that the student has no programme and no request waiting; it
+      // enrols nobody, because an administrator approves.
+      const { error } = (await client.rpc('request_programme', {
         p_programme: programmeId,
-      })) as { data: unknown; error: unknown }
-      if (error) {
-        // An unknown, closed or archived programme all answer the same.
-        if (databaseCode(error) === 'P0002') {
-          throw new AppError('validation', PROGRAMME_NOT_OPEN, { cause: error })
-        }
-        throw fromSupabaseError(error)
+      })) as { error: unknown }
+      if (!error) return
+      const code = databaseCode(error)
+      // An unknown, closed or archived programme all answer the same.
+      if (code === 'P0002') throw new AppError('validation', PROGRAMME_NOT_OPEN, { cause: error })
+      // Two different conflicts, told apart by the function's own words.
+      if (code === '23505') {
+        const inProgramme = databaseMessage(error).includes('already in a programme')
+        throw new AppError('conflict', inProgramme ? ALREADY_IN_PROGRAMME : PROGRAMME_ASKED, {
+          cause: error,
+        })
       }
-      // SECURITY: the answer is checked like any row.
-      const parsed = countRow.safeParse(data)
-      if (!parsed.success) {
-        throw fromSupabaseError({ message: 'Malformed row', cause: parsed.error })
+      throw fromSupabaseError(error)
+    },
+
+    async cancelProgrammeRequest(requestId) {
+      // SECURITY: an ID that is not a UUID is turned away before it reaches the database.
+      if (!isUuid(requestId)) throw new AppError('not_found', 'Request not found')
+      const { error } = (await client.rpc('cancel_programme_request', {
+        p_request: requestId,
+      })) as { error: unknown }
+      if (!error) return
+      const code = databaseCode(error)
+      if (code === 'P0002') throw new AppError('not_found', 'Request not found', { cause: error })
+      if (code === '23505') {
+        throw new AppError('conflict', 'This request has already been decided.', { cause: error })
       }
-      return parsed.data
+      throw fromSupabaseError(error)
     },
 
     async cancelJoinRequest(requestId) {
