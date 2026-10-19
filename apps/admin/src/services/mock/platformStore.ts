@@ -121,6 +121,21 @@ const storedSchema = z.object({
   // Programmes and the courses they hold; absent in a save made before they existed (D105).
   programmes: z.array(programmeSchema).optional(),
   programmeCourses: z.array(z.object({ programmeId: z.string(), courseId: z.string() })).optional(),
+  // Who joined which programme, and the requests to; absent in a save made before they existed (D106).
+  programmeMembers: z
+    .array(z.object({ programmeId: z.string(), studentId: z.string() }))
+    .optional(),
+  programmeRequests: z
+    .array(
+      z.object({
+        id: z.string(),
+        programmeId: z.string(),
+        studentId: z.string(),
+        status: z.enum(['pending', 'approved', 'declined', 'cancelled']),
+        createdAt: z.string(),
+      }),
+    )
+    .optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -155,6 +170,8 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       enrollmentRequests,
       programmes,
       programmeCourses,
+      programmeMembers,
+      programmeRequests,
       ...saved
     } = parsed.data
     // Classes, summaries and jobs describe one another, so they are taken from the save together.
@@ -171,6 +188,8 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       // Programmes and their courses describe one another, so they come from the save together.
       programmes: programmes && programmeCourses ? programmes : seed.programmes,
       programmeCourses: programmes && programmeCourses ? programmeCourses : seed.programmeCourses,
+      programmeMembers: programmeMembers ?? seed.programmeMembers,
+      programmeRequests: programmeRequests ?? seed.programmeRequests,
     }
   } catch {
     // Not JSON.
@@ -192,6 +211,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
     enrollmentRequests,
     programmes,
     programmeCourses,
+    programmeMembers,
+    programmeRequests,
     auditLog,
   } = data
   store.setItem(
@@ -207,6 +228,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
       enrollmentRequests,
       programmes,
       programmeCourses,
+      programmeMembers,
+      programmeRequests,
       auditLog,
     }),
   )

@@ -5,6 +5,8 @@
 
 // Icon for the empty state.
 import { GraduationCap } from 'lucide-react'
+// Whether a row's students dialog is showing.
+import { useState } from 'react'
 // Links inside the app.
 import { Link } from 'react-router'
 
@@ -20,6 +22,8 @@ import { useToast } from '@conote/ui/toast'
 import { ErrorState } from '@conote/portal'
 // The table.
 import { DataTable, type DataColumn } from '@/components/common/DataTable'
+// The students dialog.
+import { ProgrammeMembersDialog } from './ProgrammeMembersDialog'
 // The data and the change.
 import { useProgrammes, useSetEnrolmentOpen } from '@/hooks/useProgrammes'
 // Administrator-facing error wording.
@@ -42,6 +46,7 @@ const COLUMNS: DataColumn<ProgrammeListItem, never>[] = [
   },
   { heading: 'Courses', cell: (programme) => String(programme.courseCount) },
   { heading: 'Students', cell: (programme) => String(programme.studentCount) },
+  { heading: 'Requests', cell: (programme) => String(programme.pendingRequestCount) },
   {
     heading: 'Enrolment',
     // The word is always shown, so colour is never the only signal.
@@ -84,9 +89,37 @@ function EnrolmentToggle({ programme }: Readonly<{ programme: ProgrammeListItem 
   )
 }
 
-/** The row action for one programme, defined once outside the component. */
+/** One programme's row actions: its students, and opening or closing it. */
+function RowActions({ programme }: Readonly<{ programme: ProgrammeListItem }>) {
+  // Whether the students dialog is showing.
+  const [showing, setShowing] = useState(false)
+  return (
+    <span className="flex flex-wrap gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-label={`Students in ${programme.code}`}
+        onClick={() => {
+          setShowing(true)
+        }}
+      >
+        Students
+      </Button>
+      <EnrolmentToggle programme={programme} />
+      <ProgrammeMembersDialog
+        programme={showing ? programme : null}
+        onClose={() => {
+          setShowing(false)
+        }}
+      />
+    </span>
+  )
+}
+
+/** The row actions for one programme, defined once outside the component. */
 function renderActions(programme: ProgrammeListItem) {
-  return <EnrolmentToggle programme={programme} />
+  return <RowActions programme={programme} />
 }
 
 /** The list. */

@@ -17,7 +17,12 @@ import { expectNoAxeViolations } from '@conote/testing/axe'
 // Session factory.
 import { makeSession } from '@/test/factories'
 // Render helper.
-import { createTestServices, renderWithRouter, startNewStudent } from '@/test/renderWithRouter'
+import {
+  createTestServices,
+  MOCK_ENROLMENT_KEY,
+  renderWithRouter,
+  startNewStudent,
+} from '@/test/renderWithRouter'
 // Service overrides type.
 import type { Services } from '@/services/types'
 
@@ -29,10 +34,10 @@ function renderNewStudent(path = '/dashboard', services: Partial<Services> = {})
 
 /** The dialog, once it has opened. */
 async function dialog() {
-  return screen.findByRole('dialog', { name: 'Join your courses' })
+  return screen.findByRole('dialog', { name: 'Join your programme' })
 }
 
-describe('Join your courses', () => {
+describe('Join your programme dialog', () => {
   // Proves a new student sees the dialog on arriving, with courses in use and nothing completed
   // or archived (FR-ENR-1).
   it('opens for a new student, listing courses in use', async () => {
@@ -141,12 +146,12 @@ describe('Join your courses', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  // Proves "Find courses" opens it again after a skip (FR-ENR-2).
-  it('reopens from the Find courses button', async () => {
+  // Proves "Join programme" opens it again after a skip (FR-ENR-2).
+  it('reopens from the Join programme button', async () => {
     const { user } = renderNewStudent()
     await user.click(within(await dialog()).getByRole('button', { name: 'Not now' }))
 
-    await user.click(await screen.findByRole('button', { name: 'Find courses' }))
+    await user.click(await screen.findByRole('button', { name: 'Join programme' }))
 
     expect(await dialog()).toBeInTheDocument()
   })
@@ -200,7 +205,7 @@ describe('Join your courses', () => {
 
     const section = await screen.findByRole('region', { name: 'Requested courses' })
     expect(within(section).getByText('Declined')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Find courses' }))
+    await user.click(screen.getByRole('button', { name: 'Join programme' }))
     const box = await dialog()
     await user.click(
       await within(box).findByRole('button', { name: 'Request again to join MTH 202' }),
@@ -219,11 +224,11 @@ describe('Join your courses', () => {
     await expectNoAxeViolations(box)
   })
 
-  // Proves a student already in courses is not prompted, and My Courses offers Find courses.
-  it('offers Find courses on My Courses to a student who has courses', async () => {
+  // Proves a student already in courses is not prompted, and My Courses offers Join programme.
+  it('offers Join programme on My Courses to a student who has courses', async () => {
     const { user } = renderWithRouter({ routes, path: '/courses', session: makeSession() })
 
-    await user.click(await screen.findByRole('button', { name: 'Find courses' }))
+    await user.click(await screen.findByRole('button', { name: 'Join programme' }))
 
     const box = await dialog()
     // The four courses the student is in read as Joined.
@@ -232,78 +237,154 @@ describe('Join your courses', () => {
 })
 
 describe('Join your programme', () => {
+  /** Opens the dialog for a new student and returns the programme group. */
+  async function openGroup(
+    path = '/dashboard',
+    services: Partial<Services> = {},
+    student: { startNew: boolean } = { startNew: true },
+  ) {
+    if (student.startNew) startNewStudent(window.localStorage)
+    const view = renderWithRouter({ routes, path, session: makeSession(), services })
+    const box = await dialog()
+    const group = await within(box).findByRole('group', { name: 'Choose your programme' })
+    return { ...view, box, group }
+  }
+
   // Proves the dialog offers the open programmes first, with what joining adds, and hides a
   // closed one (D105).
   it('offers the open programmes with their courses', async () => {
-    renderNewStudent()
+    const { group } = await openGroup()
 
-    const box = await dialog()
-    const group = await within(box).findByRole('group', { name: 'Join your programme' })
     expect(within(group).getByText('Software Engineering, Year 3')).toBeInTheDocument()
     expect(within(group).getByText('Biomedical Sciences, Year 1')).toBeInTheDocument()
     // Closed programmes are not offered.
     expect(within(group).queryByText('Law, Year 1')).not.toBeInTheDocument()
     // The courses in use, by code; the completed and archived ones are left out.
     expect(within(group).getByText('3 courses: BUS 207, CSE 205, SWE 311')).toBeInTheDocument()
+    // Asking, not joining: an administrator approves.
+    expect(
+      within(group).getByRole('button', { name: 'Request to join SWE-Y3' }),
+    ).toBeInTheDocument()
   })
 
-  // Proves joining enrols the student at once and says how many courses it added. The Home of a
-  // student with no courses then gives way to their notes, so the dialog goes with it.
-  it('joins a programme and says how many courses it added', async () => {
-    const { user } = renderNewStudent()
-    const box = await dialog()
-    const group = await within(box).findByRole('group', { name: 'Join your programme' })
+  // Proves asking records a waiting request and says an administrator decides; nothing is
+  // enrolled, so the student's Home does not change.
+  it('asks to join, shows the request as waiting and enrols nothing', async () => {
+    const { user, group } = await openGroup()
 
-    await user.click(within(group).getByRole('button', { name: 'Join SWE-Y3' }))
+    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
 
-    expect(await screen.findByText('You joined 3 courses.')).toBeInTheDocument()
+    expect(await screen.findByText('Request sent. An administrator will approve it.')).toBeVisible()
+    expect(await within(group).findByText('Requested')).toBeInTheDocument()
+    // Still the no-courses Home: the dialog stays open on the request.
+    expect(screen.getByRole('dialog', { name: 'Join your programme' })).toBeInTheDocument()
+    // One request waits at a time: the others cannot be asked for yet.
+    expect(within(group).getByRole('button', { name: 'Request to join BMS-Y1' })).toBeDisabled()
+    expect(within(group).getByText(/One request waits at a time/)).toBeInTheDocument()
+  })
+
+  // Proves a waiting request can be withdrawn, which frees the other programmes.
+  it('withdraws a request', async () => {
+    const { user, group } = await openGroup()
+    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
+    await within(group).findByText('Requested')
+
+    await user.click(within(group).getByRole('button', { name: 'Cancel request for SWE-Y3' }))
+
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Join your courses' })).not.toBeInTheDocument()
+      expect(within(group).queryByText('Requested')).not.toBeInTheDocument()
     })
+    expect(within(group).getByRole('button', { name: 'Request to join BMS-Y1' })).toBeEnabled()
   })
 
-  // Proves that on My Courses, where the dialog stays, the programme and its courses show as joined.
-  it('shows the programme and its courses as joined', async () => {
+  // Proves an approved student sees only their programme, as joined, and is told how to change it.
+  it('shows only the programme the student is in', async () => {
+    // As the demo leaves a student after an administrator approved the request.
+    window.localStorage.setItem(
+      MOCK_ENROLMENT_KEY,
+      JSON.stringify({
+        enrolledCourseIds: ['swe-311', 'cse-205', 'bus-207'],
+        requests: [],
+        programmeId: 'swe-y3',
+        programmeRequests: [
+          {
+            id: 'r1',
+            programmeId: 'swe-y3',
+            status: 'approved',
+            createdAt: '2026-10-19T08:00:00Z',
+          },
+        ],
+      }),
+    )
     const { user } = renderWithRouter({ routes, path: '/courses', session: makeSession() })
-    await user.click(await screen.findByRole('button', { name: 'Find courses' }))
-    const box = await dialog()
-    const group = await within(box).findByRole('group', { name: 'Join your programme' })
-
-    await user.click(within(group).getByRole('button', { name: 'Join SWE-Y3' }))
-
-    await waitFor(() => {
-      expect(within(group).getByText('Joined')).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Join programme' }))
+    const group = await within(await dialog()).findByRole('group', {
+      name: 'Choose your programme',
     })
-    expect(within(group).queryByRole('button', { name: 'Join SWE-Y3' })).not.toBeInTheDocument()
-    // Its courses are listed as joined below.
-    expect(await within(box).findAllByText('Joined')).not.toHaveLength(1)
+
+    expect(within(group).getByText('Software Engineering, Year 3')).toBeInTheDocument()
+    expect(within(group).getByText('Joined')).toBeInTheDocument()
+    expect(within(group).queryByText('Biomedical Sciences, Year 1')).not.toBeInTheDocument()
+    expect(within(group).queryByRole('button', { name: /Request to join/ })).not.toBeInTheDocument()
+    expect(within(group).getByText(/To change it, ask an administrator/)).toBeInTheDocument()
   })
 
-  // Proves a refused join says why, in words written for people.
-  it('shows why a programme could not be joined', async () => {
+  // Proves a refused request says why, in words written for people.
+  it('shows why a programme could not be requested', async () => {
     const real = createTestServices().enrolment
-    const { user } = renderNewStudent('/dashboard', {
+    const { user, group } = await openGroup('/dashboard', {
       enrolment: {
         ...real,
-        joinProgramme: () =>
-          Promise.reject(new AppError('validation', "This programme isn't open.")),
+        requestProgramme: () =>
+          Promise.reject(new AppError('conflict', "You're already in a programme.")),
       },
     })
-    const box = await dialog()
-    const group = await within(box).findByRole('group', { name: 'Join your programme' })
 
-    await user.click(within(group).getByRole('button', { name: 'Join SWE-Y3' }))
+    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
 
-    expect(await within(group).findByText("This programme isn't open.")).toBeInTheDocument()
+    expect(await within(group).findByText("You're already in a programme.")).toBeInTheDocument()
+  })
+
+  // Proves a declined request shows as declined and can be sent again.
+  it('shows a declined request and offers to ask again', async () => {
+    const real = createTestServices().enrolment
+    const { group } = await openGroup('/dashboard', {
+      enrolment: {
+        ...real,
+        listJoinableProgrammes: () =>
+          Promise.resolve([
+            {
+              id: 'swe-y3',
+              code: 'SWE-Y3',
+              name: 'Software Engineering, Year 3',
+              courseCount: 3,
+              courseCodes: ['BUS 207', 'CSE 205', 'SWE 311'],
+              membership: 'declined' as const,
+              requestId: null,
+            },
+          ]),
+      },
+    })
+
+    expect(within(group).getByText('Declined')).toBeInTheDocument()
+    expect(
+      within(group).getByRole('button', { name: 'Request again to join SWE-Y3' }),
+    ).toBeEnabled()
   })
 
   // Proves a failed load of the programmes shows a retry, while the courses still list.
   it('shows an error with Retry when the programmes fail to load', async () => {
     const real = createTestServices().enrolment
-    renderNewStudent('/dashboard', {
-      enrolment: {
-        ...real,
-        listJoinableProgrammes: () => Promise.reject(new AppError('network', 'down')),
+    startNewStudent(window.localStorage)
+    renderWithRouter({
+      routes,
+      path: '/dashboard',
+      session: makeSession(),
+      services: {
+        enrolment: {
+          ...real,
+          listJoinableProgrammes: () => Promise.reject(new AppError('network', 'down')),
+        },
       },
     })
     const box = await dialog()
@@ -315,22 +396,24 @@ describe('Join your programme', () => {
   // Proves a school with no open programme shows no programme section at all.
   it('shows nothing when no programme is open', async () => {
     const real = createTestServices().enrolment
-    renderNewStudent('/dashboard', {
-      enrolment: { ...real, listJoinableProgrammes: () => Promise.resolve([]) },
+    startNewStudent(window.localStorage)
+    renderWithRouter({
+      routes,
+      path: '/dashboard',
+      session: makeSession(),
+      services: { enrolment: { ...real, listJoinableProgrammes: () => Promise.resolve([]) } },
     })
     const box = await dialog()
     await within(box).findByText('Linear Algebra')
 
     expect(
-      within(box).queryByRole('group', { name: 'Join your programme' }),
+      within(box).queryByRole('group', { name: 'Choose your programme' }),
     ).not.toBeInTheDocument()
   })
 
   // Proves the section has no accessibility violations.
   it('has no accessibility violations', async () => {
-    renderNewStudent()
-    const box = await dialog()
-    await within(box).findByRole('group', { name: 'Join your programme' })
+    const { box } = await openGroup()
 
     await expectNoAxeViolations(box)
   })

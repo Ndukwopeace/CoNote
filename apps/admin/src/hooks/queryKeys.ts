@@ -39,6 +39,11 @@ export const queryKeys = {
     all: ['programmes'] as const,
     // The list.
     list: () => [...queryKeys.programmes.all, 'list'] as const,
+    // The requests waiting for a decision (D106).
+    requests: () => [...queryKeys.programmes.all, 'requests'] as const,
+    // One programme's students.
+    members: (programmeId: string) =>
+      [...queryKeys.programmes.all, 'members', programmeId] as const,
   },
   courses: {
     // Every course query; cleared after any change to a course or its students.

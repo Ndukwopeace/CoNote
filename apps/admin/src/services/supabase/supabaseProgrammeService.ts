@@ -21,13 +21,23 @@ import { isUuid } from '@conote/supabase/ids'
 import { readRows } from '@conote/supabase/rows'
 
 // Programme shapes.
-import type { ImportOutcome, ProgrammeListItem } from '@/types/programmes'
+import type {
+  ImportOutcome,
+  ProgrammeListItem,
+  ProgrammeMember,
+  ProgrammeRequestItem,
+} from '@/types/programmes'
 
 // The interface this implementation must satisfy.
 import type { ProgrammeService } from '../types'
 
 /** The columns the list view returns. */
-const COLUMNS = 'id, code, name, open_enrolment, course_count, student_count'
+const COLUMNS = 'id, code, name, open_enrolment, course_count, student_count, pending_request_count'
+/** The columns of the waiting-requests view. */
+const REQUEST_COLUMNS =
+  'id, created_at, programme_id, programme_code, programme_name, student_id, student_name, student_email'
+/** The columns of the members view. */
+const MEMBER_COLUMNS = 'student_id, student_name, student_email'
 /** What an unusable teacher gets told. */
 const TEACHER_MESSAGE = 'Choose an active teacher.'
 /** What a file that breaks the rules gets told, with the database's reason after it. */
@@ -41,7 +51,27 @@ const programmeRow = z.object({
   open_enrolment: z.boolean(),
   course_count: z.number(),
   student_count: z.number(),
+  pending_request_count: z.number(),
 })
+/** A waiting request, with who asked and for what. */
+const requestRow = z.object({
+  id: z.string(),
+  created_at: z.string(),
+  programme_id: z.string(),
+  programme_code: z.string(),
+  programme_name: z.string(),
+  student_id: z.string(),
+  student_name: z.string(),
+  student_email: z.string(),
+})
+/** A student in a programme. */
+const memberRow = z.object({
+  student_id: z.string(),
+  student_name: z.string(),
+  student_email: z.string(),
+})
+/** What removing a student answers with: how many courses they left. */
+const countRow = z.number().int().nonnegative()
 /** What the import function answers with. */
 const outcomeRow = z.object({
   programmesCreated: z.number(),
@@ -64,6 +94,7 @@ function toItem(row: z.infer<typeof programmeRow>): ProgrammeListItem {
     openEnrolment: row.open_enrolment,
     courseCount: row.course_count,
     studentCount: row.student_count,
+    pendingRequestCount: row.pending_request_count,
   }
 }
 
@@ -112,6 +143,99 @@ export function createSupabaseProgrammeService({
       const found = (await readAll()).find((programme) => programme.id === programmeId)
       if (!found) throw new AppError('not_found', 'Programme not found.')
       return found
+    },
+
+    async listProgrammeRequests() {
+      const rows = await readRows(
+        client
+          .from('admin_programme_requests')
+          .select(REQUEST_COLUMNS)
+          .eq('status', 'pending')
+          .order('created_at'),
+        requestRow,
+      )
+      return rows.map((row): ProgrammeRequestItem => ({
+        id: row.id,
+        programmeId: row.programme_id,
+        programmeCode: row.programme_code,
+        programmeName: row.programme_name,
+        studentId: row.student_id,
+        studentName: row.student_name,
+        studentEmail: row.student_email,
+        createdAt: row.created_at,
+      }))
+    },
+
+    async decideProgrammeRequest(requestId, decision) {
+      await requireSession()
+      // SECURITY: an ID that is not a UUID is turned away before it reaches the database.
+      if (!isUuid(requestId)) throw new AppError('not_found', 'Request not found.')
+      // The database function checks the caller is an administrator, locks the request so two
+      // administrators cannot both decide it, and does the enrolling in one transaction.
+      const { error } = (await client.rpc('decide_programme_request', {
+        p_request: requestId,
+        p_decision: decision,
+      })) as { error: unknown }
+      if (!error) return
+      const code = databaseCode(error)
+      if (code === 'P0002') throw new AppError('not_found', 'Request not found.', { cause: error })
+      if (code === '23505') {
+        // Decided already, or the student has joined a programme since.
+        const inProgramme = databaseMessage(error).includes('already in a programme')
+        throw new AppError(
+          'conflict',
+          inProgramme
+            ? 'This student is already in a programme.'
+            : 'This request has already been decided.',
+          { cause: error },
+        )
+      }
+      if (code === '23514') {
+        throw new AppError('validation', 'This programme is archived.', { cause: error })
+      }
+      if (code === '22023') {
+        throw new AppError('validation', "This account can't join a programme.", { cause: error })
+      }
+      throw fromSupabaseError(error)
+    },
+
+    async listProgrammeMembers(programmeId) {
+      // SECURITY: an ID that is not a UUID is turned away before it is used in a filter.
+      if (!isUuid(programmeId)) return []
+      const rows = await readRows(
+        client
+          .from('admin_programme_members')
+          .select(MEMBER_COLUMNS)
+          .eq('programme_id', programmeId)
+          .order('student_name'),
+        memberRow,
+      )
+      return rows.map((row): ProgrammeMember => ({
+        studentId: row.student_id,
+        studentName: row.student_name,
+        studentEmail: row.student_email,
+      }))
+    },
+
+    async removeFromProgramme(studentId) {
+      await requireSession()
+      // SECURITY: an ID that is not a UUID is turned away before it reaches the database.
+      if (!isUuid(studentId)) throw new AppError('not_found', "This student isn't in a programme.")
+      const { data, error } = (await client.rpc('remove_from_programme', {
+        p_student: studentId,
+      })) as { data: unknown; error: unknown }
+      if (error) {
+        if (databaseCode(error) === 'P0002') {
+          throw new AppError('not_found', "This student isn't in a programme.", { cause: error })
+        }
+        throw fromSupabaseError(error)
+      }
+      // SECURITY: the answer is checked like any row.
+      const parsed = countRow.safeParse(data)
+      if (!parsed.success) {
+        throw fromSupabaseError({ message: 'Malformed row', cause: parsed.error })
+      }
+      return parsed.data
     },
 
     async importTimetable(payload, { dryRun }) {

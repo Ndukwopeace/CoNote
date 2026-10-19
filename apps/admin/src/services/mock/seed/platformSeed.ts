@@ -636,6 +636,17 @@ export function createPlatformSeed(now: Date): PlatformData {
       { programmeId: 'programme-bms-y1', courseId: 'bus-207' },
     ],
     programmeMembers: [],
+    // Two students waiting to join Software Engineering Year 3.
+    programmeRequests: users
+      .filter((user) => user.role === 'student' && user.status === 'active')
+      .slice(0, 2)
+      .map((student, index) => ({
+        id: `programme-request-${String(index + 1)}`,
+        programmeId: 'programme-swe-y3',
+        studentId: student.id,
+        status: 'pending' as const,
+        createdAt: clock.ago((index + 1) * 3 * HOUR),
+      })),
     auditLog: buildAuditLog(users, clock),
     courses,
     resources: buildResources(courses, clock),

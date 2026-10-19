@@ -31,7 +31,12 @@ import type {
 // The timetable import's payload.
 import type { ImportPayload } from '@/lib/timetable/payload'
 // Programme shapes.
-import type { ImportOutcome, ProgrammeListItem } from '@/types/programmes'
+import type {
+  ImportOutcome,
+  ProgrammeListItem,
+  ProgrammeMember,
+  ProgrammeRequestItem,
+} from '@/types/programmes'
 // Dashboard shapes.
 import type {
   ActivityPoint,
@@ -197,6 +202,22 @@ export interface ProgrammeService {
    * for a payload that breaks the rules, an unknown time zone or a teacher who is not active.
    */
   importTimetable(payload: ImportPayload, options: { dryRun: boolean }): Promise<ImportOutcome>
+  /** The requests waiting for a decision (D106), oldest first. */
+  listProgrammeRequests(): Promise<ProgrammeRequestItem[]>
+  /**
+   * Approves or declines a waiting request. Approving enrols the student in every course in use
+   * the programme holds and makes it their programme. Rejects with not_found for an unknown ID,
+   * conflict once decided, and conflict when the student is already in a programme.
+   */
+  decideProgrammeRequest(requestId: string, decision: 'approved' | 'declined'): Promise<void>
+  /** The students in a programme, A to Z by name. */
+  listProgrammeMembers(programmeId: string): Promise<ProgrammeMember[]>
+  /**
+   * Takes a student out of their programme and out of the programme's courses; their notes are
+   * kept, and they may ask to join a programme again. Returns how many courses they left. Rejects
+   * with not_found for a student who is not in a programme.
+   */
+  removeFromProgramme(studentId: string): Promise<number>
 }
 
 /** Every service the admin app uses. Grows with each milestone. */

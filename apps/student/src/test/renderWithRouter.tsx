@@ -35,7 +35,7 @@ import type { Session } from '@/types/auth'
 
 // Starts a student in no courses, as signing up does (re-exported for tests, which may not reach
 // the demo services directly).
-export { startNewStudent } from '@/services/mock/mockEnrolment'
+export { MOCK_ENROLMENT_KEY, startNewStudent } from '@/services/mock/mockEnrolment'
 
 /** What a test can pass in. */
 interface RenderOptions {

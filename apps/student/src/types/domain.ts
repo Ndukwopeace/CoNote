@@ -103,8 +103,10 @@ export interface JoinableProgramme {
   courseCount: number
   // Those courses' codes, A to Z.
   courseCodes: string[]
-  // Whether this is the programme the student already joined.
-  isMine: boolean
+  // The student's standing with it: nothing yet, asked and waiting, joined, or declined.
+  membership: JoinMembership
+  // The waiting request's ID, for withdrawing it; null unless `membership` is "pending".
+  requestId: string | null
 }
 
 /** A request to join a course that is still open to the student's attention (FR-ENR-4). */

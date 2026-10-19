@@ -43,7 +43,7 @@ test('a new visitor signs up from the landing page and reaches the dashboard', a
   // (D76); skipping it leaves the dashboard, greeted by the new name.
   await expect(page).toHaveURL(/\/dashboard$/)
   await page
-    .getByRole('dialog', { name: 'Join your courses' })
+    .getByRole('dialog', { name: 'Join your programme' })
     .getByRole('button', { name: 'Not now' })
     .click()
   await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()

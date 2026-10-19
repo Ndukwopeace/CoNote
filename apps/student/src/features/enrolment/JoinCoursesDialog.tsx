@@ -111,16 +111,18 @@ export function JoinCoursesDialog({ open, onOpenChange }: Readonly<JoinCoursesDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      {/* Taller than a phone with the programmes above the courses, so it scrolls inside the screen. */}
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         {/* The title names the dialog. */}
-        <DialogTitle>Join your courses</DialogTitle>
+        <DialogTitle>Join your programme</DialogTitle>
         <DialogDescription className="text-sm text-muted-foreground">
-          Join your programme, or search for single courses and ask to join. An administrator
-          approves each course request.
+          Ask to join the year you study in. Once an administrator approves, you are added to all of
+          its courses. Missing one? Ask to join it on its own; each request needs approval too.
         </DialogDescription>
         {/* The programmes: one tap joins every course of a year (D105). */}
         <ProgrammePicker />
         {/* Or one course at a time: search by code or title. */}
+        <h3 className="text-sm font-semibold">Or request a single course</h3>
         <Input
           type="search"
           aria-label="Search courses to join"

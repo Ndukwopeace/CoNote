@@ -57,7 +57,7 @@ select tests.login(:s2);
 select tests.rows('select * from public.joinable_programmes', 2, 'a student sees the open programmes');
 select tests.is((select course_count from public.joinable_programmes where code = 'SWE'), 2, 'only courses in use count');
 select tests.is((select course_codes from public.joinable_programmes where code = 'SWE'), array['MTH 202', 'PHY 101'], 'the codes they would join, A to Z');
-select tests.is((select is_mine from public.joinable_programmes where code = 'SWE'), false, 'not theirs yet');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'none', 'not theirs yet');
 select tests.reset();
 select tests.login(:t1);
 select tests.rows('select * from public.joinable_programmes', 0, 'a teacher sees none');
@@ -71,33 +71,134 @@ select tests.login(:s2);
 select tests.rows('select * from public.joinable_programmes', 1, 'a closed programme is hidden');
 select tests.reset();
 
--- ===== Joining =====
+-- ===== Asking to join =====
+select tests.login(:admin);
+insert into public.programmes (code, name) values ('OTH', 'Another year');
+select tests.reset();
+select id as oth from public.programmes where code = 'OTH' \gset
+
 select tests.login(:s2);
 select tests.denied('update public.profiles set programme_id = ' || quote_literal(:'swe') || ' where id = ' || quote_literal(:s2), 'a student cannot set their programme directly');
-select tests.is((select public.join_programme(:'swe')), 2, 'joining enrols the courses in use');
-select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2), 2, 'two enrolments exist');
+select tests.fails_with('select public.join_programme(' || quote_literal(:'swe') || ')', '42883', 'the old self-service join no longer exists');
+select tests.denied('insert into public.programme_requests (programme_id) values (' || quote_literal(:'swe') || ')', 'a student cannot write a request directly');
+select public.request_programme(:'swe') as req2 \gset
+select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2), 0, 'asking enrols nothing');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'pending', 'the list shows the request as waiting');
+select tests.is((select request_id from public.joinable_programmes where code = 'SWE'), (:'req2')::uuid, 'and carries its ID');
+select tests.is((select programme_id from public.profiles where id = :s2), null::uuid, 'no programme is theirs yet');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'swe') || ')', '23505', 'the same programme cannot be asked twice');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'oth') || ')', '23505', 'only one request waits at a time');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'csn') || ')', 'P0002', 'a closed programme cannot be asked');
+select tests.fails_with('select public.request_programme(gen_random_uuid())', 'P0002', 'an unknown programme answers the same');
+select tests.rows('select * from public.programme_requests', 1, 'a student reads their own request');
+select tests.reset();
+select tests.login(:s1);
+select tests.rows('select * from public.programme_requests', 0, 'another student reads none of it');
+select tests.fails_with('select public.cancel_programme_request(' || quote_literal(:'req2') || ')', 'P0002', 'another student cannot withdraw it');
+select tests.reset();
+
+-- Withdrawing, and asking again.
+select tests.login(:s2);
+select public.cancel_programme_request(:'req2');
+select tests.is((select status::text from public.programme_requests where id = (:'req2')::uuid), 'cancelled', 'a request can be withdrawn');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'none', 'and the list goes back to none');
+select tests.fails_with('select public.cancel_programme_request(' || quote_literal(:'req2') || ')', '23505', 'a withdrawn request cannot be withdrawn again');
+select public.request_programme(:'swe') as req3 \gset
+select tests.reset();
+
+-- ===== What an administrator sees and decides =====
+select tests.login(:admin);
+select tests.rows('select * from public.admin_programme_requests where status = ''pending''', 1, 'the administrator sees the waiting request');
+select tests.is((select student_email from public.admin_programme_requests where id = (:'req3')::uuid), (select email from public.profiles where id = :s2), 'with who asked');
+select tests.is((select pending_request_count from public.admin_programmes where code = 'SWE'), 1, 'the programme counts it');
+select tests.reset();
+select tests.login(:s2);
+select tests.rows('select * from public.admin_programme_requests', 0, 'a student sees none of the administrator list');
+select tests.fails_with('select public.decide_programme_request(' || quote_literal(:'req3') || ', ''approved'')', '42501', 'a student cannot approve their own request');
+select tests.reset();
+select tests.login(:t1);
+select tests.fails_with('select public.decide_programme_request(' || quote_literal(:'req3') || ', ''approved'')', '42501', 'a teacher cannot decide');
+select tests.reset();
+select tests.anonymous();
+select tests.denied('select public.decide_programme_request(gen_random_uuid(), ''approved'')', 'a visitor cannot decide');
+select tests.denied('select public.request_programme(gen_random_uuid())', 'a visitor cannot ask');
+select tests.reset();
+
+select tests.login(:admin);
+select tests.fails_with('select public.decide_programme_request(' || quote_literal(:'req3') || ', ''maybe'')', '22023', 'only two decisions exist');
+select tests.fails_with('select public.decide_programme_request(gen_random_uuid(), ''approved'')', 'P0002', 'an unknown request is not found');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'swe') || ')', '42501', 'an administrator cannot ask to join');
+select public.decide_programme_request(:'req3', 'declined');
+select tests.reset();
+select tests.login(:s2);
+select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2), 0, 'a declined request enrols nothing');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'declined', 'the list says declined');
+select public.request_programme(:'swe') as req4 \gset
+select tests.reset();
+
+select tests.login(:admin);
+select tests.fails_with('select public.decide_programme_request(' || quote_literal(:'req3') || ', ''approved'')', '23505', 'a decided request is not decided again');
+select public.decide_programme_request(:'req4', 'approved');
+select tests.reset();
+
+-- Approval enrols the courses in use and remembers the programme.
+select tests.login(:s2);
+select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2), 2, 'approval enrols the courses in use');
 select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2) || ' and course_id in (' || quote_literal(:c3) || ', ' || quote_literal(:c4) || ')', 0, 'the archived and the completed course are left out');
 select tests.is((select programme_id from public.profiles where id = :s2), (:'swe')::uuid, 'the programme is remembered on the profile');
-select tests.is((select is_mine from public.joinable_programmes where code = 'SWE'), true, 'the list marks it as theirs');
-select tests.is((select public.join_programme(:'swe')), 0, 'joining again adds nothing');
-select tests.fails_with('select public.join_programme(' || quote_literal(:'csn') || ')', 'P0002', 'a closed programme cannot be joined');
-select tests.fails_with('select public.join_programme(gen_random_uuid())', 'P0002', 'an unknown programme answers the same');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'enrolled', 'the list marks it as theirs');
+-- One programme only.
+select tests.fails_with('select public.request_programme(' || quote_literal(:'oth') || ')', '23505', 'a student in a programme cannot ask for another');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'swe') || ')', '23505', 'nor for their own again');
 select tests.reset();
 
 -- Student 1 was already in C1: only C2 is new.
 select tests.login(:s1);
-select tests.is((select public.join_programme(:'swe')), 1, 'a course already joined is not counted twice');
+select public.request_programme(:'swe') as req5 \gset
 select tests.reset();
-
 select tests.login(:admin);
+select public.decide_programme_request(:'req5', 'approved');
 select tests.is((select student_count from public.admin_programmes where code = 'SWE'), 2, 'the admin count follows the profiles');
-select tests.fails_with('select public.join_programme(' || quote_literal(:'swe') || ')', '42501', 'an administrator cannot join');
+select tests.is((select pending_request_count from public.admin_programmes where code = 'SWE'), 0, 'and nothing waits any more');
+select tests.rows('select * from public.admin_programme_members where programme_id = ' || quote_literal(:'swe'), 2, 'the administrator lists the members');
+select tests.reset();
+select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s1), 2, 'a course already joined is not counted twice');
+
+-- ===== Removing a student from a programme =====
+select tests.login(:s2);
+select tests.rows('select * from public.admin_programme_members', 0, 'and sees none');
+select tests.fails_with('select public.remove_from_programme(' || quote_literal(:s2) || ')', '42501', 'a student cannot remove anyone, even themselves');
 select tests.reset();
 select tests.login(:t1);
-select tests.fails_with('select public.join_programme(' || quote_literal(:'swe') || ')', '42501', 'a teacher cannot join');
+select tests.fails_with('select public.remove_from_programme(' || quote_literal(:s2) || ')', '42501', 'a teacher cannot remove anyone');
 select tests.reset();
 select tests.anonymous();
-select tests.denied('select public.join_programme(gen_random_uuid())', 'a visitor cannot call it');
+select tests.denied('select public.remove_from_programme(gen_random_uuid())', 'a visitor cannot remove anyone');
+select tests.reset();
+select tests.login(:admin);
+select tests.fails_with('select public.remove_from_programme(' || quote_literal(:t1) || ')', 'P0002', 'only a student in a programme is found');
+select tests.is((select public.remove_from_programme(:s2)), 2, 'removing takes the student out of the courses of the programme');
+select tests.is((select student_count from public.admin_programmes where code = 'SWE'), 1, 'the member count drops');
+select tests.is((select count(*) from public.audit_logs where action = 'programme_members.remove'), 1::bigint, 'the removal is audited');
+select tests.is((select metadata ->> 'coursesRemoved' from public.audit_logs where action = 'programme_members.remove'), '2', 'with a count and nothing else');
+select tests.reset();
+select tests.login(:s2);
+select tests.is((select programme_id from public.profiles where id = :s2), null::uuid, 'the programme is cleared from the profile');
+select tests.rows('select * from public.enrollments where student_id = ' || quote_literal(:s2), 0, 'and the courses are gone');
+select tests.is((select membership from public.joinable_programmes where code = 'SWE'), 'none', 'the list offers it again');
+select tests.reset();
+-- The student can ask again, for the same programme or another.
+select tests.login(:s2);
+select public.request_programme(:'oth') as req6 \gset
+select tests.reset();
+select tests.login(:admin);
+select public.decide_programme_request(:'req6', 'declined');
+select tests.reset();
+
+-- The audit log records the requests and the decisions.
+select tests.login(:admin);
+select tests.is((select count(*) from public.audit_logs where action = 'programme_requests.insert') >= 5, true, 'requests are audited');
+select tests.is((select count(*) from public.audit_logs where action = 'programme_requests.update') >= 5, true, 'decisions and withdrawals are audited');
 select tests.reset();
 
 -- An archived programme is refused too.
@@ -105,7 +206,7 @@ select tests.login(:admin);
 update public.programmes set archived_at = now() where code = 'SWE';
 select tests.reset();
 select tests.login(:s2);
-select tests.fails_with('select public.join_programme(' || quote_literal(:'swe') || ')', 'P0002', 'an archived programme cannot be joined');
+select tests.fails_with('select public.request_programme(' || quote_literal(:'swe') || ')', 'P0002', 'an archived programme cannot be asked');
 select tests.reset();
 
 -- ===== The timetable import =====

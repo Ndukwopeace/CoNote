@@ -126,6 +126,18 @@ export interface ProgrammeMemberRecord {
   studentId: string
 }
 
+/** Where a student's request to join a programme stands (`programme_requests.status`, D106). */
+export type ProgrammeRequestStatus = 'pending' | 'approved' | 'declined' | 'cancelled'
+
+/** A student's request to join a programme (`programme_requests`, D106). */
+export interface ProgrammeRequestRecord {
+  id: string
+  programmeId: string
+  studentId: string
+  status: ProgrammeRequestStatus
+  createdAt: string
+}
+
 /** A class (`class_sessions`). */
 export interface ClassRecord {
   id: string
@@ -213,6 +225,8 @@ export interface PlatformData {
   programmes: ProgrammeRecord[]
   programmeCourses: ProgrammeCourseRecord[]
   programmeMembers: ProgrammeMemberRecord[]
+  // Students' requests to join programmes (D106).
+  programmeRequests: ProgrammeRequestRecord[]
   auditLog: AuditEntry[]
   courses: CourseRecord[]
   resources: ResourceRecord[]
@@ -235,6 +249,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     programmes: [],
     programmeCourses: [],
     programmeMembers: [],
+    programmeRequests: [],
     auditLog: [],
     courses: [],
     resources: [],

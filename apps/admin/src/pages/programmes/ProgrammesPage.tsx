@@ -13,8 +13,9 @@ import { Link } from 'react-router'
 import { buttonVariants } from '@conote/ui/button'
 import { PageTitle } from '@conote/ui/common/PageTitle'
 
-// The list.
+// The waiting requests and the list.
 import { ProgrammeList } from '@/features/programmes/ProgrammeList'
+import { ProgrammeRequests } from '@/features/programmes/ProgrammeRequests'
 // The address of the import.
 import { ADMIN_ROUTES } from '@/lib/routes'
 
@@ -29,7 +30,8 @@ export function ProgrammesPage() {
         <div>
           <h1 className="text-2xl font-bold">Programmes</h1>
           <p className="text-sm text-muted-foreground">
-            A student picks a programme when they sign up and joins all its courses at once.
+            A student asks to join a programme; once you approve, they are in all its courses. A
+            student belongs to one programme.
           </p>
         </div>
         <Link to={ADMIN_ROUTES.importTimetable} className={buttonVariants()}>
@@ -37,8 +39,15 @@ export function ProgrammesPage() {
           Import timetable
         </Link>
       </div>
+      {/* Requests waiting for a decision. */}
+      <ProgrammeRequests />
       {/* The list. */}
-      <ProgrammeList />
+      <section aria-labelledby="programme-list-heading" className="space-y-3">
+        <h2 id="programme-list-heading" className="text-lg font-semibold">
+          All programmes
+        </h2>
+        <ProgrammeList />
+      </section>
     </div>
   )
 }

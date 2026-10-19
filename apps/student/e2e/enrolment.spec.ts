@@ -28,7 +28,7 @@ test('a new student asks to join courses, and the requests wait for approval', a
   await signUp(page)
 
   // The dialog opens by itself, lists courses in use and nothing finished or archived.
-  const dialog = page.getByRole('dialog', { name: 'Join your courses' })
+  const dialog = page.getByRole('dialog', { name: 'Join your programme' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('Linear Algebra')).toBeVisible()
   await expect(dialog.getByText('Calculus I')).toHaveCount(0)
@@ -63,10 +63,10 @@ test('a new student asks to join courses, and the requests wait for approval', a
   await expect(page.getByText(/not enrolled in any courses yet/)).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // "Find courses" opens the dialog again, with the request shown.
-  await page.getByRole('button', { name: 'Find courses' }).click()
+  // "Join programme" opens the dialog again, with the request shown.
+  await page.getByRole('button', { name: 'Join programme' }).click()
   await expect(
-    page.getByRole('dialog', { name: 'Join your courses' }).getByText('Requested'),
+    page.getByRole('dialog', { name: 'Join your programme' }).getByText('Requested'),
   ).toBeVisible()
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
@@ -82,9 +82,9 @@ test('a returning student with courses is not prompted, and can still find more'
   // No dialog on arrival.
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // My Courses offers Find courses, and the four courses read as Joined.
+  // My Courses offers Join programme, and the four courses read as Joined.
   await page.goto('/courses')
-  await page.getByRole('button', { name: 'Find courses' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Join your courses' })
+  await page.getByRole('button', { name: 'Join programme' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Join your programme' })
   await expect(dialog.getByText('Joined')).toHaveCount(4)
 })

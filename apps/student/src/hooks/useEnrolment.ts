@@ -71,28 +71,32 @@ export function useJoinableProgrammes() {
   })
 }
 
-/** "You joined 3 courses." */
-function joinedText(added: number): string {
-  if (added === 0) return "You're already in all of its courses."
-  return `You joined ${added} ${added === 1 ? 'course' : 'courses'}.`
-}
-
 /**
- * Joins a programme. Joining enrols the student in several courses at once, so every cached read
- * (courses, classes, notes, summaries, the lists here) is refreshed afterwards. The toast is
- * raised here, not by the caller: the refresh turns the dialog's own screen into the student's
- * Home, and a callback of a component that has unmounted would never run.
+ * Asks to join a programme (D106). Nothing is enrolled until an administrator approves, so only
+ * the enrolment lists are refreshed. The toast is raised here, not by the caller, so it shows even
+ * if the dialog closes first.
  */
-export function useJoinProgramme() {
-  // The enrolment service and the cache.
+export function useRequestProgramme() {
+  // The enrolment service, the cache and the toast.
   const { enrolment } = useServices()
   const client = useQueryClient()
   const toast = useToast()
   return useMutation({
-    mutationFn: (programmeId: string) => appQuery(() => enrolment.joinProgramme(programmeId)),
-    onSuccess: (added) => {
-      toast.success(joinedText(added))
+    mutationFn: (programmeId: string) => appQuery(() => enrolment.requestProgramme(programmeId)),
+    onSuccess: () => {
+      toast.success('Request sent. An administrator will approve it.')
     },
-    onSettled: () => client.invalidateQueries(),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.enrolment.all }),
+  })
+}
+
+/** Withdraws a waiting request to join a programme. */
+export function useCancelProgrammeRequest() {
+  // The enrolment service and the cache.
+  const { enrolment } = useServices()
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (requestId: string) => appQuery(() => enrolment.cancelProgrammeRequest(requestId)),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.enrolment.all }),
   })
 }

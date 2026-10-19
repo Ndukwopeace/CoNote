@@ -74,6 +74,17 @@ const storedStateSchema = z.object({
   enrolledCourseIds: z.array(z.string()),
   // The programme the student joined, if any (absent in state stored before programmes existed).
   programmeId: z.string().nullable().optional(),
+  // The requests to join a programme (D106); absent in state stored before they existed.
+  programmeRequests: z
+    .array(
+      z.object({
+        id: z.string(),
+        programmeId: z.string(),
+        status: z.enum(['pending', 'approved', 'declined', 'cancelled']),
+        createdAt: z.string(),
+      }),
+    )
+    .optional(),
   requests: z.array(
     z.object({
       id: z.string(),
@@ -92,6 +103,10 @@ const NOT_OPEN = "This course isn't open for requests."
 
 /** The message for a programme that can't be joined, whatever the reason. */
 const PROGRAMME_NOT_OPEN = "This programme isn't open."
+/** The message for asking to join a second programme: a student belongs to one. */
+const ALREADY_IN_PROGRAMME = "You're already in a programme."
+/** The message for asking while another request waits. */
+const PROGRAMME_ASKED = "You've already asked to join a programme."
 
 /**
  * Makes the demo student a new one: in no courses, with no requests. Called when someone signs up,
@@ -110,6 +125,10 @@ export interface MockEnrolment {
   enrolledIds: () => ReadonlySet<string>
   // Stands in for an admin's decision on a request.
   decide: (requestId: string, decision: 'approved' | 'declined') => Promise<void>
+  // Stands in for an admin's decision on a request to join a programme.
+  decideProgramme: (requestId: string, decision: 'approved' | 'declined') => Promise<void>
+  // Stands in for an admin taking the student out of their programme and its courses.
+  removeFromProgramme: () => Promise<void>
 }
 
 /** Courses in use: ongoing or upcoming, and not archived. */
@@ -272,6 +291,7 @@ export function createMockEnrolment({
     async listJoinableProgrammes() {
       await wait()
       const state = read()
+      const asked = state.programmeRequests ?? []
       return programmes
         .filter(isJoinable)
         .map((programme): JoinableProgramme => {
@@ -281,19 +301,27 @@ export function createMockEnrolment({
             .filter((course): course is CatalogCourse => course !== undefined && isOpen(course))
             .map((course) => course.code)
             .sort((a, b) => a.localeCompare(b))
+          // The student's standing: in it, waiting on it, turned down for it, or nothing yet.
+          const latest = asked.findLast((request) => request.programmeId === programme.id)
+          const pending = latest?.status === 'pending' ? latest : undefined
+          let membership: JoinableProgramme['membership'] = 'none'
+          if (state.programmeId === programme.id) membership = 'enrolled'
+          else if (pending) membership = 'pending'
+          else if (latest?.status === 'declined') membership = 'declined'
           return {
             id: programme.id,
             code: programme.code,
             name: programme.name,
             courseCount: codes.length,
             courseCodes: codes,
-            isMine: state.programmeId === programme.id,
+            membership,
+            requestId: pending?.id ?? null,
           }
         })
         .sort((a, b) => a.code.localeCompare(b.code))
     },
 
-    async joinProgramme(programmeId) {
+    async requestProgramme(programmeId) {
       await wait()
       const state = read()
       const programme = programmes.find((candidate) => candidate.id === programmeId)
@@ -301,17 +329,43 @@ export function createMockEnrolment({
       if (!programme || !isJoinable(programme)) {
         throw new AppError('validation', PROGRAMME_NOT_OPEN)
       }
-      // The courses in use that the student is not in yet.
-      const added = programme.courseIds.filter((id) => {
-        const course = courseById(id)
-        return course !== undefined && isOpen(course) && !state.enrolledCourseIds.includes(id)
-      })
+      // One programme per student, and one request waiting at a time.
+      if (state.programmeId) throw new AppError('conflict', ALREADY_IN_PROGRAMME)
+      const asked = state.programmeRequests ?? []
+      if (asked.some((request) => request.status === 'pending')) {
+        throw new AppError('conflict', PROGRAMME_ASKED)
+      }
+      // Recorded as waiting, until an administrator decides. Nothing is enrolled.
       write({
         ...state,
-        enrolledCourseIds: [...state.enrolledCourseIds, ...added],
-        programmeId: programme.id,
+        programmeRequests: [
+          ...asked,
+          {
+            id: crypto.randomUUID(),
+            programmeId,
+            status: 'pending' as const,
+            createdAt: now().toISOString(),
+          },
+        ],
       })
-      return added.length
+    },
+
+    async cancelProgrammeRequest(requestId) {
+      await wait()
+      const state = read()
+      const asked = state.programmeRequests ?? []
+      const request = asked.find((candidate) => candidate.id === requestId)
+      if (!request) throw new AppError('not_found', 'Request not found')
+      // Only a request still waiting can be withdrawn.
+      if (request.status !== 'pending') {
+        throw new AppError('conflict', 'This request has already been decided.')
+      }
+      write({
+        ...state,
+        programmeRequests: asked.map((candidate) =>
+          candidate.id === requestId ? { ...candidate, status: 'cancelled' as const } : candidate,
+        ),
+      })
     },
 
     async cancelJoinRequest(requestId) {
@@ -353,6 +407,44 @@ export function createMockEnrolment({
         requests: state.requests.map((candidate) =>
           candidate.id === requestId ? { ...candidate, status: decision } : candidate,
         ),
+      })
+    },
+    decideProgramme: async (requestId, decision) => {
+      await wait()
+      const state = read()
+      const asked = state.programmeRequests ?? []
+      const request = asked.find((candidate) => candidate.id === requestId)
+      if (request?.status !== 'pending') {
+        throw new AppError('conflict', 'This request has already been decided.')
+      }
+      const programme = programmes.find((candidate) => candidate.id === request.programmeId)
+      // Approval enrols the student in the courses in use, and the programme becomes theirs.
+      const added =
+        decision === 'approved' && programme
+          ? programme.courseIds.filter((id) => {
+              const course = courseById(id)
+              return course !== undefined && isOpen(course) && !state.enrolledCourseIds.includes(id)
+            })
+          : []
+      write({
+        ...state,
+        enrolledCourseIds: [...state.enrolledCourseIds, ...added],
+        programmeId: decision === 'approved' ? request.programmeId : (state.programmeId ?? null),
+        programmeRequests: asked.map((candidate) =>
+          candidate.id === requestId ? { ...candidate, status: decision } : candidate,
+        ),
+      })
+    },
+    removeFromProgramme: async () => {
+      await wait()
+      const state = read()
+      const programme = programmes.find((candidate) => candidate.id === state.programmeId)
+      // The student leaves the programme and its courses.
+      const leaving = new Set(programme?.courseIds ?? [])
+      write({
+        ...state,
+        enrolledCourseIds: state.enrolledCourseIds.filter((id) => !leaving.has(id)),
+        programmeId: null,
       })
     },
   }

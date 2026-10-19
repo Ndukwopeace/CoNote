@@ -115,15 +115,18 @@ export interface EnrolmentService {
   requestToJoin(courseId: string): Promise<JoinRequest>
   /** Withdraws a pending request. Rejects with not_found for an unknown ID, and conflict once decided. */
   cancelJoinRequest(requestId: string): Promise<void>
-  /** The programmes open to join (D105), by code. */
+  /** The programmes open to join (D105), by code, with the student's standing in each. */
   listJoinableProgrammes(): Promise<JoinableProgramme[]>
   /**
-   * Joins a programme: the student is enrolled at once in every course in use it holds, with no
-   * request to approve, because an administrator set the programme up. Returns how many courses
-   * were newly joined; joining again adds none. Rejects with validation for a programme that is
-   * closed, archived or unknown ("This programme isn't open.").
+   * Asks to join a programme (D106). Nothing is enrolled until an administrator approves, and then
+   * the student is in every course in use the programme holds. A student belongs to one
+   * programme and has one request waiting at a time. Rejects with validation for a programme that
+   * is closed, archived or unknown ("This programme isn't open.") and with conflict when the
+   * student is already in a programme or has a request waiting.
    */
-  joinProgramme(programmeId: string): Promise<number>
+  requestProgramme(programmeId: string): Promise<void>
+  /** Withdraws a waiting request. Rejects with not_found for an unknown ID, and conflict once decided. */
+  cancelProgrammeRequest(requestId: string): Promise<void>
 }
 
 /** Class sessions (FR-CLS). Unknown IDs reject with a not_found AppError. */

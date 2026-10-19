@@ -45,6 +45,14 @@ const PROGRAMMES: CatalogProgramme[] = [
     ],
   },
   {
+    id: 'prog-other',
+    code: 'SWE-Y4',
+    name: 'Software Engineering, Year 4',
+    openEnrolment: true,
+    archived: false,
+    courseIds: [FIXTURE.open],
+  },
+  {
     id: 'prog-closed',
     code: 'BMS-Y1',
     name: 'Biomedical Sciences, Year 1',
@@ -93,6 +101,7 @@ runEnrolmentServiceContract('mock', {
 runProgrammeContract('mock', {
   fixture: {
     open: 'prog-open',
+    other: 'prog-other',
     closed: 'prog-closed',
     archived: 'prog-archived',
     // MTH 202, PHY 101 and SWE 311 are in use.
@@ -101,7 +110,10 @@ runProgrammeContract('mock', {
     completedCourse: FIXTURE.completed,
     archivedCourse: FIXTURE.archived,
   },
-  create: () => ({ service: create().service }),
+  create: () => {
+    const { service, decideProgramme, removeFromProgramme } = create()
+    return { service, decide: decideProgramme, remove: removeFromProgramme }
+  },
 })
 
 describe('mock enrolment', () => {
@@ -120,32 +132,47 @@ describe('mock enrolment', () => {
     await expect(second.service.listMyJoinRequests()).resolves.toEqual([request])
   })
 
-  // Proves a joined programme and its courses survive a new service, as a reload would, and an
-  // approved request does not forget the programme.
-  it('keeps a joined programme across services', async () => {
+  // Proves a request and an approved programme survive a new service, as a reload would.
+  it('keeps programme requests and the programme across services', async () => {
     const first = create(window.localStorage)
-    await first.service.joinProgramme('prog-open')
-    const request = await first.service.requestToJoin(FIXTURE.completed).catch(() => null)
-    expect(request).toBeNull()
+    await first.service.requestProgramme('prog-open')
+    const asked = (await first.service.listJoinableProgrammes()).find((p) => p.id === 'prog-open')
+    expect(asked?.membership).toBe('pending')
+    await first.decideProgramme(asked?.requestId ?? '', 'approved')
 
     const second = create(window.localStorage)
 
-    expect([...second.enrolledIds()].sort()).toEqual(
-      [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort(),
+    expect([...second.enrolledIds()].sort((a, b) => a.localeCompare(b))).toEqual(
+      [FIXTURE.enrolled, FIXTURE.open, FIXTURE.upcoming].sort((a, b) => a.localeCompare(b)),
     )
     const programmes = await second.service.listJoinableProgrammes()
-    expect(programmes.find((programme) => programme.id === 'prog-open')?.isMine).toBe(true)
+    expect(programmes.find((programme) => programme.id === 'prog-open')?.membership).toBe(
+      'enrolled',
+    )
   })
 
-  // Proves a new student has joined no programme.
+  // Proves state stored before programme requests existed still loads.
+  it('reads state stored without programme requests', async () => {
+    window.localStorage.setItem(
+      MOCK_ENROLMENT_KEY,
+      JSON.stringify({ enrolledCourseIds: [FIXTURE.enrolled], requests: [] }),
+    )
+
+    const enrolment = create(window.localStorage)
+
+    const programmes = await enrolment.service.listJoinableProgrammes()
+    expect(programmes.every((programme) => programme.membership === 'none')).toBe(true)
+  })
+
+  // Proves a new student has joined no programme and has no request waiting.
   it('starts a new student with no programme', async () => {
     const enrolment = create(window.localStorage)
-    await enrolment.service.joinProgramme('prog-open')
+    await enrolment.service.requestProgramme('prog-open')
 
     startNewStudent(window.localStorage)
 
     const programmes = await enrolment.service.listJoinableProgrammes()
-    expect(programmes.some((programme) => programme.isMine)).toBe(false)
+    expect(programmes.every((programme) => programme.membership === 'none')).toBe(true)
   })
 
   // Proves signing up starts a student in no courses, even in services made earlier.

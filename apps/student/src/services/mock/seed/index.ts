@@ -673,6 +673,15 @@ const PROGRAMMES: readonly CatalogProgramme[] = [
     archived: false,
     courseIds: ['eng-201'],
   },
+  // A long name, as the real timetable has, so narrow screens are seen coping with it.
+  {
+    id: 'csn-y3-csdpe',
+    code: 'CSN-Y3-CSDPE',
+    name: 'CyberSecurity & Networking · Year 3 · Cloud Security and Data Protection Engineering',
+    openEnrolment: true,
+    archived: false,
+    courseIds: ['cse-205', 'bus-207'],
+  },
   // Not open to joining yet.
   {
     id: 'law-y1',

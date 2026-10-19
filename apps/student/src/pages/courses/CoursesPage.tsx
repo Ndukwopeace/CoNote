@@ -83,7 +83,7 @@ export function CoursesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">My Courses</h1>
         <Button type="button" variant="outline" onClick={join.open}>
-          Find courses
+          Join programme
         </Button>
       </div>
 
@@ -168,8 +168,8 @@ function CourseList({
   if (courses.data.length === 0) {
     return (
       <EmptyState icon={GraduationCap} title="No courses yet">
-        You&apos;re not enrolled in any courses yet. Find a course to request to join, or wait for
-        your teacher or administrator to add you.
+        You&apos;re not enrolled in any courses yet. Join your programme to get your courses, or
+        wait for your teacher or administrator to add you.
       </EmptyState>
     )
   }

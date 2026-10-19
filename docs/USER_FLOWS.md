@@ -392,14 +392,15 @@ flowchart TD
 
 ---
 
-### F13 — Join your programme (D105)
+### F13 — Join your programme (D105, D106)
 
-1. A student with no courses lands on Home; the join dialog opens (or **Find courses** on My Courses).
-2. Under **Join your programme** they see the open programmes, each with the codes of its courses.
-3. **Join programme** enrols them in all of those courses. A toast says how many were added.
-4. Home shows their courses. Single courses can still be requested below the programmes and need approval.
+1. A student with no courses lands on Home; the join dialog opens (or **Join programme** on Home or My Courses).
+2. Under **Choose your programme** they see the open programmes, each with the codes of its courses.
+3. **Request to join** records a request and a toast says an administrator will approve it. Nothing is enrolled yet; the student can **Cancel request**, and while one waits the others cannot be asked for.
+4. An administrator approves on the Programmes page. The student is then in every course in use of the programme, and the dialog shows only that programme, as joined.
+5. If declined, the programme shows **Declined** and the student may **Request again**. A student belongs to one programme.
 
-**Admin side:** an administrator imports the school's timetable PDF (Courses → Import timetable), sets the term and teachers, checks the dry run and imports. Programmes then appear for students; the administrator can close one at any time.
+**Admin side:** an administrator imports the school's timetable PDF (Courses → Import timetable), sets the term and teachers, checks the dry run and imports. Programmes then appear for students; the administrator approves or declines requests, lists a programme's students and can remove one (they leave the programme and its courses, notes are kept), or close a programme at any time.
 
 ---
 

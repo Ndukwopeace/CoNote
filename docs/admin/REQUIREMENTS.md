@@ -432,7 +432,11 @@ Removing a teacher leaves the course unassigned, and that raises the "course wit
 
 ## 12a. Programmes and timetable import (D105)
 
-**Programmes list:** code, name, courses, students who joined, and whether joining is open. An administrator opens or closes joining with a switch; closed programmes are not offered to students.
+**Programmes list:** code, name, courses, students who joined, requests waiting, and whether joining is open. An administrator opens or closes joining with a switch; closed programmes are not offered to students.
+
+**Requests (D106):** a student asks to join a programme and nothing is enrolled until an administrator decides. The Requests section lists each waiting request with the student, the programme and the date, with **Approve** and **Decline**. Approving puts the student in every course in use the programme holds and makes it their programme; a student already in another programme is refused ("This student is already in a programme."). A request is decided once.
+
+**Students in a programme (D106):** each row has a **Students** button listing who joined, with **Remove**. Removing asks first, takes the student out of the programme and its courses, keeps their notes, and lets them ask to join a programme again. A student belongs to one programme.
 
 **Import a timetable** (`/admin/programmes/import`, also linked from Courses):
 1. **Choose.** One or more timetable PDFs (up to 60 pages each), the term's first and last day, and the time zone (default `Africa/Douala`). A file that is not a PDF, or has no readable timetable, is refused with a reason.
