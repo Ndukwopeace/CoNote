@@ -16,6 +16,8 @@ import {
   getClassStatus,
   groupClassesByDay,
   hasClassStarted,
+  isOpenForNotes,
+  classesByDay,
   classesToChoose,
   upcomingClasses,
 } from './classes'
@@ -131,22 +133,22 @@ describe('adjacentClasses', () => {
 })
 
 describe('defaultNoteClass', () => {
-  // Proves the class that is on now wins, even when an earlier one is also recent.
+  // Proves the class that is on now wins, even when an earlier one has also ended today.
   it('picks the class that is on now', () => {
-    const sessions = [at(-1, 9, 11, 'yesterday'), at(0, 9, 11, 'now'), at(0, 14, 15, 'later')]
+    const sessions = [at(0, 7, 8, 'earlier'), at(0, 9, 11, 'now'), at(0, 14, 15, 'later')]
     expect(defaultNoteClass(sessions, now)?.id).toBe('now')
   })
 
   // Proves a student writing up after class gets the one that just ended, not a future one.
-  it('picks the latest class that has started, once it is over', () => {
-    const sessions = [at(-2, 9, 11, 'older'), at(0, 8, 9, 'just-ended'), at(1, 9, 11, 'tomorrow')]
+  it('picks the latest class that has started today, once it is over', () => {
+    const sessions = [at(0, 6, 7, 'older'), at(0, 8, 9, 'just-ended'), at(1, 9, 11, 'tomorrow')]
     expect(defaultNoteClass(sessions, now)?.id).toBe('just-ended')
   })
 
-  // Proves an old class is not guessed: after a week the student chooses.
-  it('picks nothing when the latest class is over a week old', () => {
-    expect(defaultNoteClass([at(-8, 9, 11, 'old')], now)).toBeUndefined()
-    expect(defaultNoteClass([at(-7, 11, 12, 'edge')], now)?.id).toBe('edge')
+  // Proves a class from the last two days can still be guessed, and an older one is not (D108).
+  it('picks nothing when the latest class is older than two days', () => {
+    expect(defaultNoteClass([at(-2, 9, 11, 'two-days-ago')], now)?.id).toBe('two-days-ago')
+    expect(defaultNoteClass([at(-3, 15, 17, 'three-days-ago')], now)).toBeUndefined()
   })
 
   // Proves nothing is picked when no class has started, or there are none.
@@ -166,23 +168,84 @@ describe('hasClassStarted', () => {
   })
 })
 
+describe('isOpenForNotes', () => {
+  // Proves a class is open from its start time on, for today and the two days before (D108).
+  it('is true for a class that has started today or in the last two days', () => {
+    expect(isOpenForNotes(at(0, 10, 11), now)).toBe(true)
+    expect(isOpenForNotes(at(0, 8, 9), now)).toBe(true)
+    expect(isOpenForNotes(at(-1, 9, 11), now)).toBe(true)
+    expect(isOpenForNotes(at(-2, 0, 1), now)).toBe(true)
+  })
+
+  // Proves a class that has not started, or is older than two days, is not open.
+  it('is false before the start and after the window', () => {
+    expect(isOpenForNotes(at(0, 10, 11), new Date(2026, 8, 28, 9, 59))).toBe(false)
+    expect(isOpenForNotes(at(1, 9, 11), now)).toBe(false)
+    expect(isOpenForNotes(at(-3, 23, 24), now)).toBe(false)
+  })
+
+  // Proves the days are local ones: a class at 23:30 two days ago is still open at 23:45, and
+  // not five minutes into the next day.
+  it('uses local calendar days', () => {
+    const lateClass = at(-2, 23, 24, 'late')
+    expect(isOpenForNotes(lateClass, new Date(2026, 8, 28, 23, 45))).toBe(true)
+    expect(isOpenForNotes(lateClass, new Date(2026, 8, 29, 0, 5))).toBe(false)
+  })
+})
+
 describe('classesToChoose', () => {
-  // Proves the class sheet offers only classes that have started (on now, or over), latest first,
-  // and leaves out the ones still to come.
-  it('lists started classes latest first and leaves out classes still to come', () => {
+  // Proves the class sheet lists today and the two days before (D108): the classes that have
+  // started come first, latest first, then today's that are still to come, soonest first. Older
+  // days and later days are left out.
+  it('lists the last three days, started classes first, and leaves out the rest', () => {
     const sessions = [
       at(2, 9, 10, 'in-two-days'),
       at(-3, 9, 10, 'three-days-ago'),
+      at(-2, 9, 10, 'two-days-ago'),
       at(0, 9, 11, 'now'),
+      at(0, 7, 8, 'this-morning'),
       at(1, 9, 10, 'tomorrow'),
       at(-1, 9, 10, 'yesterday'),
+      at(0, 15, 16, 'this-evening'),
       at(0, 11, 12, 'later-today'),
     ]
     expect(classesToChoose(sessions, now).map((s) => s.id)).toEqual([
       'now',
+      'this-morning',
       'yesterday',
-      'three-days-ago',
+      'two-days-ago',
+      'later-today',
+      'this-evening',
     ])
     expect(classesToChoose([], now)).toEqual([])
+  })
+})
+
+describe('classesByDay', () => {
+  // Proves the choosable classes are grouped by day, newest day first and labelled "Today",
+  // "Yesterday", then the date for two days back (D108), each group keeping its own order.
+  it('groups the classes under Today, Yesterday and the date', () => {
+    const sessions = [
+      at(-2, 9, 10, 'two-days-ago'),
+      at(0, 15, 16, 'this-evening'),
+      at(-1, 9, 10, 'yesterday-morning'),
+      at(0, 9, 11, 'now'),
+      at(-1, 14, 15, 'yesterday-afternoon'),
+      at(-3, 9, 10, 'too-old'),
+    ]
+    const days = classesByDay(sessions, now)
+
+    expect(days.map((d) => d.label)).toEqual(['Today', 'Yesterday', 'Sat 26 Sep'])
+    expect(days.map((d) => d.classes.map((s) => s.id))).toEqual([
+      ['now', 'this-evening'],
+      ['yesterday-afternoon', 'yesterday-morning'],
+      ['two-days-ago'],
+    ])
+  })
+
+  // Proves a day with no classes gets no heading, and no classes gives no groups.
+  it('leaves out days with no classes', () => {
+    expect(classesByDay([at(-2, 9, 10)], now).map((d) => d.label)).toEqual(['Sat 26 Sep'])
+    expect(classesByDay([], now)).toEqual([])
   })
 })

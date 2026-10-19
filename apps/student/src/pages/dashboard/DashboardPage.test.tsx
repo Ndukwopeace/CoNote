@@ -202,35 +202,82 @@ describe('DashboardPage: Note mode', () => {
 })
 
 describe('DashboardPage: choosing the class', () => {
-  /** A student whose classes have all yet to start. */
-  function onlyFuture() {
-    const base = createTestServices().classes
+  /** A class on the faked day (Monday 28 September 2026) from `hour` for two hours. */
+  const onDay = (dayOffset: number, id: string, title: string, hour: number) =>
+    makeClass({
+      id,
+      courseId: 'swe-311',
+      title,
+      startsAt: new Date(2026, 8, 28 + dayOffset, hour, 0).toISOString(),
+      endsAt: new Date(2026, 8, 28 + dayOffset, hour + 2, 0).toISOString(),
+    })
+
+  /** A student whose classes are exactly `sessions`. */
+  function withClasses(...sessions: ReturnType<typeof onDay>[]) {
     return {
-      classes: {
-        ...base,
-        listMyClasses: () =>
-          Promise.resolve([makeClass({ id: 'later', courseId: 'swe-311', title: 'Later class' })]),
-      },
+      classes: { ...createTestServices().classes, listMyClasses: () => Promise.resolve(sessions) },
     }
   }
 
-  // Proves that with no class started the chip asks the student to choose, and the sheet offers
-  // nothing: a class still to come cannot be chosen (D107).
-  it('offers no class while none has started', async () => {
-    const { user } = renderDashboard(onlyFuture())
+  // Proves a class that begins later today is listed but cannot be chosen yet (D108): the row is
+  // disabled and says when it opens.
+  it('lists a class that has not started but does not let it be chosen', async () => {
+    const { user } = renderDashboard(withClasses(onDay(0, 'later', 'Later class', 10)))
     const chip = await screen.findByRole('button', { name: 'Choose a class' })
     expect(screen.getByText('Choose a class below, then type a thought.')).toBeVisible()
 
     await user.click(chip)
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+    const row = within(sheet).getByRole('button', { name: /Later class/ })
 
-    expect(within(sheet).getByText(/None of your classes has started yet/)).toBeVisible()
-    expect(within(sheet).queryByRole('button', { name: /Later class/ })).toBeNull()
+    expect(row).toBeDisabled()
+    expect(within(row).getByText(/Opens at 10 AM – 12 PM/)).toBeVisible()
+  })
+
+  // Proves tomorrow's class and one three days back are not listed at all (D108); with nothing
+  // from the last three days the sheet says so.
+  it('leaves out later days and classes older than two days', async () => {
+    const { user } = renderDashboard(
+      withClasses(onDay(1, 'next', 'Next class', 9), onDay(-3, 'old', 'Old class', 9)),
+    )
+    await user.click(await screen.findByRole('button', { name: 'Choose a class' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+
+    expect(within(sheet).getByText('You have no classes from the last three days.')).toBeVisible()
+    expect(within(sheet).queryByRole('button', { name: /Next class/ })).toBeNull()
+    expect(within(sheet).queryByRole('button', { name: /Old class/ })).toBeNull()
+  })
+
+  // Proves a class from yesterday can still be chosen from the sheet, and choosing it moves the chip.
+  it('lets the student choose a class from yesterday', async () => {
+    const { user } = renderDashboard(recentServices())
+    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · First class/ }))
+    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+
+    await user.click(within(sheet).getByRole('button', { name: /Yesterday class/ }))
+
+    expect(await screen.findByRole('button', { name: /Class: .*Yesterday class/ })).toBeVisible()
+  })
+
+  // Proves the sheet groups the classes by day: Today, Yesterday, then the date (D108).
+  it('groups the classes under Today, Yesterday and the date', async () => {
+    const { user } = renderDashboard(recentServices())
+    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · First class/ }))
+    const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
+
+    const headings = within(sheet)
+      .getAllByRole('heading', { level: 3 })
+      .map((h) => h.textContent)
+    expect(headings).toEqual(['Today', 'Yesterday', 'Sat 26 Sep'])
+    expect(within(sheet).getByRole('region', { name: 'Yesterday' })).toHaveTextContent(
+      'Yesterday class',
+    )
+    expect(within(sheet).queryByRole('button', { name: /Old class/ })).toBeNull()
   })
 
   // Proves sending with no class opens the sheet instead of guessing, keeping the text.
   it('opens the class sheet when sending with no class', async () => {
-    const { user } = renderDashboard(onlyFuture())
+    const { user } = renderDashboard(withClasses(onDay(0, 'later', 'Later class', 10)))
     await user.type(await screen.findByRole('textbox', { name: 'Note' }), 'Early thought{Enter}')
 
     expect(await screen.findByRole('dialog', { name: 'Which class?' })).toBeVisible()
@@ -238,40 +285,58 @@ describe('DashboardPage: choosing the class', () => {
     expect(screen.getByRole('textbox', { name: 'Note', hidden: true })).toHaveValue('Early thought')
   })
 
-  // Proves the sheet lists the classes that have started, latest first, leaves out the ones to
-  // come (D107), and choosing one moves the chip.
-  it('changes the class from the chip', async () => {
+  // Proves the demo's classes older than two days are not offered, while the one on now is.
+  it('does not offer the demo classes older than two days', async () => {
     const { user } = renderDashboard()
     await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }))
 
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
     expect(within(sheet).getByText('On now')).toBeVisible()
-    const names = within(sheet)
-      .getAllByRole('button')
-      .map((b) => b.textContent)
-    // 6 of the demo's 12 classes have started; the one on now comes first, and the later ones are
-    // not offered.
-    expect(names.filter((n) => n.includes(' · '))).toHaveLength(6)
-    expect(within(sheet).queryByRole('button', { name: /Hash Tables/ })).toBeNull()
-    await user.click(within(sheet).getByRole('button', { name: /Essay Structure/ }))
-
-    expect(screen.queryByRole('dialog', { name: 'Which class?' })).toBeNull()
-    expect(
-      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
-    ).toBeVisible()
+    expect(within(sheet).queryByRole('button', { name: /Introduction to Software/ })).toBeNull()
+    expect(within(sheet).queryByRole('button', { name: /Essay Structure/ })).toBeNull()
   })
 })
 
+/** A student with classes yesterday and the day before, one at 7 today, one at 10 today (not started at 9) and an old one. */
+function recentServices() {
+  /** A class on the faked day plus `dayOffset` days, from `hour` for an hour. */
+  const on = (dayOffset: number, id: string, title: string, hour: number) =>
+    makeClass({
+      id,
+      courseId: 'swe-311',
+      title,
+      startsAt: new Date(2026, 8, 28 + dayOffset, hour, 0).toISOString(),
+      endsAt: new Date(2026, 8, 28 + dayOffset, hour + 1, 0).toISOString(),
+    })
+  return {
+    classes: {
+      ...createTestServices().classes,
+      listMyClasses: () =>
+        Promise.resolve([
+          on(-1, 'yesterday', 'Yesterday class', 14),
+          on(-2, 'before', 'Earlier class', 9),
+          on(0, 'first', 'First class', 7),
+          on(0, 'evening', 'Evening class', 10),
+          on(-3, 'old', 'Old class', 9),
+        ]),
+    },
+  }
+}
+
 describe('DashboardPage: navigation', () => {
-  // Proves the sidebar (wider screens) lists today's classes, earlier ones and the pages, with the
-  // CoNote logo; choosing a class there moves the chip.
-  it('lists the classes and pages, and choosing a class moves the chip', async () => {
-    const { user } = renderDashboard()
+  // Proves the sidebar (wider screens) lists the classes by day (Today, Yesterday, the date) and the
+  // pages, with the CoNote logo; choosing a class there moves the chip, and a class that has not
+  // started is shown but cannot be chosen (D108).
+  it('lists the recent classes by day, and choosing a class moves the chip', async () => {
+    const { user } = renderDashboard(recentServices())
     await screen.findByRole('textbox', { name: 'Note' })
     const nav = screen.getByRole('navigation', { name: 'Main' })
 
     expect(within(nav).getByText('Today')).toBeVisible()
-    expect(within(nav).getByText('Earlier')).toBeVisible()
+    expect(within(nav).getByText('Yesterday')).toBeVisible()
+    expect(within(nav).getByText('Sat 26 Sep')).toBeVisible()
+    expect(within(nav).queryByRole('button', { name: /Old class/ })).toBeNull()
+    expect(within(nav).getByRole('button', { name: /Evening class/ })).toBeDisabled()
     expect(within(nav).getByRole('link', { name: /Summaries/ })).toHaveAttribute(
       'href',
       '/notes?tab=summaries',
@@ -287,24 +352,24 @@ describe('DashboardPage: navigation', () => {
     // The CoNote word beside the mark.
     expect(within(nav).getByText('CoNote')).toBeVisible()
 
-    await user.click(within(nav).getByRole('button', { name: /ENG 201 · Essay Structure/ }))
+    await user.click(within(nav).getByRole('button', { name: /Yesterday class/ }))
     expect(
-      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
+      await screen.findByRole('button', { name: /Class: SWE 311 · Yesterday class/ }),
     ).toBeVisible()
   })
 
   // Proves the phone menu opens the same navigation as a drawer, and choosing a class closes it.
   it('opens the drawer from the menu button and closes it on a choice', async () => {
-    const { user } = renderDashboard()
+    const { user } = renderDashboard(recentServices())
     await screen.findByRole('textbox', { name: 'Note' })
     await user.click(screen.getByRole('button', { name: 'Open menu' }))
 
     const drawer = await screen.findByRole('dialog', { name: 'Menu' })
-    await user.click(within(drawer).getByRole('button', { name: /ENG 201 · Essay Structure/ }))
+    await user.click(within(drawer).getByRole('button', { name: /Yesterday class/ }))
 
     expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
     expect(
-      await screen.findByRole('button', { name: /Class: ENG 201 · Essay Structure/ }),
+      await screen.findByRole('button', { name: /Class: SWE 311 · Yesterday class/ }),
     ).toBeVisible()
   })
 
