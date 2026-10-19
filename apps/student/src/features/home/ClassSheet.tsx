@@ -1,6 +1,6 @@
 /**
- * The sheet that opens from the class chip (D102): every class of the student's, the ones that
- * have started first (latest first), then the ones to come, each with when it is. Choosing one
+ * The sheet that opens from the class chip (D102): the classes of the student's that have started
+ * (D107), latest first, each with when it is. A class still to come is not offered. Choosing one
  * files the next notes under it.
  */
 
@@ -48,6 +48,12 @@ export function ClassSheet({
             ? 'Change it only if you are writing about another class.'
             : 'Choose the class your notes are for.'}
         </SheetDescription>
+        {/* Nothing has started yet: say when to come back, rather than show an empty list. */}
+        {classes.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            None of your classes has started yet. You can choose one when it begins.
+          </p>
+        )}
         <ul className="flex flex-col gap-2 overflow-y-auto">
           {classes.map((session) => {
             // The class's course, for its code.

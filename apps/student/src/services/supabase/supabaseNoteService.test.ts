@@ -21,6 +21,8 @@ import { createSupabaseNoteService } from './supabaseNoteService'
 const NOTE = '50000000-0000-0000-0000-000000000001'
 const CLASS = '30000000-0000-0000-0000-000000000001'
 const COURSE = '20000000-0000-0000-0000-000000000001'
+// When the class began: long ago, so notes may be written about it.
+const STARTED = '2026-01-05T09:00:00Z'
 const STUDENT = '10000000-0000-0000-0000-000000000004'
 
 /** A note row as the database returns it. */
@@ -65,7 +67,7 @@ interface Answers {
 function setup(overrides: Partial<Answers> = {}) {
   const answers: Answers = {
     read: { data: [noteRow()], error: null },
-    klass: { data: { id: CLASS, course_id: COURSE }, error: null },
+    klass: { data: { id: CLASS, course_id: COURSE, starts_at: STARTED }, error: null },
     insert: { data: noteRow(), error: null },
     update: { data: [noteRow({ title: 'Edited' })], error: null },
     remove: { data: [{ id: NOTE }], error: null },
@@ -214,7 +216,11 @@ describe('Supabase note service: writing', () => {
 
   // SECURITY: proves a class that is not the student's (or not a UUID, or hidden) is refused alike.
   it.each([
-    ['not a UUID', 'no-such-class', { data: { id: CLASS, course_id: COURSE }, error: null }],
+    [
+      'not a UUID',
+      'no-such-class',
+      { data: { id: CLASS, course_id: COURSE, starts_at: STARTED }, error: null },
+    ],
     ['hidden by Row Level Security', CLASS, { data: null, error: null }],
   ])('refuses a class that is %s', async (_label, classId, klass) => {
     const { service } = setup({ klass })
@@ -228,6 +234,26 @@ describe('Supabase note service: writing', () => {
       kind: 'validation',
       message,
     })
+  })
+
+  // Proves a class that begins later is refused on create and on edit, before any write is tried.
+  it('refuses a class that has not started', async () => {
+    const later = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    const { service, queries } = setup({
+      klass: { data: { id: CLASS, course_id: COURSE, starts_at: later }, error: null },
+    })
+
+    const message = 'That class has not started yet.'
+    await expect(service.createNote(submission())).rejects.toMatchObject({
+      kind: 'validation',
+      message,
+    })
+    await expect(service.updateNote(NOTE, submission())).rejects.toMatchObject({
+      kind: 'validation',
+      message,
+    })
+    // Only the class was read; nothing was written.
+    expect(queries.map((q) => q.table)).toEqual(['class_sessions', 'class_sessions'])
   })
 
   // Proves the database refusing the write (the course closed meanwhile) reads as the same message.

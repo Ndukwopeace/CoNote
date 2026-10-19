@@ -18,7 +18,7 @@ import { ListSkeleton } from '@/components/common/Skeletons'
 // "You're offline" banner (FR-PWA-4).
 import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 // Class rules.
-import { classesToChoose, defaultNoteClass, getClassStatus } from '@/lib/classes'
+import { classesToChoose, defaultNoteClass, getClassStatus, hasClassStarted } from '@/lib/classes'
 // The time, kept current.
 import { useNow } from '@/hooks/useNow'
 // Shapes.
@@ -75,7 +75,8 @@ export function HomeScreen({
   const [guessed, setGuessed] = useState<string | null | undefined>(undefined)
   if (status === 'ready' && guessed === undefined) {
     setGuessed(
-      classes.find((c) => c.id === params.get('classId'))?.id ??
+      // A class that has not started is not taken from the address (D107).
+      classes.find((c) => c.id === params.get('classId') && hasClassStarted(c, new Date()))?.id ??
         defaultNoteClass(classes, new Date())?.id ??
         null,
     )

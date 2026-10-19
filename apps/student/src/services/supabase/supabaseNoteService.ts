@@ -43,14 +43,17 @@ const noteRow = z.object({
   created_at: z.string(),
   updated_at: z.string(),
 })
-// A class, only to learn which course it belongs to.
-const classRow = z.object({ id: z.string(), course_id: z.string() })
+// A class, only to learn which course it belongs to and whether it has started.
+const classRow = z.object({ id: z.string(), course_id: z.string(), starts_at: z.string() })
 // What a delete reads back.
 const idRow = z.object({ id: z.string() })
 
 // Shown for a class that is not one of the student's, whatever the reason (unknown, hidden, or
 // another course's), so the answer reveals nothing about which classes exist.
 const CHOOSE_CLASS = 'Choose a class from your courses.'
+
+// Shown for a class that begins later.
+const NOT_STARTED = 'That class has not started yet.'
 
 /** One row as the app's Note. */
 function toNote(row: z.infer<typeof noteRow>): Note {
@@ -103,10 +106,18 @@ export function createSupabaseNoteService({ client }: { client: SupabaseClient }
     if (!isUuid(classId)) throw new AppError('validation', CHOOSE_CLASS)
     // Row Level Security shows only classes of courses the student is in.
     const session = await readOne(
-      client.from('class_sessions').select('id, course_id').eq('id', classId).maybeSingle(),
+      client
+        .from('class_sessions')
+        .select('id, course_id, starts_at')
+        .eq('id', classId)
+        .maybeSingle(),
       classRow,
     )
     if (!session) throw new AppError('validation', CHOOSE_CLASS)
+    // A class still to come has nothing to write about yet (D107); the database refuses it too.
+    if (Date.parse(session.starts_at) > Date.now()) {
+      throw new AppError('validation', NOT_STARTED)
+    }
     return session.course_id
   }
 
@@ -162,7 +173,7 @@ export function createSupabaseNoteService({ client }: { client: SupabaseClient }
         if (!row) throw new AppError('unknown', 'Unexpected error')
         return toNote(row)
       } catch (error) {
-        // The course closed since the class was read.
+        // The course closed since the class was read, or the class had not started.
         if (error instanceof AppError && error.kind === 'forbidden') {
           throw new AppError('validation', CHOOSE_CLASS, { cause: error })
         }

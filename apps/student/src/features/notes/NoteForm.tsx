@@ -41,7 +41,7 @@ import { useMyClasses } from '@/hooks/useClasses'
 import { useMyCourses } from '@/hooks/useCourses'
 import { useCreateNote, useUpdateNote } from '@/hooks/useNoteMutations'
 // Relative times for the draft banner.
-import { defaultNoteClass } from '@/lib/classes'
+import { defaultNoteClass, hasClassStarted } from '@/lib/classes'
 import { formatRelativeTime } from '@/lib/dates'
 // Student-facing wording for errors.
 import { errorMessage } from '@/lib/errorMessages'
@@ -152,11 +152,14 @@ function NoteFormFields({
       : undefined,
   )
   // SECURITY: a class from the address counts only if it is one of the student's classes, so a
-  // crafted ?classId= can't preselect someone else's class.
+  // crafted ?classId= can't preselect someone else's class. A class that has not started does not
+  // count either (D107), so a link to one starts the form on the likely class instead.
   const startClassId =
     mode.kind === 'edit'
       ? mode.note.classId
-      : (classes.find((c) => c.id === mode.classId)?.id ?? guessedId ?? '')
+      : (classes.find((c) => c.id === mode.classId && hasClassStarted(c, new Date()))?.id ??
+        guessedId ??
+        '')
   // The class fixed by where the form was opened from (edit, or new from a class), or guessed.
   const fixedClass = classes.find((c) => c.id === startClassId)
   // Whether the student asked to choose another class than the guessed one.
@@ -269,9 +272,10 @@ function NoteFormFields({
     }
   }
 
-  // Classes of the course chosen in the picker, in number order.
+  // Classes of the course chosen in the picker, in number order. Only the ones that have started
+  // are offered (D107): a class still to come has nothing to write about yet.
   const pickerClasses = classes
-    .filter((c) => c.courseId === courseId)
+    .filter((c) => c.courseId === courseId && hasClassStarted(c, new Date()))
     .sort((a, b) => a.number - b.number)
   // The course of a class, for labels.
   const courseOf = (c: ClassSession | undefined) =>

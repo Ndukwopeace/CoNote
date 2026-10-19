@@ -215,17 +215,17 @@ describe('DashboardPage: choosing the class', () => {
   }
 
   // Proves that with no class started the chip asks the student to choose, and the sheet offers
-  // every class, including the ones still to come; choosing one files the notes under it.
-  it('lets the student choose when no class has started', async () => {
+  // nothing: a class still to come cannot be chosen (D107).
+  it('offers no class while none has started', async () => {
     const { user } = renderDashboard(onlyFuture())
     const chip = await screen.findByRole('button', { name: 'Choose a class' })
     expect(screen.getByText('Choose a class below, then type a thought.')).toBeVisible()
 
     await user.click(chip)
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
-    await user.click(within(sheet).getByRole('button', { name: /Later class/ }))
 
-    expect(await screen.findByRole('button', { name: /Class: .*Later class/ })).toBeVisible()
+    expect(within(sheet).getByText(/None of your classes has started yet/)).toBeVisible()
+    expect(within(sheet).queryByRole('button', { name: /Later class/ })).toBeNull()
   })
 
   // Proves sending with no class opens the sheet instead of guessing, keeping the text.
@@ -238,8 +238,8 @@ describe('DashboardPage: choosing the class', () => {
     expect(screen.getByRole('textbox', { name: 'Note', hidden: true })).toHaveValue('Early thought')
   })
 
-  // Proves the sheet lists the started classes first and then the ones to come, and choosing one
-  // moves the chip.
+  // Proves the sheet lists the classes that have started, latest first, leaves out the ones to
+  // come (D107), and choosing one moves the chip.
   it('changes the class from the chip', async () => {
     const { user } = renderDashboard()
     await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }))
@@ -249,8 +249,10 @@ describe('DashboardPage: choosing the class', () => {
     const names = within(sheet)
       .getAllByRole('button')
       .map((b) => b.textContent)
-    // 12 classes in the demo, and the one on now comes first.
-    expect(names.filter((n) => n.includes(' · '))).toHaveLength(12)
+    // 6 of the demo's 12 classes have started; the one on now comes first, and the later ones are
+    // not offered.
+    expect(names.filter((n) => n.includes(' · '))).toHaveLength(6)
+    expect(within(sheet).queryByRole('button', { name: /Hash Tables/ })).toBeNull()
     await user.click(within(sheet).getByRole('button', { name: /Essay Structure/ }))
 
     expect(screen.queryByRole('dialog', { name: 'Which class?' })).toBeNull()

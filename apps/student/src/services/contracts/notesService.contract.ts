@@ -20,6 +20,8 @@ export interface NotesFixture {
   courseB: string
   // A class the student may not file notes under (another course's, or one that doesn't exist).
   foreignClass: string
+  // A class of a course the student is in that has not started yet, when the fixture has one.
+  upcomingClass?: string
 }
 
 /** The demo's classes. */
@@ -29,6 +31,8 @@ export const MOCK_NOTES_FIXTURE: NotesFixture = {
   classB: 'cse-205-c1',
   courseB: 'cse-205',
   foreignClass: 'someone-elses-class',
+  // The demo's second CSE 205 class begins hours from now.
+  upcomingClass: 'cse-205-c2',
 }
 
 // A well-formed ID that no record has, so databases that use UUIDs are tested with one too.
@@ -237,6 +241,24 @@ export function runNotesServiceContract(
       await expect(
         notes.updateNote(note.id, input(classId ?? fixture.foreignClass)),
       ).rejects.toMatchObject({ kind: 'validation', message: 'Choose a class from your courses.' })
+    })
+
+    // Proves notes wait for the class: one under a class still to come is refused on create and on
+    // edit, the same way for every implementation (D107).
+    it('refuses a note under a class that has not started', async () => {
+      // A fixture without an upcoming class cannot prove it.
+      if (!fixture.upcomingClass) return
+      const { notes } = create()
+      const note = await notes.createNote(input(fixture.classA))
+
+      await expect(notes.createNote(input(fixture.upcomingClass))).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'That class has not started yet.',
+      })
+      await expect(notes.updateNote(note.id, input(fixture.upcomingClass))).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'That class has not started yet.',
+      })
     })
   })
 }

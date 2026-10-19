@@ -141,6 +141,10 @@ export function createMockNoteService({
     // under someone else's class.
     const session = classes.find((c) => c.id === parsed.data.classId)
     if (!session) throw new AppError('validation', 'Choose a class from your courses.')
+    // A class still to come has nothing to write about yet (D107); the database refuses it too.
+    if (Date.parse(session.startsAt) > now().getTime()) {
+      throw new AppError('validation', 'That class has not started yet.')
+    }
     // SECURITY: markup is cleaned before storage too (defence in depth; SafeHtml still cleans
     // on display), so a stored note never holds scripts or event handlers.
     const contentHtml = sanitizeHtml(parsed.data.contentHtml)
