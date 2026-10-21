@@ -21,10 +21,12 @@ export function NoteBubble({ note }: Readonly<{ note: Note }>) {
   const meta = [...note.tags, formatClockTime(note.createdAt)].join(' · ')
   return (
     <li className="ml-auto flex max-w-[86%] flex-col items-end gap-1">
-      {/* SECURITY: note HTML renders only through SafeHtml. */}
+      {/* SECURITY: note HTML renders only through SafeHtml. A word with no spaces (a link, a
+          formula, a pasted string) is broken where it meets the edge: otherwise it sets the
+          bubble's width, which then runs off the left of the screen. */}
       <SafeHtml
         html={note.contentHtml}
-        className="rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-base leading-snug text-accent-foreground [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_ul]:list-disc [&_ul]:pl-5"
+        className="max-w-full rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-base leading-snug [overflow-wrap:anywhere] text-accent-foreground [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_ul]:list-disc [&_ul]:pl-5"
       />
       <p className="text-xs text-muted-foreground">
         {meta}

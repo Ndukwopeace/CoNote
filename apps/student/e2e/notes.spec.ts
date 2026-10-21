@@ -135,3 +135,50 @@ test('a student switches Home to Ask and asks about the class', async ({ page })
   await expect(page.getByRole('log', { name: 'Conversation' })).toContainText('What is waterfall?')
   await expectNoAxeViolations(page)
 })
+
+// A note with no spaces must wrap inside its bubble, not push the bubble out of the screen.
+test('a long unbroken note stays inside the screen', async ({ page }) => {
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
+
+  // Send 200 letters with no space to break the line at.
+  const unbroken = 'x'.repeat(200)
+  await page.getByRole('textbox', { name: 'Note', exact: true }).fill(unbroken)
+  await page.getByRole('button', { name: 'Save note' }).click()
+  // The note's bubble is the first box inside the newest item of the stream.
+  const bubble = page.getByRole('main').getByRole('listitem').last().locator('> div').first()
+  await expect(bubble).toContainText(unbroken)
+
+  // It sits inside the stream: nothing is cut off at either edge.
+  const box = await bubble.boundingBox()
+  const stream = await page.getByRole('main').boundingBox()
+  expect(box).not.toBeNull()
+  expect(stream).not.toBeNull()
+  expect(box!.x).toBeGreaterThanOrEqual(stream!.x)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(stream!.x + stream!.width)
+  // The text wraps onto more than one line, rather than running on.
+  expect(box!.height).toBeGreaterThan(60)
+})
+
+// The same for a long unbroken question in Ask mode.
+test('a long unbroken question stays inside the screen', async ({ page }) => {
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Ask', exact: true }).click()
+  const unbroken = 'q'.repeat(200)
+  await page.getByRole('textbox', { name: 'Ask a question' }).fill(unbroken)
+  await page.getByRole('button', { name: 'Send' }).click()
+
+  // Your question's bubble is inside the conversation: nothing is cut off at either edge.
+  const bubble = page.getByRole('log', { name: 'Conversation' }).getByRole('listitem').first()
+  await expect(bubble).toContainText(unbroken)
+  const box = await bubble.boundingBox()
+  const stream = await page.getByRole('main').boundingBox()
+  expect(box).not.toBeNull()
+  expect(stream).not.toBeNull()
+  expect(box!.x).toBeGreaterThanOrEqual(stream!.x)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(stream!.x + stream!.width)
+})
