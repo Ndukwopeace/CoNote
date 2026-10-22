@@ -74,12 +74,14 @@ describe('Join your programme dialog', () => {
     const { user } = renderNewStudent()
     const box = await dialog()
 
-    await user.click(await within(box).findByRole('button', { name: 'Request to join MTH 202' }))
+    await user.click(
+      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
+    )
 
     expect(await within(box).findByText('Requested')).toBeInTheDocument()
-    await user.click(within(box).getByRole('button', { name: 'Cancel request for MTH 202' }))
+    await user.click(within(box).getByRole('button', { name: 'Cancel request for Linear Algebra' }))
     expect(
-      await within(box).findByRole('button', { name: 'Request to join MTH 202' }),
+      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
     ).toBeInTheDocument()
     expect(within(box).queryByText('Requested')).not.toBeInTheDocument()
   })
@@ -96,7 +98,9 @@ describe('Join your programme dialog', () => {
     })
     const box = await dialog()
 
-    await user.click(await within(box).findByRole('button', { name: 'Request to join MTH 202' }))
+    await user.click(
+      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
+    )
 
     expect(await within(box).findByRole('alert')).toHaveTextContent(
       "This course isn't open for requests.",
@@ -208,7 +212,7 @@ describe('Join your programme dialog', () => {
     await user.click(screen.getByRole('button', { name: 'Join programme' }))
     const box = await dialog()
     await user.click(
-      await within(box).findByRole('button', { name: 'Request again to join MTH 202' }),
+      await within(box).findByRole('button', { name: 'Request again to join Linear Algebra' }),
     )
 
     expect(await within(box).findByText('Requested')).toBeInTheDocument()
@@ -263,7 +267,7 @@ describe('Join your programme', () => {
     expect(within(group).getByText('3 courses: BUS 207, CSE 205, SWE 311')).toBeInTheDocument()
     // Asking, not joining: an administrator approves.
     expect(
-      within(group).getByRole('button', { name: 'Request to join SWE-Y3' }),
+      within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
     ).toBeInTheDocument()
   })
 
@@ -272,29 +276,41 @@ describe('Join your programme', () => {
   it('asks to join, shows the request as waiting and enrols nothing', async () => {
     const { user, group } = await openGroup()
 
-    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
+    await user.click(
+      within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
+    )
 
     expect(await screen.findByText('Request sent. An administrator will approve it.')).toBeVisible()
     expect(await within(group).findByText('Requested')).toBeInTheDocument()
     // Still the no-courses Home: the dialog stays open on the request.
     expect(screen.getByRole('dialog', { name: 'Join your programme' })).toBeInTheDocument()
     // One request waits at a time: the others cannot be asked for yet.
-    expect(within(group).getByRole('button', { name: 'Request to join BMS-Y1' })).toBeDisabled()
+    expect(
+      within(group).getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
+    ).toBeDisabled()
     expect(within(group).getByText(/One request waits at a time/)).toBeInTheDocument()
   })
 
   // Proves a waiting request can be withdrawn, which frees the other programmes.
   it('withdraws a request', async () => {
     const { user, group } = await openGroup()
-    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
+    await user.click(
+      within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
+    )
     await within(group).findByText('Requested')
 
-    await user.click(within(group).getByRole('button', { name: 'Cancel request for SWE-Y3' }))
+    await user.click(
+      within(group).getByRole('button', {
+        name: 'Cancel request for Software Engineering, Year 3',
+      }),
+    )
 
     await waitFor(() => {
       expect(within(group).queryByText('Requested')).not.toBeInTheDocument()
     })
-    expect(within(group).getByRole('button', { name: 'Request to join BMS-Y1' })).toBeEnabled()
+    expect(
+      within(group).getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
+    ).toBeEnabled()
   })
 
   // Proves an approved student sees only their programme, as joined, and is told how to change it.
@@ -340,7 +356,9 @@ describe('Join your programme', () => {
       },
     })
 
-    await user.click(within(group).getByRole('button', { name: 'Request to join SWE-Y3' }))
+    await user.click(
+      within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
+    )
 
     expect(await within(group).findByText("You're already in a programme.")).toBeInTheDocument()
   })
@@ -368,7 +386,9 @@ describe('Join your programme', () => {
 
     expect(within(group).getByText('Declined')).toBeInTheDocument()
     expect(
-      within(group).getByRole('button', { name: 'Request again to join SWE-Y3' }),
+      within(group).getByRole('button', {
+        name: 'Request again to join Software Engineering, Year 3',
+      }),
     ).toBeEnabled()
   })
 

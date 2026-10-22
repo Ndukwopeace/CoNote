@@ -58,7 +58,8 @@ export function HomeNav({
             'disabled:cursor-not-allowed disabled:opacity-50',
           )}
         >
-          {course?.code} · {session.title}
+          {course?.title} · {session.title}
+          <span className="ml-2 text-xs font-normal opacity-80">{course?.code}</span>
         </button>
       </li>
     )

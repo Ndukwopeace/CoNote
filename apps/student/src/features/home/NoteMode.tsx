@@ -50,6 +50,7 @@ import { useComposerDraft } from './useComposerDraft'
 export function NoteMode({
   chosen,
   label,
+  code,
   live,
   greeting,
   onOpenSheet,
@@ -61,6 +62,8 @@ export function NoteMode({
   chosen: ClassSession | undefined
   // "SWE 311 · SDLC Models", or null while no class is chosen.
   label: string | null
+  // The course code, shown small after the name.
+  code: string | null
   live: boolean
   greeting: string
   onOpenSheet: () => void
@@ -204,7 +207,13 @@ export function NoteMode({
         {/* Said to screen readers, not shown: the bubble is the visible confirmation. */}
         <output className="sr-only">{announce}</output>
         <div className="flex gap-2 overflow-x-auto px-1 pb-1">
-          <ClassChip label={label} live={live} onClick={onOpenSheet} disabled={Boolean(editing)} />
+          <ClassChip
+            label={label}
+            code={code}
+            live={live}
+            onClick={onOpenSheet}
+            disabled={Boolean(editing)}
+          />
           {PRESET_TAGS.map((preset) => (
             <button
               key={preset}

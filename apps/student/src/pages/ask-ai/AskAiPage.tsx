@@ -125,8 +125,8 @@ function AskAi({ courses, classes }: Readonly<{ courses: Course[]; classes: Clas
         >
           <option value="all">All my courses</option>
           {courses.map((course) => (
-            <optgroup key={course.id} label={course.code}>
-              <option value={`course:${course.id}`}>{course.code} · whole course</option>
+            <optgroup key={course.id} label={`${course.title} (${course.code})`}>
+              <option value={`course:${course.id}`}>{course.title} · whole course</option>
               {classes
                 .filter((c) => c.courseId === course.id)
                 .sort((a, b) => a.number - b.number)

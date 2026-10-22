@@ -30,12 +30,15 @@ import { Statement } from './Statement'
 export function AskMode({
   context,
   label,
+  code,
   live,
   greeting,
   onOpenSheet,
 }: Readonly<{
   context: AiContext
   label: string | null
+  // The course code, shown small after the name.
+  code: string | null
   live: boolean
   greeting: string
   onOpenSheet: () => void
@@ -132,7 +135,7 @@ export function AskMode({
 
       <div className="space-y-2 px-3 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="flex gap-2 px-1 pb-1">
-          <ClassChip label={label} live={live} onClick={onOpenSheet} />
+          <ClassChip label={label} code={code} live={live} onClick={onOpenSheet} />
         </div>
         <Composer
           label="Ask a question"

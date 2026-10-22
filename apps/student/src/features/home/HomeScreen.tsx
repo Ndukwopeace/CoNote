@@ -92,8 +92,10 @@ export function HomeScreen({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const chosen = classes.find((c) => c.id === chosenId)
   const course = courses.find((c) => c.id === chosen?.courseId)
-  // "SWE 311 · SDLC Models", while a class is chosen.
-  const label = chosen && course ? `${course.code} · ${chosen.title}` : null
+  // "Professional Writing · Week 2", while a class is chosen: the name leads (D110).
+  const label = chosen && course ? `${course.title} · ${chosen.title}` : null
+  // The course code, shown small beside the name.
+  const code = course?.code ?? null
   // Whether the class is on now.
   const live = chosen ? getClassStatus(chosen, now) === 'live' : false
 
@@ -175,6 +177,7 @@ export function HomeScreen({
               key={editNote?.id ?? 'new'}
               chosen={chosen}
               label={label}
+              code={code}
               live={live}
               greeting={greeting}
               onOpenSheet={() => {
@@ -198,6 +201,7 @@ export function HomeScreen({
                   : { scope: 'all' }
               }
               label={label}
+              code={code}
               live={live}
               greeting={greeting}
               onOpenSheet={() => {

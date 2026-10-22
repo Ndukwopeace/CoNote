@@ -108,10 +108,10 @@ function ProgrammeRow({
   const canAsk = programme.membership === 'none' || programme.membership === 'declined'
   return (
     <li className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
-      {/* Code, name and the courses joining adds. */}
+      {/* Full name first, then the code small, then the courses joining adds (D110). */}
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-primary-dark">{programme.code}</p>
-        <p className="font-medium break-words">{programme.name}</p>
+        <p className="font-semibold break-words">{programme.name}</p>
+        <p className="text-xs text-muted-foreground">{programme.code}</p>
         <p className="text-xs text-muted-foreground">
           {`${count} ${count === 1 ? 'course' : 'courses'}: ${programme.courseCodes.join(', ')}`}
         </p>
@@ -126,7 +126,7 @@ function ProgrammeRow({
               type="button"
               variant="link"
               disabled={busy}
-              aria-label={`Cancel request for ${programme.code}`}
+              aria-label={`Cancel request for ${programme.name}`}
               onClick={() => {
                 if (programme.requestId !== null) onCancel(programme.requestId)
               }}
@@ -140,7 +140,7 @@ function ProgrammeRow({
           <Button
             type="button"
             disabled={busy || othersWaiting}
-            aria-label={`${programme.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${programme.code}`}
+            aria-label={`${programme.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${programme.name}`}
             onClick={onAsk}
           >
             {programme.membership === 'declined' ? 'Request again' : 'Request to join'}
