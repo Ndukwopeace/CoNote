@@ -61,13 +61,15 @@ function changeCachedNotes(client: QueryClient, change: (note: Note) => Note | n
 }
 
 /** One note; fails with a not_found AppError for an unknown or someone else's note. */
-export function useNote(noteId: string) {
+export function useNote(noteId: string, enabled = true) {
   // The note service.
   const { notes } = useServices()
   // Cached note.
   return useQuery({
     queryKey: queryKeys.notes.detail(noteId),
     queryFn: () => appQuery(() => notes.getNote(noteId)),
+    // Off while there is no note to ask for.
+    enabled,
   })
 }
 

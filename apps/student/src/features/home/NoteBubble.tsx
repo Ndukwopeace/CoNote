@@ -1,6 +1,6 @@
 /**
  * One of the student's notes in the Home stream (D102): the text as a bubble, with its tags and
- * time underneath and a link to the note.
+ * time underneath, a link to the note and one to edit it here in the composer (D109).
  */
 
 // Client-side links.
@@ -12,11 +12,13 @@ import { SafeHtml } from '@/components/common/SafeHtml'
 import { formatClockTime } from '@/lib/dates'
 // Note address.
 import { routeTo } from '@/lib/routes'
+// Class-name helper.
+import { cn } from '@conote/ui/utils'
 // Shape.
 import type { Note } from '@/types/domain'
 
 /** A note bubble. */
-export function NoteBubble({ note }: Readonly<{ note: Note }>) {
+export function NoteBubble({ note, editing = false }: Readonly<{ note: Note; editing?: boolean }>) {
   // "Key concept · 10:42 AM".
   const meta = [...note.tags, formatClockTime(note.createdAt)].join(' · ')
   return (
@@ -26,13 +28,24 @@ export function NoteBubble({ note }: Readonly<{ note: Note }>) {
           bubble's width, which then runs off the left of the screen. */}
       <SafeHtml
         html={note.contentHtml}
-        className="max-w-full rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-base leading-snug [overflow-wrap:anywhere] text-accent-foreground [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_ul]:list-disc [&_ul]:pl-5"
+        className={cn(
+          'max-w-full rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-base leading-snug [overflow-wrap:anywhere] text-accent-foreground [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_ul]:list-disc [&_ul]:pl-5',
+          // The note being edited is marked, so it is clear which one the composer holds.
+          editing && 'ring-2 ring-primary',
+        )}
       />
       <p className="text-xs text-muted-foreground">
         {meta}
         {' · '}
         <Link to={routeTo.note(note.id)} className="font-medium text-primary-dark hover:underline">
           Open<span className="sr-only"> note</span>
+        </Link>
+        {' · '}
+        <Link
+          to={routeTo.editNote(note.id)}
+          className="font-medium text-primary-dark hover:underline"
+        >
+          Edit<span className="sr-only"> note</span>
         </Link>
       </p>
     </li>

@@ -1,6 +1,7 @@
 /**
  * M4 "done when" (docs/MILESTONES.md): a student writes a note for a class, finds it from the
- * class, the course and the Notes page, edits it, reloads without losing it, and deletes it.
+ * class, the course and the Notes page, edits it, reloads without losing it, and deletes it. Since
+ * D109 the writing and the editing both happen in the chat on Home.
  */
 
 // Playwright's assertions and test function.
@@ -19,27 +20,29 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard$/)
   await page.goto('/courses/swe-311/classes/swe-311-c4?tab=notes')
 
-  // Add Note opens the editor for this class.
+  // Add Note opens the chat on Home for this class, with the cursor in the box.
   await page.getByRole('link', { name: 'Add Note' }).click()
-  await expect(page).toHaveURL(/\/notes\/new\?classId=swe-311-c4$/)
-  await expect(page.getByText('SWE 311 · SDLC Models')).toBeVisible()
+  await expect(page).toHaveURL(/\/dashboard\?write=1&classId=swe-311-c4$/)
+  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
+  const box = page.getByRole('textbox', { name: 'Note', exact: true })
+  await expect(box).toBeFocused()
   await expectNoAxeViolations(page)
 
-  // Write: title, formatted body, a tag.
-  await page.getByRole('textbox', { name: /Title/ }).fill('Spiral model')
-  await page.getByRole('textbox', { name: 'Note', exact: true }).click()
-  await page.keyboard.type('Risk-driven iterations')
-  await page.keyboard.press('ControlOrMeta+a')
-  await page.getByRole('button', { name: 'Bold' }).click()
-  await page.getByRole('button', { name: 'Question' }).click()
-  await page.getByRole('button', { name: 'Save Note' }).click()
+  // Write: a title from the plus menu, the text, a tag.
+  await page.getByRole('button', { name: 'More options' }).click()
+  await page.getByRole('menuitem', { name: 'Add a title' }).click()
+  await page.getByRole('textbox', { name: 'Title' }).fill('Spiral model')
+  await box.fill('Risk-driven iterations')
+  await page.getByRole('button', { name: 'Question', exact: true }).click()
+  await page.getByRole('button', { name: 'Save note' }).click()
 
-  // Saved: toast, and back on the class's Notes tab with the note listed.
-  await expect(page.getByText('Note saved.')).toBeVisible()
-  await expect(page).toHaveURL(/\/courses\/swe-311\/classes\/swe-311-c4\?tab=notes$/)
+  // Saved: it is in the stream, and the composer is empty for the next thought.
+  await expect(page.getByText('Risk-driven iterations')).toBeVisible()
+  await expect(box).toHaveValue('')
+
+  // Found from the class's Notes tab and the course's.
+  await page.goto('/courses/swe-311/classes/swe-311-c4?tab=notes')
   await expect(page.getByRole('tabpanel').getByRole('link', { name: /Spiral model/ })).toBeVisible()
-
-  // Found from the course's Notes tab.
   await page.goto('/courses/swe-311?tab=notes')
   await expect(page.getByRole('tabpanel').getByRole('link', { name: /Spiral model/ })).toBeVisible()
 
@@ -52,28 +55,38 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   await expect(row).toBeVisible()
   await expectNoAxeViolations(page)
 
-  // Open it: the body keeps its bold formatting, sanitised.
+  // Open it: the read view shows the text and the tag.
   await row.click()
   await expect(page.getByRole('heading', { level: 1, name: 'Spiral model' })).toBeVisible()
-  await expect(page.locator('.note-content strong')).toHaveText('Risk-driven iterations')
+  await expect(page.getByText('Risk-driven iterations')).toBeVisible()
 
-  // Edit the title.
+  // Edit opens it in the chat's composer, in its own class, which cannot be changed meanwhile.
   await page.getByRole('link', { name: 'Edit' }).click()
-  const title = page.getByRole('textbox', { name: /Title/ })
-  await title.fill('Spiral model (Boehm)')
-  await page.getByRole('button', { name: 'Save Note' }).click()
-  await expect(page).toHaveURL(/\?tab=notes$/)
+  await expect(page).toHaveURL(/\/dashboard\?edit=/)
+  await expect(page.getByText('Editing a note')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models\./ })).toBeDisabled()
+  await expect(box).toHaveValue('Risk-driven iterations')
+  await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Spiral model')
+  await page.getByRole('textbox', { name: 'Title' }).fill('Spiral model (Boehm)')
+  await box.fill('Risk-driven iterations, each loop')
+  await page.getByRole('button', { name: 'Save note' }).click()
 
-  // A reload keeps it.
+  // Back to writing a new note, with the change in the stream and in the lists, after a reload too.
+  await expect(page.getByText('Editing a note')).toHaveCount(0)
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByText('Risk-driven iterations, each loop')).toBeVisible()
+  await page.goto('/notes')
   await page.reload()
   await expect(
-    page.getByRole('tabpanel').getByRole('link', { name: /Spiral model \(Boehm\)/ }),
+    page
+      .getByRole('list', { name: 'My notes' })
+      .getByRole('link', { name: 'Spiral model (Boehm)', exact: true }),
   ).toBeVisible()
 
   // Delete it from the read view, after confirming.
   await page
-    .getByRole('tabpanel')
-    .getByRole('link', { name: /Spiral model \(Boehm\)/ })
+    .getByRole('list', { name: 'My notes' })
+    .getByRole('link', { name: 'Spiral model (Boehm)', exact: true })
     .click()
   await page.getByRole('button', { name: 'Delete' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
@@ -83,6 +96,29 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
   expect(cspViolations).toEqual([])
+})
+
+// FR-NTE-5: what was typed and not sent is still there after a reload, and gone once it is sent.
+test('an unsent note survives a reload and is gone once it is sent', async ({ page }) => {
+  await page.goto('/login')
+  await signIn(page)
+  await expect(page).toHaveURL(/\/dashboard$/)
+  const box = page.getByRole('textbox', { name: 'Note', exact: true })
+
+  // Type without sending; wait until the draft is written, then reload.
+  await box.fill('Half a thought')
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem('conote:draft:class:swe-311-c4')))
+    .not.toBeNull()
+  await page.reload()
+  await expect(box).toHaveValue('Half a thought')
+
+  // Sending clears the draft: it does not come back.
+  await page.getByRole('button', { name: 'Save note' }).click()
+  await expect(page.getByText('Half a thought')).toBeVisible()
+  await expect(box).toHaveValue('')
+  await page.reload()
+  await expect(box).toHaveValue('')
 })
 
 // D101, D102: Home is the note composer. The class on now is already chosen, so a note takes no

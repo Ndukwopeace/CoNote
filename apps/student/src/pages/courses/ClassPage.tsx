@@ -27,7 +27,7 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 // Summary stage card.
 import { SummaryStateCard } from '@/components/common/SummaryStateCard'
 // Link styled as a button.
-import { buttonVariants } from '@conote/ui/button'
+import { Button, buttonVariants } from '@conote/ui/button'
 // Tabs.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@conote/ui/tabs'
 // Data hooks.
@@ -36,7 +36,7 @@ import { useCourse } from '@/hooks/useCourses'
 import { useMyNotes } from '@/hooks/useNotes'
 import { useNow } from '@/hooks/useNow'
 // Class rules.
-import { adjacentClasses, getClassStatus } from '@/lib/classes'
+import { adjacentClasses, getClassStatus, hasClassStarted, isOpenForNotes } from '@/lib/classes'
 // Date wording.
 import { formatClassDate, formatClassTime } from '@/lib/dates'
 // Route constants and builders.
@@ -248,16 +248,33 @@ function SummaryCard({ course, session }: Readonly<{ course: Course; session: Cl
 
 /** Notes: privacy banner, Add Note, then the list or the empty state. */
 function NotesTab({ session }: Readonly<{ session: ClassSession }>) {
+  // The clock: a class is open for notes from its start, for today and two days after (D108).
+  const now = useNow()
+  const open = isOpenForNotes(session, now)
   return (
     <div className="space-y-4">
       {/* Always shown (FR-CLS-3). */}
       <PrivacyBanner />
-      {/* Add Note, opening the editor for this class (the editor arrives in M4). */}
-      <div className="flex justify-end">
-        <Link to={routeTo.newNote(session.id)} className={buttonVariants()}>
-          <Plus aria-hidden="true" />
-          Add Note
-        </Link>
+      {/* Add Note: the chat on Home with this class chosen (D109), or off with the reason. */}
+      <div className="flex flex-col items-end gap-1">
+        {open ? (
+          <Link to={routeTo.newNote(session.id)} className={buttonVariants()}>
+            <Plus aria-hidden="true" />
+            Add Note
+          </Link>
+        ) : (
+          <>
+            <Button type="button" disabled>
+              <Plus aria-hidden="true" />
+              Add Note
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              {hasClassStarted(session, now)
+                ? 'Notes are open during the class and for two days after.'
+                : 'Notes open when the class starts.'}
+            </p>
+          </>
+        )}
       </div>
       {/* The list with its states. */}
       <ClassNotes classId={session.id} />

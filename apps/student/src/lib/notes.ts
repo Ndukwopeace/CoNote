@@ -38,6 +38,53 @@ export function htmlToText(html: string): string {
   return parse(html).body.textContent.replace(/\s+/g, ' ').trim()
 }
 
+/** The blocks the composer turns into lines: a paragraph, heading, list item, quote or code block. */
+const COMPOSER_BLOCKS = 'p, h2, h3, h4, li, blockquote, pre'
+
+/**
+ * A saved note as the text the Home composer edits: one line per block of text. A note written
+ * in the composer comes back exactly as typed; a note from the old editor loses its formatting.
+ * SECURITY: read through the inert document (see `parse`), so nothing in the note can run.
+ */
+export function htmlToComposerText(html: string): string {
+  const body = parse(html).body
+  // Only the innermost blocks, so a quote holding a paragraph gives one line, not two.
+  const lines = Array.from(body.querySelectorAll(COMPOSER_BLOCKS))
+    .filter((block) => block.querySelector(COMPOSER_BLOCKS) === null)
+    .map((block) => block.textContent.trim())
+    .filter((line) => line !== '')
+  // Text outside any block (not written by the app) still counts.
+  return lines.length > 0 ? lines.join('\n') : body.textContent.trim()
+}
+
+/** Whether a note holds formatting the Home composer cannot keep: bold, lists, links, headings. */
+export function hasRichFormatting(html: string): boolean {
+  return (
+    parse(html).body.querySelector(
+      'strong, b, em, i, u, s, code, a, ul, ol, h2, h3, h4, blockquote',
+    ) !== null
+  )
+}
+
+/** The title the student typed for a note: '' when it is the one made from the first line. */
+export function typedTitle(note: Readonly<{ title?: string; contentHtml: string }>): string {
+  // A saved title that differs from what the text would give was typed; the made one would go
+  // stale as soon as the text is edited.
+  const title = note.title ?? ''
+  return title !== '' && title !== resolveNoteTitle('', note.contentHtml) ? title : ''
+}
+
+/** The preset tag the composer shows for a note: its first one, or null. */
+export function presetTag(note: Readonly<{ tags: readonly string[] }>): string | null {
+  return note.tags.find((tag) => (PRESET_TAGS as readonly string[]).includes(tag)) ?? null
+}
+
+/** Every tag of a note except the one the composer controls, which an edit keeps as it is. */
+export function otherTags(note: Readonly<{ tags: readonly string[] }>): string[] {
+  const shown = presetTag(note)
+  return note.tags.filter((tag) => tag !== shown)
+}
+
 /** The first block of text in a note body, shortened to 80 characters, or "" if there is none. */
 export function firstLine(html: string): string {
   // Every block that could hold a line.

@@ -30,8 +30,8 @@ export const ROUTES = {
   courses: '/courses',
   // All of the student's notes.
   notes: '/notes',
-  // Write a new note.
-  newNote: '/notes/new',
+  // Write a new note: the chat on Home with the composer ready (D109).
+  newNote: '/dashboard?write=1',
   // Ask CoNote AI.
   askAi: '/ask-ai',
   // Notifications list.
@@ -86,12 +86,12 @@ export const routeTo = {
   // The summary of one class.
   summary: (courseId: string, classId: string) =>
     `/courses/${encodeURIComponent(courseId)}/classes/${encodeURIComponent(classId)}/summary`,
-  // Write a new note for one class (FR-CLS-2 "Add Note").
-  newNote: (classId: string) => `/notes/new?classId=${encodeURIComponent(classId)}`,
+  // Write a new note for one class (FR-CLS-2 "Add Note"): the chat on Home, class chosen (D109).
+  newNote: (classId: string) => `/dashboard?write=1&classId=${encodeURIComponent(classId)}`,
   // Read one note.
   note: (noteId: string) => `/notes/${encodeURIComponent(noteId)}`,
-  // Edit one note.
-  editNote: (noteId: string) => `/notes/${encodeURIComponent(noteId)}/edit`,
+  // Edit one note, in the chat on Home (D109).
+  editNote: (noteId: string) => `/dashboard?edit=${encodeURIComponent(noteId)}`,
   // A settings tab; the type only allows real tab names.
   settings: (tab: SettingsTab) => `/settings/${tab}`,
   // Sign in, optionally remembering where to go afterwards (checked later by isSafeRedirect).

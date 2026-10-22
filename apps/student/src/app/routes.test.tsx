@@ -35,9 +35,7 @@ describe('app routes: portal pages', () => {
     ['/courses/swe-311/classes/swe-311-c2', 'Software Requirements'],
     ['/courses/swe-311/classes/swe-311-c2/summary', 'Software Requirements'],
     ['/notes', 'Notes'],
-    ['/notes/new', 'New note'],
     ['/notes/note-1', 'Why process matters'],
-    ['/notes/note-1/edit', 'Edit note'],
     ['/ask-ai', 'Ask CoNote AI'],
     ['/notifications', 'Notifications'],
     ['/settings/profile', 'Settings'],
@@ -60,6 +58,36 @@ describe('app routes: portal pages', () => {
       await screen.findByRole('heading', { level: 1, name: "Let's CoNote" }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Good (morning|afternoon|evening), Victory\./)).toBeInTheDocument()
+  })
+
+  // Proves the old new-note address still works: writing happens in the chat on Home now (D109),
+  // so a bookmark or an old link lands there, with the cursor in the composer.
+  it('sends /notes/new to the chat, ready to write', async () => {
+    const { router } = renderApp('/notes/new')
+
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+    expect(router.state.location.search).toBe('?write=1')
+  })
+
+  // Proves the class in an old new-note link is kept, and encoded again on the way.
+  it('keeps the class when sending /notes/new?classId= to the chat', async () => {
+    const { router } = renderApp('/notes/new?classId=swe-311-c4')
+
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
+
+    expect(router.state.location.search).toBe('?write=1&classId=swe-311-c4')
+  })
+
+  // Proves the old edit address opens that note in the chat's composer.
+  it('sends /notes/:id/edit to the note in the composer', async () => {
+    const { router } = renderApp('/notes/note-7/edit')
+
+    await screen.findByRole('heading', { level: 1, name: "Let's CoNote" })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+    expect(router.state.location.search).toBe('?edit=note-7')
   })
 
   // Proves the old /profile address still works (decision D7).

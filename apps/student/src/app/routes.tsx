@@ -26,6 +26,8 @@ import { PortalLayout } from '@/layouts/PortalLayout'
 import { PublicLayout } from '@/layouts/PublicLayout'
 // Every page plus the update toast.
 import { RootLayout } from '@/layouts/RootLayout'
+// Old note addresses.
+import { EditNoteRedirect, NewNoteRedirect } from './NoteRedirects'
 // Route builders.
 import { routeTo } from '@/lib/routes'
 
@@ -66,21 +68,16 @@ const portalRoutes: RouteObject[] = [
     path: 'notes',
     lazy: async () => ({ Component: (await import('@/pages/notes/NotesPage')).NotesPage }),
   },
-  // New note. Listed before "notes/:noteId"; React Router also ranks exact paths first.
-  {
-    path: 'notes/new',
-    lazy: async () => ({ Component: (await import('@/pages/notes/NewNotePage')).NewNotePage }),
-  },
+  // New note: written in the chat on Home now (D109). Listed before "notes/:noteId"; React Router
+  // also ranks exact paths first.
+  { path: 'notes/new', element: <NewNoteRedirect /> },
   // Read one note.
   {
     path: 'notes/:noteId',
     lazy: async () => ({ Component: (await import('@/pages/notes/NotePage')).NotePage }),
   },
-  // Edit one note.
-  {
-    path: 'notes/:noteId/edit',
-    lazy: async () => ({ Component: (await import('@/pages/notes/EditNotePage')).EditNotePage }),
-  },
+  // Edit one note: in the chat's composer now (D109).
+  { path: 'notes/:noteId/edit', element: <EditNoteRedirect /> },
   // Ask CoNote AI.
   {
     path: 'ask-ai',

@@ -16,8 +16,6 @@ import { routes } from '@/app/routes'
 import { expectNoAxeViolations } from '@conote/testing/axe'
 // Empty, failing and hanging data.
 import { emptyCatalog, failingCatalog, hangingCatalog } from '@/test/catalogServices'
-// Layout stand-ins the editor needs in jsdom.
-import { installEditorDomStubs } from '@/test/editorDom'
 // Session and class factories.
 import { makeClass, makeSession } from '@/test/factories'
 // Render helper.
@@ -31,9 +29,6 @@ import type { Services } from '@/services/types'
 function renderDashboard(services: Partial<Services> = {}, path = '/dashboard') {
   return renderWithRouter({ routes, path, session: makeSession(), services })
 }
-
-// The editor needs layout calls jsdom lacks.
-installEditorDomStubs()
 
 // Only Date is faked, at 9:00 on a Monday, so timers and promises run normally.
 beforeEach(() => {
@@ -143,16 +138,13 @@ describe('DashboardPage: Note mode', () => {
     expect(await screen.findByText('<b>bold</b>')).toBeVisible()
   })
 
-  // Proves the "+" menu: a title on request, a way to the full editor, and the photo option shown
-  // as not ready.
-  it('offers a title and the full editor from the plus menu', async () => {
+  // Proves the "+" menu: a title on request, no second editor to leave for (D109), and the photo
+  // option shown as not ready.
+  it('offers a title from the plus menu, and no separate editor', async () => {
     const { user } = renderDashboard()
     await user.click(await screen.findByRole('button', { name: 'More options' }))
 
-    expect(screen.getByRole('menuitem', { name: 'Open the full editor' })).toHaveAttribute(
-      'href',
-      '/notes/new?classId=swe-311-c4',
-    )
+    expect(screen.queryByRole('menuitem', { name: 'Open the full editor' })).toBeNull()
     expect(screen.getByRole('menuitem', { name: /Photo of the board/ })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -383,6 +375,158 @@ describe('DashboardPage: navigation', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).not.toBe('/dashboard')
     })
+  })
+})
+
+describe('DashboardPage: writing and editing in the chat', () => {
+  // Proves every "New note" button lands on Home with the cursor in the box (D109).
+  it('puts the cursor in the composer when opened to write', async () => {
+    renderDashboard({}, '/dashboard?write=1&classId=swe-311-c4')
+
+    const box = await screen.findByRole('textbox', { name: 'Note' })
+
+    await waitFor(() => {
+      expect(box).toHaveFocus()
+    })
+  })
+
+  // Proves Home does not steal focus on an ordinary visit, which would open the keyboard on a
+  // phone before the student has asked to write.
+  it('leaves the composer alone on an ordinary visit', async () => {
+    renderDashboard()
+
+    const box = await screen.findByRole('textbox', { name: 'Note' })
+
+    expect(box).not.toHaveFocus()
+  })
+
+  // Proves unsent text survives leaving Home and coming back (FR-NTE-5).
+  it('keeps what was typed, and brings it back on the next visit', async () => {
+    const first = renderDashboard()
+    await first.user.type(await screen.findByRole('textbox', { name: 'Note' }), 'Half a thou')
+    first.unmount()
+
+    renderDashboard()
+
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toHaveValue('Half a thou')
+  })
+
+  // Proves a sent note leaves no draft behind to come back.
+  it('does not bring back a note that was sent', async () => {
+    const first = renderDashboard()
+    await first.user.type(
+      await screen.findByRole('textbox', { name: 'Note' }),
+      'Sent already{Enter}',
+    )
+    await screen.findByText('Sent already')
+    first.unmount()
+
+    renderDashboard()
+
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toHaveValue('')
+  })
+
+  // Proves each bubble has an Edit link that opens that note in the composer (D109).
+  it('opens a note for editing from its bubble', async () => {
+    const { user, router } = renderDashboard()
+    const bubble = (await screen.findByText(/Each phase finishes/)).closest('li') as HTMLElement
+
+    await user.click(within(bubble).getByRole('link', { name: /^Edit/ }))
+
+    expect(router.state.location.search).toBe('?edit=note-7')
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toHaveValue(
+      'Each phase finishes before the next starts; changes late are expensive.',
+    )
+  })
+
+  // Proves editing happens here: the note's text and tag are in the composer, a bar says which
+  // note is being edited, and saving replaces the bubble and returns to a fresh composer.
+  it('edits a note in the composer and saves it', async () => {
+    const { user, router } = renderDashboard({}, '/dashboard?edit=note-7')
+    const box = await screen.findByRole('textbox', { name: 'Note' })
+
+    expect(await screen.findByText('Editing a note')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Key concept' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await user.type(box, ' Cost of change grows.{Enter}')
+
+    expect(await screen.findByText(/Cost of change grows\./)).toBeVisible()
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('')
+    })
+    expect(screen.queryByText('Editing a note')).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveValue('')
+    // The same note was changed: it is not a second one.
+    expect(screen.getAllByText(/Each phase finishes/)).toHaveLength(1)
+  })
+
+  // Proves Cancel leaves the note as it was and returns to writing a new one.
+  it('cancels an edit without changing the note', async () => {
+    const { user, router } = renderDashboard({}, '/dashboard?edit=note-7')
+    const box = await screen.findByRole('textbox', { name: 'Note' })
+    await user.type(box, ' something I will not keep')
+
+    await user.click(screen.getByRole('button', { name: 'Cancel edit' }))
+
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('')
+    })
+    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveValue('')
+    expect(screen.queryByText(/I will not keep/)).toBeNull()
+    expect(screen.getByText(/Each phase finishes before the next starts/)).toBeVisible()
+  })
+
+  // Proves the class cannot be changed while a note is edited, so it cannot be moved by accident.
+  it('keeps the note in its own class while editing', async () => {
+    renderDashboard({}, '/dashboard?edit=note-7')
+
+    expect(await screen.findByText('Editing a note')).toBeVisible()
+
+    expect(screen.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeDisabled()
+  })
+
+  // Proves a note from the old editor, with bold and lists, is flagged before the student edits:
+  // the composer keeps the words but not the formatting.
+  it('warns that formatting is removed when a rich note is edited', async () => {
+    const services = createTestServices()
+    const note = await services.notes.createNote({
+      classId: 'swe-311-c4',
+      title: '',
+      contentHtml: '<p><strong>Bold</strong> idea</p><ul><li>One</li></ul>',
+      tags: [],
+    })
+    renderDashboard({ notes: services.notes }, `/dashboard?edit=${note.id}`)
+
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toHaveValue('Bold idea\nOne')
+    expect(screen.getByText(/Bold and lists are removed/)).toBeVisible()
+  })
+
+  // Proves an edit address for a note that is not the student's opens ordinary Home, not an error.
+  it('ignores an edit address for an unknown note', async () => {
+    renderDashboard({}, '/dashboard?edit=someone-elses-note')
+
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toHaveValue('')
+    expect(screen.queryByText('Editing a note')).toBeNull()
+  })
+
+  // Proves an edit that fails is explained and keeps the typed text.
+  it('keeps the text and explains when an edit fails', async () => {
+    const base = createTestServices().notes
+    const { user } = renderDashboard(
+      { notes: { ...base, updateNote: () => Promise.reject(new AppError('network', 'offline')) } },
+      '/dashboard?edit=note-7',
+    )
+    const box = await screen.findByRole('textbox', { name: 'Note' })
+
+    await user.type(box, ' more{Enter}')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't reach CoNote/)
+    expect(box).toHaveValue(
+      'Each phase finishes before the next starts; changes late are expensive. more',
+    )
+    expect(screen.getByText('Editing a note')).toBeVisible()
   })
 })
 

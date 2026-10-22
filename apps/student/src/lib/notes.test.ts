@@ -9,12 +9,17 @@ import { describe, expect, it } from 'vitest'
 import {
   addTag,
   firstLine,
+  hasRichFormatting,
+  htmlToComposerText,
   htmlToText,
   MAX_BODY_LENGTH,
   MAX_TAG_LENGTH,
   MAX_TAGS,
   noteInputSchema,
+  otherTags,
+  presetTag,
   resolveNoteTitle,
+  typedTitle,
   textToNoteHtml,
 } from './notes'
 
@@ -149,5 +154,88 @@ describe('textToNoteHtml', () => {
   it('drops blank lines and trims', () => {
     expect(textToNoteHtml('  one  \n\n   \ntwo ')).toBe('<p>one</p><p>two</p>')
     expect(textToNoteHtml('   \n ')).toBe('')
+  })
+})
+
+describe('htmlToComposerText', () => {
+  // Proves a saved note comes back as the lines the student typed: one line per paragraph, so
+  // editing in the chat box and saving again gives the same note.
+  it('gives one line per block, and survives a round trip', () => {
+    const typed = 'Waterfall is linear\nChanges late are expensive'
+    expect(htmlToComposerText(textToNoteHtml(typed))).toBe(typed)
+  })
+
+  // Proves rich notes from the old editor become readable lines: list items and headings each
+  // get a line, and the markup is gone.
+  it('flattens lists and headings from the old editor', () => {
+    const html =
+      '<h2>Phases</h2><p>Intro <strong>bold</strong></p><ul><li>One</li><li>Two</li></ul>'
+    expect(htmlToComposerText(html)).toBe('Phases\nIntro bold\nOne\nTwo')
+  })
+
+  // Proves escaped text comes back as the characters typed, not as entities.
+  it('turns escaped characters back into text', () => {
+    expect(htmlToComposerText(textToNoteHtml('a < b & c'))).toBe('a < b & c')
+  })
+
+  // Proves an empty note gives an empty box.
+  it('returns an empty string for no text', () => {
+    expect(htmlToComposerText('')).toBe('')
+    expect(htmlToComposerText('<p></p>')).toBe('')
+  })
+})
+
+describe('hasRichFormatting', () => {
+  // Proves formatting the chat box cannot keep is detected, so the student is told before it goes.
+  it('is true for bold, lists, links and headings', () => {
+    for (const html of [
+      '<p><strong>x</strong></p>',
+      '<p><em>x</em></p>',
+      '<ul><li>x</li></ul>',
+      '<ol><li>x</li></ol>',
+      '<p><a href="https://x.test">x</a></p>',
+      '<h2>x</h2>',
+      '<blockquote><p>x</p></blockquote>',
+    ]) {
+      expect(hasRichFormatting(html)).toBe(true)
+    }
+  })
+
+  // Proves plain paragraphs, as the chat box writes them, are not flagged.
+  it('is false for plain paragraphs', () => {
+    expect(hasRichFormatting(textToNoteHtml('one\ntwo'))).toBe(false)
+  })
+})
+
+describe('typedTitle', () => {
+  const base = { contentHtml: '<p>Waterfall is linear</p>' }
+
+  // Proves a title the student typed is given back, so it can be edited.
+  it('returns a title that differs from the first line', () => {
+    expect(typedTitle({ ...base, title: 'Waterfall' })).toBe('Waterfall')
+  })
+
+  // Proves the title made from the first line is not treated as typed: it would go stale when the
+  // text is edited.
+  it('returns nothing for the title made from the first line, or the stand-in', () => {
+    expect(typedTitle({ ...base, title: 'Waterfall is linear' })).toBe('')
+    expect(typedTitle({ contentHtml: '', title: 'Untitled note' })).toBe('')
+    expect(typedTitle({ ...base })).toBe('')
+  })
+})
+
+describe('presetTag and otherTags', () => {
+  // Proves the composer's tag is the first preset on the note, and every other tag is kept.
+  it("splits a note's tags into the preset the composer shows and the others", () => {
+    const note = { tags: ['spiral', 'Question', 'Example'] }
+    expect(presetTag(note)).toBe('Question')
+    expect(otherTags(note)).toEqual(['spiral', 'Example'])
+  })
+
+  // Proves a note with no preset tag shows none and keeps every tag.
+  it('shows no preset when there is none', () => {
+    expect(presetTag({ tags: ['spiral'] })).toBeNull()
+    expect(otherTags({ tags: ['spiral'] })).toEqual(['spiral'])
+    expect(presetTag({ tags: [] })).toBeNull()
   })
 })

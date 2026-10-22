@@ -329,7 +329,7 @@ Set in `vercel.json` and verified after the first deploy. This is the policy sin
 - **Budget:** at most 250 KB gzipped of initial JavaScript, enforced by `size-limit` in CI. From M2.5, the service-worker precache stays under 2 MB.
 - **Code splitting:**
   - every route is lazy-loaded
-  - the editor (Tiptap) and DOMPurify load only on pages that need them
+  - DOMPurify loads only on pages that need it
 - **TanStack Query defaults:** `staleTime` of 30 seconds for lists, and refetch on window focus. No polling in v1.
 - **Images** have explicit width and height and use `loading="lazy"` below the fold.
 - **Lighthouse** is checked in M6 against the landing page: LCP under 2.5 s (NFR-3).

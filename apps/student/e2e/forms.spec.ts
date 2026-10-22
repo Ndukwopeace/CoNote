@@ -23,7 +23,7 @@ async function isTouchScreen(page: Page): Promise<boolean> {
 
 /**
  * Proves `field` is at least 16px on a touch screen. On a desktop the compact text stays, unless
- * the field was never compact (`compactOnDesktop` false), as with the note editor.
+ * the field was never compact (`compactOnDesktop` false), as with the composer.
  */
 async function expectNoZoomSize(page: Page, field: Locator, { compactOnDesktop = true } = {}) {
   const size = await fontSize(field)
@@ -41,9 +41,7 @@ test('the sign-in fields are big enough that iOS does not zoom', async ({ page }
   await expectNoZoomSize(page, page.getByLabel('Password', { exact: true }))
 })
 
-test('the notes filters, the chat box and the note editor do not trigger the zoom either', async ({
-  page,
-}) => {
+test('the notes filters and the chat box do not trigger the zoom either', async ({ page }) => {
   await page.goto('/login')
   await signIn(page)
   await page.waitForURL('**/dashboard')
@@ -56,8 +54,14 @@ test('the notes filters, the chat box and the note editor do not trigger the zoo
   await page.goto('/ask-ai')
   await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Ask a question' }))
 
-  // The note form: the title and the rich-text editor.
-  await page.goto('/notes/new')
-  await expectNoZoomSize(page, page.getByLabel('Title (optional)'))
-  await expectNoZoomSize(page, page.locator('.note-content').first(), { compactOnDesktop: false })
+  // The note composer on Home: the text box, and the title field from the plus menu.
+  await page.goto('/dashboard')
+  await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Note', exact: true }), {
+    compactOnDesktop: false,
+  })
+  await page.getByRole('button', { name: 'More options' }).click()
+  await page.getByRole('menuitem', { name: 'Add a title' }).click()
+  await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Title' }), {
+    compactOnDesktop: false,
+  })
 })
