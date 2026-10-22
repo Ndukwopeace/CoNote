@@ -19,13 +19,19 @@ describe('routeTo', () => {
   // Proves note addresses.
   it('builds note paths', () => {
     expect(routeTo.note('n1')).toBe('/notes/n1')
-    expect(routeTo.editNote('n1')).toBe('/notes/n1/edit')
+    // Editing happens in the chat on Home (D109): the note's ID is the only thing in the address.
+    expect(routeTo.editNote('n1')).toBe('/dashboard?edit=n1')
   })
 
   // SECURITY: proves the class ID in "Add Note" is encoded, so it can't add query parameters.
-  it('builds the new-note path for a class', () => {
-    expect(routeTo.newNote('swe-311-c4')).toBe('/notes/new?classId=swe-311-c4')
-    expect(routeTo.newNote('a&tab=x')).toBe('/notes/new?classId=a%26tab%3Dx')
+  it('builds the new-note path for a class: the chat on Home, ready to write', () => {
+    expect(routeTo.newNote('swe-311-c4')).toBe('/dashboard?write=1&classId=swe-311-c4')
+    expect(routeTo.newNote('a&tab=x')).toBe('/dashboard?write=1&classId=a%26tab%3Dx')
+  })
+
+  // SECURITY: proves a note ID in the edit address is encoded the same way.
+  it('encodes the note ID in the edit path', () => {
+    expect(routeTo.editNote('a&edit=x')).toBe('/dashboard?edit=a%26edit%3Dx')
   })
 
   // SECURITY: proves an ID with "/" or "?" is encoded, so it can't change the address's shape.

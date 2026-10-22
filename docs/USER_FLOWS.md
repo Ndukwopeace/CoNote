@@ -36,9 +36,9 @@ flowchart LR
     CLASS["/courses/:courseId/classes/:classId<br/>Overview, Notes, Summary"]
     SUMMARY[".../classes/:classId/summary"]
     NOTES["/notes<br/>My Notes, Summaries"]
-    NEWNOTE["/notes/new?classId="]
+    NEWNOTE["/dashboard?write=1&classId=<br/>(old /notes/new redirects here)"]
     NOTE["/notes/:noteId"]
-    EDITNOTE["/notes/:noteId/edit"]
+    EDITNOTE["/dashboard?edit=:noteId<br/>(old /notes/:noteId/edit redirects here)"]
     AI["/ask-ai"]
     NOTIF["/notifications"]
     SETTINGS["/settings/:tab<br/>profile, account, notifications, privacy, help"]
@@ -91,9 +91,9 @@ Every portal page also reaches the navigation's destinations and the top-bar con
 | Class | `/courses/:courseId/classes/:classId` | No | Course, Dashboard, All classes, search | New note, Note, Summary, Previous/Next class |
 | Summary | `.../summary` | No | Class, Course Summaries tab, Notes Summaries tab, notification | Ask AI, Class |
 | Notes | `/notes` | Yes | Nav, Dashboard stat card | Note, Edit, Summary |
-| New note | `/notes/new` | No | Class "Add Note", Notes page | Class (Notes tab) |
+| New note | `/dashboard?write=1` (the chat; `/notes/new` redirects) | No | Class "Add Note", Notes page | Class (Notes tab) |
 | Note | `/notes/:noteId` | No | Notes, Class, Course, search | Edit, Class |
-| Edit note | `/notes/:noteId/edit` | No | Note, Notes row icon | Note or Class |
+| Edit note | `/dashboard?edit=:noteId` (the chat; `/notes/:noteId/edit` redirects) | No | Bubble, Note, Notes row icon | Home |
 | Ask CoNote AI | `/ask-ai` | Yes | Nav, Dashboard card, Summary panel | — |
 | Notifications | `/notifications` | Yes | Nav, bell | Whatever the notification links to |
 | Settings | `/settings/:tab` | Yes (desktop, tablet); avatar menu on phone | Nav, avatar menu, `/profile` | — |
@@ -212,25 +212,15 @@ flowchart TD
 flowchart TD
   A{"Start from"} -- "Dashboard class row" --> B["Class page"]
   A -- "Courses, Course, Classes tab" --> B
-  A -- "Notes page: New note" --> P["/notes/new, pick course then class"]
-  B --> C["Notes tab: privacy banner + Add Note"]
-  C --> D["/notes/new?classId=..."]
-  P --> D
-  D --> E{"Saved draft for this class?"}
-  E -- "Yes" --> F["Offer: restore draft or discard"] --> G
-  E -- "No" --> G["Write: optional title, body, tags"]
-  G -.-> H["Draft autosaves to localStorage"]
+  A -- "Notes page: New note" --> D["Home with the cursor in the composer (D109)"]
+  B --> C["Notes tab: privacy banner + Add Note (open classes only)"]
+  C --> D
+  D --> G["Write in the chat: optional title, text, one tag"]
+  G -.-> H["Draft autosaves per class; back in the box on the next visit"]
   G --> I{"Action"}
-  I -- "Save" --> J{"Body empty?"}
-  J -- "Yes" --> K["Inline error: note cannot be empty"] --> G
-  J -- "No" --> L{"Save succeeded?"}
-  L -- "No" --> M["Error toast, content kept"] --> G
-  L -- "Yes" --> N["Clear draft, success toast"] --> O["Class page, Notes tab, new note on top"]
-  I -- "Cancel" --> Q{"Unsaved changes?"}
-  Q -- "No" --> O
-  Q -- "Yes" --> R["Confirm: discard changes?"]
-  R -- "Keep editing" --> G
-  R -- "Discard" --> S["Clear draft"] --> O
+  I -- "Send" --> L{"Save succeeded?"}
+  L -- "No" --> M["Error shown, text kept"] --> G
+  L -- "Yes" --> N["Note in the stream, draft cleared, composer empty"] --> G
 ```
 
 **Requirements:** FR-CLS-3, FR-CLS-4, FR-NTE-1 to FR-NTE-6.

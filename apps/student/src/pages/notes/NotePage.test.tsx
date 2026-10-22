@@ -49,7 +49,10 @@ describe('NotePage', () => {
       '/courses/swe-311/classes/swe-311-c2',
     )
     expect(screen.getByText(/Created/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/notes/note-4/edit')
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
+      'href',
+      '/dashboard?edit=note-4',
+    )
   })
 
   // SECURITY: proves the body is sanitised on display, even if stored HTML were hostile.

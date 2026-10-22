@@ -79,10 +79,33 @@ describe('ClassPage', () => {
     expect(
       await within(panel).findByRole('link', { name: /Waterfall in one line/ }),
     ).toHaveAttribute('href', '/notes/note-7')
+    // Writing happens in the chat on Home (D109), with this class chosen.
     expect(within(panel).getByRole('link', { name: 'Add Note' })).toHaveAttribute(
       'href',
-      '/notes/new?classId=swe-311-c4',
+      '/dashboard?write=1&classId=swe-311-c4',
     )
+  })
+
+  // Proves a class from earlier than the last three days cannot have notes added from here: the
+  // button is off, and says when notes are open (D108).
+  it('turns Add Note off for an old class, and says why', async () => {
+    renderClass('/courses/swe-311/classes/swe-311-c2?tab=notes')
+
+    const panel = await screen.findByRole('tabpanel')
+
+    expect(within(panel).queryByRole('link', { name: 'Add Note' })).toBeNull()
+    expect(within(panel).getByRole('button', { name: 'Add Note' })).toBeDisabled()
+    expect(within(panel).getByText(/open during the class and for two days after/)).toBeVisible()
+  })
+
+  // Proves a class that has not started shows the button off too, with when notes open.
+  it('turns Add Note off before the class starts', async () => {
+    renderClass('/courses/cse-205/classes/cse-205-c2?tab=notes')
+
+    const panel = await screen.findByRole('tabpanel')
+
+    expect(within(panel).getByRole('button', { name: 'Add Note' })).toBeDisabled()
+    expect(within(panel).getByText(/Notes open when the class starts/)).toBeVisible()
   })
 
   // Proves the FR-CLS-4 empty state, with the banner still showing.

@@ -51,8 +51,11 @@ describe('NotesPage: My Notes', () => {
     )
     expect(
       within(first!).getByRole('link', { name: 'Edit Waterfall in one line' }),
-    ).toHaveAttribute('href', '/notes/note-7/edit')
-    expect(screen.getByRole('link', { name: 'New note' })).toHaveAttribute('href', '/notes/new')
+    ).toHaveAttribute('href', '/dashboard?edit=note-7')
+    expect(screen.getByRole('link', { name: 'New note' })).toHaveAttribute(
+      'href',
+      '/dashboard?write=1',
+    )
   })
 
   // Proves the course filter, search and sort, all kept in the address.

@@ -20,6 +20,7 @@ import { OfflineBanner } from '@/features/pwa/OfflineBanner'
 // Class rules.
 import { defaultNoteClass, getClassStatus, hasClassStarted } from '@/lib/classes'
 // The time, kept current.
+import { useNote } from '@/hooks/useNoteMutations'
 import { useNow } from '@/hooks/useNow'
 // Shapes.
 import type { AppError } from '@conote/core/errors'
@@ -81,7 +82,12 @@ export function HomeScreen({
         null,
     )
   }
-  const chosenId = picked ?? guessed ?? null
+  // A note to edit in the composer (D109): from the address, if it is the student's note.
+  const editId = params.get('edit')
+  const editQuery = useNote(editId ?? '', editId !== null)
+  const editNote = editId !== null ? editQuery.data : undefined
+  // A note being edited keeps its own class, whatever else was chosen.
+  const chosenId = editNote ? editNote.classId : (picked ?? guessed ?? null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const chosen = classes.find((c) => c.id === chosenId)
@@ -90,6 +96,19 @@ export function HomeScreen({
   const label = chosen && course ? `${course.code} · ${chosen.title}` : null
   // Whether the class is on now.
   const live = chosen ? getClassStatus(chosen, now) === 'live' : false
+
+  /** Leaves editing (after a save, or on Cancel): the address loses `edit`, the rest stays. */
+  function endEdit() {
+    const updated = new URLSearchParams(params)
+    updated.delete('edit')
+    setParams(updated, { replace: true })
+  }
+
+  /** Chooses a class. A class chosen while a note is edited ends the edit first. */
+  function choose(classId: string) {
+    if (editNote) endEdit()
+    setPicked(classId)
+  }
 
   /** Switches mode, keeping the rest of the address. */
   function setMode(next: HomeMode) {
@@ -106,7 +125,7 @@ export function HomeScreen({
         classes={classes}
         courses={courses}
         chosenId={chosenId}
-        onChoose={setPicked}
+        onChoose={choose}
         now={now}
         newSummaries={newSummaries}
         {...(onDone ? { onDone } : {})}
@@ -152,6 +171,8 @@ export function HomeScreen({
           )}
           {status === 'ready' && courses.length > 0 && mode === 'note' && (
             <NoteMode
+              // A different note, or none, starts the composer over with its own text.
+              key={editNote?.id ?? 'new'}
               chosen={chosen}
               label={label}
               live={live}
@@ -162,6 +183,9 @@ export function HomeScreen({
               onAsk={() => {
                 setMode('ask')
               }}
+              editing={editNote}
+              focusComposer={params.get('write') === '1'}
+              onEditDone={endEdit}
             />
           )}
           {status === 'ready' && courses.length > 0 && mode === 'ask' && (
@@ -199,7 +223,7 @@ export function HomeScreen({
         chosenId={chosenId}
         now={now}
         onChoose={(classId) => {
-          setPicked(classId)
+          choose(classId)
           setSheetOpen(false)
         }}
       />

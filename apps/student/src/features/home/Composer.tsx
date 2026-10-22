@@ -5,8 +5,8 @@
 
 // Icons.
 import { Plus, SendHorizontal } from 'lucide-react'
-// The "+" menu's items come from the caller.
-import type { ReactNode } from 'react'
+// The text box is focused on request.
+import { useEffect, useRef, type ReactNode } from 'react'
 
 // Standard button and the "+" menu.
 import { Button } from '@conote/ui/button'
@@ -26,6 +26,8 @@ interface ComposerProps {
   busy?: boolean
   // The "+" menu's items (DropdownMenuItem elements).
   menu: ReactNode
+  // Puts the cursor in the box when the composer appears (a "New note" button, an edit).
+  focusOnMount?: boolean
 }
 
 /** The composer. */
@@ -38,7 +40,17 @@ export function Composer({
   onSubmit,
   busy = false,
   menu,
+  focusOnMount = false,
 }: Readonly<ComposerProps>) {
+  // The text box, to focus.
+  const field = useRef<HTMLTextAreaElement>(null)
+  // On request, the cursor goes into the box, after any text already there.
+  useEffect(() => {
+    const box = field.current
+    if (!focusOnMount || !box) return
+    box.focus()
+    box.setSelectionRange(box.value.length, box.value.length)
+  }, [focusOnMount])
   // Whether there is anything to send.
   const canSend = value.trim() !== '' && !busy
 
@@ -63,6 +75,7 @@ export function Composer({
       </DropdownMenu>
       {/* The text. It grows with what is typed, up to a few lines. */}
       <textarea
+        ref={field}
         aria-label={label}
         rows={1}
         value={value}
