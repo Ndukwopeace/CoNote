@@ -31,7 +31,9 @@ export function ClassChip({
   let name = 'Choose a class'
   if (label) {
     // "Class: Professional Writing · Week 2, WRI 101."
-    const described = `Class: ${label}${code ? `, ${code}` : ''}.`
+    const codePart = code ? `, ${code}` : ''
+    // Said as one phrase.
+    const described = `Class: ${label}${codePart}.`
     name = disabled ? described : `${described} Change`
   }
   return (
