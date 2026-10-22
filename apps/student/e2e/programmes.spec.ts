@@ -44,10 +44,12 @@ test('a new student asks to join a programme and nothing is enrolled until it is
   await expect(group.getByText('Cloud Security and Data Protection Engineering')).toBeVisible()
 
   // Asking records a waiting request. It does not enrol: the dialog stays, and the others wait.
-  await group.getByRole('button', { name: 'Request to join SWE-Y3' }).click()
+  await group.getByRole('button', { name: 'Request to join Software Engineering, Year 3' }).click()
   await expect(page.getByText('Request sent. An administrator will approve it.')).toBeVisible()
   await expect(group.getByText('Requested')).toBeVisible()
-  await expect(group.getByRole('button', { name: 'Request to join BMS-Y1' })).toBeDisabled()
+  await expect(
+    group.getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
+  ).toBeDisabled()
   await expect(dialog).toBeVisible()
 
   // The request survives a reload, and the student still has no courses.
@@ -62,8 +64,12 @@ test('a new student asks to join a programme and nothing is enrolled until it is
   await expect(again.getByText('Requested')).toBeVisible()
 
   // Withdrawing frees the other programmes.
-  await again.getByRole('button', { name: 'Cancel request for SWE-Y3' }).click()
+  await again
+    .getByRole('button', { name: 'Cancel request for Software Engineering, Year 3' })
+    .click()
   await expect(again.getByText('Requested')).toHaveCount(0)
-  await expect(again.getByRole('button', { name: 'Request to join BMS-Y1' })).toBeEnabled()
+  await expect(
+    again.getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
+  ).toBeEnabled()
   expect(cspViolations).toEqual([])
 })

@@ -67,7 +67,7 @@ export function GlobalSearch() {
       name: 'Courses',
       options: results.courses.map((c) => ({
         key: `course-${c.id}`,
-        label: `${c.code} · ${c.title}`,
+        label: `${c.title} · ${c.code}`,
         detail: c.teacher.fullName,
         to: routeTo.course(c.id),
       })),

@@ -95,8 +95,12 @@ export function ClassSheet({
                           waiting && 'cursor-not-allowed opacity-50 hover:border-border',
                         )}
                       >
+                        {/* The course name leads; the code follows, small (D110). */}
                         <span className="font-semibold">
-                          {course?.code} · {session.title}
+                          {course?.title} · {session.title}
+                          <span className="ml-2 text-xs font-normal opacity-80">
+                            {course?.code}
+                          </span>
                         </span>
                         <span className="text-sm text-muted-foreground">
                           {waitingOrWhen(session, now, waiting)}

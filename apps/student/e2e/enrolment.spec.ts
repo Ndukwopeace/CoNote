@@ -39,12 +39,12 @@ test('a new student asks to join courses, and the requests wait for approval', a
   await dialog.getByRole('searchbox', { name: 'Search courses to join' }).fill('mth')
   // The programme above names "Software Engineering, Year 3", so match the course title exactly.
   await expect(dialog.getByText('Software Engineering', { exact: true })).toHaveCount(0)
-  await dialog.getByRole('button', { name: 'Request to join MTH 202' }).click()
+  await dialog.getByRole('button', { name: 'Request to join Linear Algebra' }).click()
   await expect(dialog.getByText('Requested')).toBeVisible()
   await dialog.getByRole('searchbox').fill('')
-  await dialog.getByRole('button', { name: 'Request to join PHY 101' }).click()
+  await dialog.getByRole('button', { name: 'Request to join General Physics' }).click()
   await expect(dialog.getByText('Requested')).toHaveCount(2)
-  await dialog.getByRole('button', { name: 'Cancel request for PHY 101' }).click()
+  await dialog.getByRole('button', { name: 'Cancel request for General Physics' }).click()
   await expect(dialog.getByText('Requested')).toHaveCount(1)
 
   // Not now: the dashboard says one request is waiting, and nothing is enrolled.

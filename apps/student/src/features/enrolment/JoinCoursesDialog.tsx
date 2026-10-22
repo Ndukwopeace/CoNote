@@ -167,10 +167,10 @@ function CourseRow({
 }>) {
   return (
     <li className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
-      {/* Code, title and teacher. */}
+      {/* Name first, then the code small, then the teacher (D110). */}
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-primary-dark">{course.code}</p>
-        <p className="truncate font-medium">{course.title}</p>
+        <p className="line-clamp-2 font-semibold">{course.title}</p>
+        <p className="text-xs text-muted-foreground">{course.code}</p>
         <p className="truncate text-xs text-muted-foreground">{course.teacherName}</p>
       </div>
       {/* The standing and its action. The words carry the meaning, not colour. */}
@@ -183,7 +183,7 @@ function CourseRow({
               type="button"
               variant="link"
               disabled={busy}
-              aria-label={`Cancel request for ${course.code}`}
+              aria-label={`Cancel request for ${course.title}`}
               onClick={() => {
                 if (course.requestId !== null) onCancel(course.requestId)
               }}
@@ -197,7 +197,7 @@ function CourseRow({
           <Button
             type="button"
             disabled={busy}
-            aria-label={`${course.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${course.code}`}
+            aria-label={`${course.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${course.title}`}
             onClick={onAsk}
           >
             {course.membership === 'declined' ? 'Request again' : 'Request to join'}

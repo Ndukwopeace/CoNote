@@ -23,7 +23,9 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   // Add Note opens the chat on Home for this class, with the cursor in the box.
   await page.getByRole('link', { name: 'Add Note' }).click()
   await expect(page).toHaveURL(/\/dashboard\?write=1&classId=swe-311-c4$/)
-  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
+  ).toBeVisible()
   const box = page.getByRole('textbox', { name: 'Note', exact: true })
   await expect(box).toBeFocused()
   await expectNoAxeViolations(page)
@@ -64,7 +66,9 @@ test('a student writes, finds, edits and deletes a note', async ({ page }) => {
   await page.getByRole('link', { name: 'Edit' }).click()
   await expect(page).toHaveURL(/\/dashboard\?edit=/)
   await expect(page.getByText('Editing a note')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models\./ })).toBeDisabled()
+  await expect(
+    page.getByRole('button', { name: /Class: Software Engineering · SDLC Models, SWE 311\./ }),
+  ).toBeDisabled()
   await expect(box).toHaveValue('Risk-driven iterations')
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('Spiral model')
   await page.getByRole('textbox', { name: 'Title' }).fill('Spiral model (Boehm)')
@@ -132,7 +136,9 @@ test('a student writes a note straight from Home', async ({ page }) => {
   await signIn(page)
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByRole('heading', { level: 1, name: "Let's CoNote" })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
+  ).toBeVisible()
   await expectNoAxeViolations(page)
 
   // Tag it, type and send, without choosing a course or class.

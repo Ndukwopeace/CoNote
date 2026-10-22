@@ -93,7 +93,7 @@ describe('DashboardPage: Note mode', () => {
     renderDashboard()
 
     expect(
-      await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }),
+      await screen.findByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
     ).toBeVisible()
     expect(await screen.findByText(/Each phase finishes before the next starts/)).toBeVisible()
     expect(screen.getByRole('textbox', { name: 'Note' })).toBeVisible()
@@ -243,7 +243,9 @@ describe('DashboardPage: choosing the class', () => {
   // Proves a class from yesterday can still be chosen from the sheet, and choosing it moves the chip.
   it('lets the student choose a class from yesterday', async () => {
     const { user } = renderDashboard(recentServices())
-    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · First class/ }))
+    await user.click(
+      await screen.findByRole('button', { name: /Class: Software Engineering · First class/ }),
+    )
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
 
     await user.click(within(sheet).getByRole('button', { name: /Yesterday class/ }))
@@ -254,7 +256,9 @@ describe('DashboardPage: choosing the class', () => {
   // Proves the sheet groups the classes by day: Today, Yesterday, then the date (D108).
   it('groups the classes under Today, Yesterday and the date', async () => {
     const { user } = renderDashboard(recentServices())
-    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · First class/ }))
+    await user.click(
+      await screen.findByRole('button', { name: /Class: Software Engineering · First class/ }),
+    )
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
 
     const headings = within(sheet)
@@ -280,7 +284,9 @@ describe('DashboardPage: choosing the class', () => {
   // Proves the demo's classes older than two days are not offered, while the one on now is.
   it('does not offer the demo classes older than two days', async () => {
     const { user } = renderDashboard()
-    await user.click(await screen.findByRole('button', { name: /Class: SWE 311 · SDLC Models/ }))
+    await user.click(
+      await screen.findByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
+    )
 
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
     expect(within(sheet).getByText('On now')).toBeVisible()
@@ -346,7 +352,7 @@ describe('DashboardPage: navigation', () => {
 
     await user.click(within(nav).getByRole('button', { name: /Yesterday class/ }))
     expect(
-      await screen.findByRole('button', { name: /Class: SWE 311 · Yesterday class/ }),
+      await screen.findByRole('button', { name: /Class: Software Engineering · Yesterday class/ }),
     ).toBeVisible()
   })
 
@@ -361,7 +367,7 @@ describe('DashboardPage: navigation', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
     expect(
-      await screen.findByRole('button', { name: /Class: SWE 311 · Yesterday class/ }),
+      await screen.findByRole('button', { name: /Class: Software Engineering · Yesterday class/ }),
     ).toBeVisible()
   })
 
@@ -484,7 +490,9 @@ describe('DashboardPage: writing and editing in the chat', () => {
 
     expect(await screen.findByText('Editing a note')).toBeVisible()
 
-    expect(screen.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
+    ).toBeDisabled()
   })
 
   // Proves a note from the old editor, with bold and lists, is flagged before the student edits:
@@ -540,7 +548,9 @@ describe('DashboardPage: Ask mode', () => {
     await user.click(screen.getByRole('button', { name: 'Ask' }))
     const box = await screen.findByRole('textbox', { name: 'Ask a question' })
     expect(within(screen.getByRole('main')).getByText('Preview')).toBeVisible()
-    expect(screen.getByRole('button', { name: /Class: SWE 311 · SDLC Models/ })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: /Class: Software Engineering · SDLC Models/ }),
+    ).toBeVisible()
 
     await user.type(box, 'What is waterfall?{Enter}')
 
