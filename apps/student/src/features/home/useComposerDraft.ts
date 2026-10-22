@@ -54,7 +54,7 @@ export function useComposerDraft(classId: string | undefined, enabled: boolean) 
   // The draft's storage key for this class.
   const key = draftKey({ ...(classId ? { classId } : {}) })
   // The text, and the key it was loaded for.
-  const [text, setTextState] = useState(() => (enabled ? read(key) : ''))
+  const [value, setValue] = useState(() => (enabled ? read(key) : ''))
   const [loadedKey, setLoadedKey] = useState(key)
   // The save waiting for the pause, and its timer.
   const pending = useRef<PendingSave | null>(null)
@@ -63,7 +63,7 @@ export function useComposerDraft(classId: string | undefined, enabled: boolean) 
   // A different class: load its draft (the previous one is saved by the effect below).
   if (loadedKey !== key) {
     setLoadedKey(key)
-    setTextState(enabled ? read(key) : '')
+    setValue(enabled ? read(key) : '')
   }
 
   /** Writes the waiting save now. */
@@ -78,11 +78,11 @@ export function useComposerDraft(classId: string | undefined, enabled: boolean) 
 
   /** Sets the text and schedules its save, replacing any save still waiting. */
   const setText = useCallback(
-    (value: string) => {
-      setTextState(value)
+    (next: string) => {
+      setValue(next)
       if (!enabled) return
       clearTimeout(timer.current)
-      pending.current = { key, classId: classId ?? '', text: value }
+      pending.current = { key, classId: classId ?? '', text: next }
       timer.current = setTimeout(flush, DRAFT_SAVE_DELAY_MS)
     },
     [enabled, key, classId, flush],
@@ -93,8 +93,8 @@ export function useComposerDraft(classId: string | undefined, enabled: boolean) 
     clearTimeout(timer.current)
     pending.current = null
     if (enabled) removeDraft(draftStorage(), key)
-    setTextState('')
+    setValue('')
   }, [enabled, key])
 
-  return { text, setText, clear }
+  return { text: value, setText, clear }
 }

@@ -17,12 +17,15 @@ export function ClassChip({
   onClick,
   disabled = false,
 }: Readonly<{ label: string | null; live: boolean; onClick: () => void; disabled?: boolean }>) {
+  // What a screen reader hears: the class and how to change it (not while the chip is off).
+  let name = 'Choose a class'
+  if (label) name = disabled ? `Class: ${label}.` : `Class: ${label}. Change`
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={label ? `Class: ${label}.${disabled ? '' : ' Change'}` : 'Choose a class'}
+      aria-label={name}
       className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border bg-card px-4 text-sm font-semibold outline-none hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-default disabled:hover:border-border"
     >
       {/* A green dot while the class is on. */}
