@@ -24,8 +24,9 @@ jobs:
     name: Lint, types, tests, build
     # A fresh Linux machine for every run.
     runs-on: ubuntu-latest
-    # Stop a stuck run after 20 minutes.
-    timeout-minutes: 20
+    # Stop a stuck run after 35 minutes. A normal run takes about 15; the browser download once
+    # took 11 minutes and left too little time for the browser tests under the old 20.
+    timeout-minutes: 35
     env:
       # Build and test against demo data.
       VITE_DATA_SOURCE: mock
@@ -88,9 +89,31 @@ jobs:
       - name: Bundle budget
         run: npm run size
 
-      # Chromium plus the system libraries it needs, for the browser tests.
+      # The installed Playwright version, so the cached browser below is replaced whenever the
+      # version changes and never reused by a version that expects a different browser build.
+      - name: Read Playwright version
+        id: playwright-version
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      # Keeps the downloaded Chromium between runs, because that download is the slow step.
+      # SECURITY: pinned to an exact commit like every other action.
+      - name: Cache Playwright browser
+        id: playwright-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      # Chromium plus the system libraries it needs, for the browser tests. Skipped when the
+      # browser came from the cache.
       - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      # The system libraries live outside the cache, so a cached run still installs those.
+      - name: Install Playwright system libraries
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       # Browser tests against the production build with production security headers.
       - name: End-to-end tests

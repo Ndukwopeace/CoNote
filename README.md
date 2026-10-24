@@ -6,17 +6,21 @@ draft summary; a teacher approves it; students read the approved version.
 This repository is a monorepo (npm workspaces). Each role gets its own app, and the apps share
 one backend and a set of packages:
 
-| Folder             | Package           | What it is                                                |
-| ------------------ | ----------------- | --------------------------------------------------------- |
-| `apps/student`     | `@conote/student` | The student portal: an installable web app (built, M1–M5) |
-| `apps/admin`       | `@conote/admin`   | The admin console (in progress, A1 done)                  |
-| `packages/ui`      | `@conote/ui`      | Design tokens, Tailwind theme, UI primitives, form fields |
-| `packages/domain`  | `@conote/domain`  | Shared roles and statuses                                 |
-| `packages/core`    | `@conote/core`    | Errors, safe redirects, environment checks, reporting     |
-| `packages/testing` | `@conote/testing` | Test-only helpers shared by every app                     |
+| Folder              | Package            | What it is                                                |
+| ------------------- | ------------------ | --------------------------------------------------------- |
+| `apps/student`      | `@conote/student`  | The student portal: an installable web app (built, M1–M5) |
+| `apps/admin`        | `@conote/admin`    | The admin console                                         |
+| `apps/teacher`      | `@conote/teacher`  | The teacher portal                                        |
+| `packages/ui`       | `@conote/ui`       | Design tokens, Tailwind theme, UI primitives, form fields |
+| `packages/portal`   | `@conote/portal`   | Sign-in, guards and frame shared by admin and teacher     |
+| `packages/supabase` | `@conote/supabase` | Supabase client, sessions and error mapping               |
+| `packages/domain`   | `@conote/domain`   | Shared roles and statuses                                 |
+| `packages/core`     | `@conote/core`     | Errors, safe redirects, environment checks, reporting     |
+| `packages/testing`  | `@conote/testing`  | Test-only helpers shared by every app                     |
 
-The teacher portal will be added as `apps/teacher`. Progress: [`docs/MILESTONES.md`](docs/MILESTONES.md)
-(student) and [`docs/admin/MILESTONES.md`](docs/admin/MILESTONES.md) (admin).
+Taking the project over? Start with [`docs/HANDOVER.md`](docs/HANDOVER.md). Progress:
+[`docs/MILESTONES.md`](docs/MILESTONES.md) (student) and
+[`docs/admin/MILESTONES.md`](docs/admin/MILESTONES.md) (admin).
 
 ## Quick start
 
@@ -61,11 +65,11 @@ executable to skip Playwright's download.
 
 ## Environment variables
 
-| Variable                 | Default | Notes                                                        |
-| ------------------------ | ------- | ------------------------------------------------------------ |
-| `VITE_DATA_SOURCE`       | `mock`  | `mock` (demo data) or `supabase` (not built yet; fails fast) |
-| `VITE_SUPABASE_URL`      |         | Only for `supabase`. Must be `https`.                        |
-| `VITE_SUPABASE_ANON_KEY` |         | Only for `supabase`. Never put a service-role key here.      |
+| Variable                 | Default | Notes                                                   |
+| ------------------------ | ------- | ------------------------------------------------------- |
+| `VITE_DATA_SOURCE`       | `mock`  | `mock` (demo data) or `supabase` (the real backend)     |
+| `VITE_SUPABASE_URL`      |         | Only for `supabase`. Must be `https`.                   |
+| `VITE_SUPABASE_ANON_KEY` |         | Only for `supabase`. Never put a service-role key here. |
 
 Variables are validated at startup (`apps/student/src/lib/env.ts`). Vite bakes them in at build time, so a
 change needs a rebuild or redeploy.
@@ -118,6 +122,7 @@ build with the same headers, so a policy that breaks the app fails locally and i
 
 ## Documentation
 
+- [`docs/HANDOVER.md`](docs/HANDOVER.md): taking over the project: accounts, running, changing, deploying, what is left
 - [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md): scope, routes, requirement IDs, data model, decisions log
 - [`docs/MILESTONES.md`](docs/MILESTONES.md): build order, CI and deployment
 - [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md): sitemap, user flows, user journeys
