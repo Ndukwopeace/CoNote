@@ -12,9 +12,9 @@ Where this document and the student portal's documents disagree about names, typ
 
 ## 1. Scope
 
-**In the MVP (D73):** sign-in, My courses, a course's classes with their summary stages, the review queue, and the review screen (read, edit, save, Approve & Publish).
+**In the MVP (D73):** sign-in, My courses, a course's classes with their summary stages, the review queue, a bell in the top bar that says when a draft is ready (D111), and the review screen (read, edit, save, Approve & Publish).
 
-**Parked (Post-MVP):** rejecting a draft and asking for a new one, draft history, notes to students, analytics for teachers, resources, and a teacher notification centre. They are not in the navigation, because a link that goes nowhere is a fake feature.
+**Parked (Post-MVP):** rejecting a draft and asking for a new one, draft history, notes to students, analytics for teachers, resources, and a full notifications page. They are not in the navigation, because a link that goes nowhere is a fake feature.
 
 ## 2. Roles and rules
 

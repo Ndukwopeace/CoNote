@@ -10,6 +10,8 @@ import { Navigate, type RouteObject } from 'react-router'
 // The shared guards, frame and error screen (packages/portal).
 import { PortalFrame, RedirectIfSignedIn, RequireRole, RouteErrorBoundary } from '@conote/portal'
 
+// The bell in the top bar.
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 // The portal's sections.
 import { NAV_ITEMS } from '@/layouts/navItems'
 // Route constants.
@@ -93,7 +95,14 @@ export const routes: RouteObject[] = [
     element: <RequireRole allowedRole="teacher" notice={NOT_TEACHER} loginTo={routeTo.login} />,
     children: [
       {
-        element: <PortalFrame name="Teacher" homePath={TEACHER_ROUTES.courses} items={NAV_ITEMS} />,
+        element: (
+          <PortalFrame
+            name="Teacher"
+            homePath={TEACHER_ROUTES.courses}
+            items={NAV_ITEMS}
+            topBarExtra={<NotificationBell />}
+          />
+        ),
         // A crashed page shows the error screen inside the frame.
         children: [{ errorElement: crashed, children: portalPages }],
       },

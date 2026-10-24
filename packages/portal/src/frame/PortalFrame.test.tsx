@@ -61,6 +61,28 @@ describe('PortalFrame', () => {
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
+  // Proves a portal can put something (a bell) in the top bar, and a portal that does not has none.
+  it('shows what the portal puts in the top bar, before the account menu', async () => {
+    const routes = testRoutes()
+    const guarded = routes[1]?.children?.[0]
+    if (guarded) {
+      guarded.element = (
+        <PortalFrame
+          name="Test"
+          homePath={PATHS.home}
+          items={[{ label: 'Home', to: PATHS.home, icon: BookOpen }]}
+          topBarExtra={<button type="button">Extra thing</button>}
+        />
+      )
+    }
+    renderPortal({ path: PATHS.home, session: { user: STAFF }, routes })
+
+    const extra = await screen.findByRole('button', { name: 'Extra thing' })
+    const account = screen.getByRole('button', { name: 'Account menu for Sam Staff' })
+    // The extra comes first in the document, so first in the tab order too.
+    expect(extra.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   // Proves the phone menu opens the same sections and closes when one is chosen.
   it('opens the sections in the phone menu and closes it on a choice', async () => {
     const { user, router } = renderPortal({ path: PATHS.home, session: { user: STAFF } })

@@ -22,6 +22,7 @@ import {
   readStoredSession,
   SESSION_KEY,
 } from '@/services/mock/mockAuthService'
+import { createMockNotificationService } from '@/services/mock/mockNotificationService'
 import { createMockReviewService } from '@/services/mock/mockReviewService'
 import { createMockTeachingService } from '@/services/mock/mockTeachingService'
 // The records the demo services read.
@@ -46,6 +47,13 @@ interface RenderOptions {
 export function createTestServices(platform: PlatformData = emptyPlatformData()): Services {
   // The signed-in teacher, read from the stored session.
   const actorId = () => readStoredSession(window.sessionStorage)?.user.id ?? null
+  // Reviewing is shared with the notices, which listen to its queue.
+  const review = createMockReviewService({
+    data: platform,
+    actorId,
+    now: () => new Date(),
+    latencyMs: 0,
+  })
   return {
     auth: createMockAuthService({
       store: window.sessionStorage,
@@ -55,10 +63,11 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
       accountStatus: (email) => platform.users.find((user) => user.email === email)?.status,
     }),
     teaching: createMockTeachingService({ data: platform, actorId, latencyMs: 0 }),
-    review: createMockReviewService({
-      data: platform,
-      actorId,
-      now: () => new Date(),
+    review,
+    // A notice for each draft waiting, as in the app.
+    notifications: createMockNotificationService({
+      review,
+      store: window.localStorage,
       latencyMs: 0,
     }),
   }

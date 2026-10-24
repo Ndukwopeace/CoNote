@@ -9,6 +9,7 @@ import type { Services } from '../types'
 import { createPlatformSeed } from './seed/platformSeed'
 // The demo services.
 import { createMockAuthService, readStoredSession } from './mockAuthService'
+import { createMockNotificationService } from './mockNotificationService'
 import { createMockReviewService } from './mockReviewService'
 import { createMockTeachingService } from './mockTeachingService'
 // Saving and restoring the platform's changes.
@@ -29,6 +30,16 @@ export function createMockServices(): Services {
   const actorId = () => readStoredSession(window.sessionStorage)?.user.id ?? null
   // An account's status on the demo platform, for the sign-in check.
   const accountStatus = (email: string) => data.users.find((user) => user.email === email)?.status
+  // Reviewing and publishing, as the signed-in teacher, saved after every change.
+  const review = createMockReviewService({
+    data,
+    actorId,
+    now,
+    latencyMs: DEMO_LATENCY_MS,
+    onChange: () => {
+      savePlatform(window.localStorage, data)
+    },
+  })
   return {
     // Sessions live in session storage: closing the tab signs the teacher out.
     auth: createMockAuthService({
@@ -40,15 +51,13 @@ export function createMockServices(): Services {
     }),
     // The signed-in teacher's courses.
     teaching: createMockTeachingService({ data, actorId, latencyMs: DEMO_LATENCY_MS }),
-    // Reviewing and publishing, as the signed-in teacher, saved after every change.
-    review: createMockReviewService({
-      data,
-      actorId,
-      now,
+    // Reviewing and publishing.
+    review,
+    // A notice for each draft waiting, with what was read kept like server data.
+    notifications: createMockNotificationService({
+      review,
+      store: window.localStorage,
       latencyMs: DEMO_LATENCY_MS,
-      onChange: () => {
-        savePlatform(window.localStorage, data)
-      },
     }),
   }
 }

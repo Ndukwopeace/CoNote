@@ -89,8 +89,9 @@ function TopBar({
       <Link to={config.homePath} className="shrink-0 rounded-md md:hidden">
         <Logo compact />
       </Link>
-      {/* Account menu, pushed to the right. */}
+      {/* Whatever the portal adds (a bell), then the account menu, pushed to the right. */}
       <div className="ml-auto flex items-center gap-2">
+        {config.topBarExtra}
         <UserMenu fullName={fullName} email={email} settingsPath={config.settingsPath} />
       </div>
     </header>

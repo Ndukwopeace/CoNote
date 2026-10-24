@@ -5,6 +5,8 @@
 
 // An icon component type.
 import type { LucideIcon } from 'lucide-react'
+// Anything a portal puts in the top bar.
+import type { ReactNode } from 'react'
 
 /** One navigation entry. */
 export interface NavItem {
@@ -23,4 +25,6 @@ export interface PortalConfig {
   items: readonly NavItem[]
   // Where the account menu's Settings link goes; no Settings link when absent.
   settingsPath?: string | undefined
+  // Something shown in the top bar before the account menu, such as a notification bell.
+  topBarExtra?: ReactNode
 }

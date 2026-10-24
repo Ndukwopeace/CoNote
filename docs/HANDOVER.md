@@ -477,8 +477,8 @@ Be honest about these. None blocks the pilot. Each one is a decision waiting for
 **Not built yet**
 
 - **Retry for failed summary jobs**, and a failed-jobs list for admins (B4).
-- **Notifications** to a teacher when a draft waits, and to a student when a summary is
-  published (B4).
+- **Email or push** for those notices. A teacher is told in the portal's bell and a student in
+  theirs (D111), but nothing is sent outside the apps.
 - The admin dashboard alerts for `delivery_failures`, `storage_errors` and `security_events`
   **read tables that nothing writes to yet**, so those alerts always show nothing.
 - The `health` function leaves out the AI service and notifications until they exist.
@@ -532,9 +532,9 @@ Parked for later: an interactive first-time tour for new students.
 
 From the original plan (`docs/MILESTONES.md`):
 
-- **B4, minimum operations:** failed-jobs list and Retry (a `retry-ai-job` Edge Function, only
+- **B4, minimum operations (the notifications part is built, D111):** failed-jobs list and Retry (a `retry-ai-job` Edge Function, only
   for failed jobs, limited by a maximum, written to the audit log); the dashboard alerts fed from
-  real data; the two notifications above.
+  real data. (The two in-app notifications are built, D111.)
 - **B5, launch:** the accessibility and responsive pass, security headers checked on the live
   addresses, backups on, a runbook, and a pilot with one real class through a full cycle.
 - **After launch** (parked): resources, analytics and an audit-log viewer, admin settings, offline
