@@ -16,6 +16,8 @@ import { TEACHER_STORAGE_PREFIX } from '@/lib/storage'
 // The shape the real implementation returns.
 import type { Services } from '../types'
 
+// The teacher's notices.
+import { createSupabaseNotificationService } from './supabaseNotificationService'
 // Reviewing and publishing summaries.
 import { createSupabaseReviewService } from './supabaseReviewService'
 // The teacher's courses and classes.
@@ -67,5 +69,10 @@ export function createSupabaseServices({
     teaching: createSupabaseTeachingService({ client }),
     // The summaries waiting for review, and saving and publishing a draft.
     review: createSupabaseReviewService({ client }),
+    // The notice that a draft is ready, and marking it read.
+    notifications: createSupabaseNotificationService({
+      client,
+      origin: window.location.origin,
+    }),
   }
 }

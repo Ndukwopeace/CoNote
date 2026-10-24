@@ -131,3 +131,29 @@ test('leaving a review with unsaved edits asks first', async ({ page }) => {
     /^This class introduced/,
   )
 })
+
+test('the bell tells a teacher a draft is ready and opens it', async ({ page }) => {
+  // Watch for Content-Security-Policy breaks throughout.
+  const cspViolations = watchCspViolations(page)
+  // Sign in: two drafts wait, so the bell counts two.
+  await page.goto('/teacher/courses')
+  await signInAs(page)
+  const bell = page.getByRole('button', { name: 'Notifications, 2 unread' })
+  await expect(bell).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // The notices name the course and class; the first opens its draft.
+  await bell.click()
+  const notice = page.getByRole('menuitem', { name: /A draft is ready to review/ }).first()
+  await expect(notice).toContainText('MTH 202, class')
+  await notice.click()
+  await expect(page.getByRole('heading', { level: 1, name: /^Class \d+:/ })).toBeVisible()
+
+  // Opening one reads it, and the count drops to one. It survives a reload, like server data.
+  await expect(page.getByRole('button', { name: 'Notifications, 1 unread' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Notifications, 1 unread' })).toBeVisible()
+
+  // SECURITY: the whole journey ran without the security policy blocking anything.
+  expect(cspViolations).toEqual([])
+})

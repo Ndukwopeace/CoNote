@@ -13,6 +13,12 @@ export const queryKeys = {
     // One course with its classes.
     course: (courseId: string) => [...queryKeys.teaching.all, 'course', courseId] as const,
   },
+  notifications: {
+    // Every query about the teacher's notices.
+    all: ['notifications'] as const,
+    // The notices, newest first.
+    list: () => [...queryKeys.notifications.all, 'list'] as const,
+  },
   review: {
     // Every query about summaries under review.
     all: ['review'] as const,

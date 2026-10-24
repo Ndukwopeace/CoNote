@@ -374,7 +374,7 @@ This is the part of A8 the loop cannot do without.
 
 - Admin: a failed-jobs list and Retry (the `retry-ai-job` Edge Function; available only on failed jobs, limited by the maximum-retries value, audited).
 - The dashboard's alerts read the real data.
-- In-app notifications: the teacher is told when a draft is waiting for review, and the student when their summary is published.
+- In-app notifications: the teacher is told when a draft is waiting for review, and the student when their summary is published. **Built (D111):** a database trigger writes both notices; the teacher portal has a bell in the top bar; the student bell already showed them.
 
 **Done when:** an admin retries a failed job and it runs again; a teacher and a student each get their notification.
 

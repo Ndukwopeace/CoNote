@@ -3,6 +3,8 @@
  * them only through useServices(), so the demo data and Supabase are interchangeable.
  */
 
+// The categories a notice can have.
+import type { NotificationType } from '@conote/domain'
 // Session shapes.
 import type { PasswordResetRequest, Session, SignInInput } from '@conote/portal'
 // Review shapes.
@@ -73,9 +75,39 @@ export interface ReviewService {
   approveAndPublish(summaryId: string, draft: SummaryDraft, version: number): Promise<ReviewDetails>
 }
 
+/** One notice in the bell. It holds words only, never anything a student wrote. */
+export interface TeacherNotification {
+  id: string
+  type: NotificationType
+  // Headline: what happened.
+  title: string
+  // Detail: which course and class.
+  body: string
+  // An in-app path to open (the draft), left out when there is none or it is not safe.
+  link?: string
+  // ISO 8601 time.
+  createdAt: string
+  // Whether the teacher has seen it.
+  read: boolean
+}
+
+/**
+ * The teacher's notices (D111): one when a draft is ready to review. The server writes them; the
+ * teacher reads their own and marks them read. An unknown ID rejects with not_found.
+ */
+export interface NotificationService {
+  /** Newest first. */
+  list(): Promise<TeacherNotification[]>
+  /** Marks one as read. */
+  markRead(notificationId: string): Promise<void>
+  /** Marks every one as read. */
+  markAllRead(): Promise<void>
+}
+
 /** Every service the teacher app uses. Grows with each milestone. */
 export interface Services {
   auth: AuthService
   teaching: TeachingService
   review: ReviewService
+  notifications: NotificationService
 }
