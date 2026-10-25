@@ -33,6 +33,11 @@ function has(count: number) {
   return count === 1 ? 'has' : 'have'
 }
 
+/** "is" or "are", to agree with `count`. */
+function is(count: number) {
+  return count === 1 ? 'is' : 'are'
+}
+
 /** The wording, severity and link for `alert`. */
 export function alertContent({ kind, count, days }: PlatformAlert): AlertContent {
   switch (kind) {
@@ -63,6 +68,14 @@ export function alertContent({ kind, count, days }: PlatformAlert): AlertContent
         message: `${counted(count, 'storage error', 'storage errors')} in the last 24 hours`,
         severity: 'critical',
         to: withQuery(ADMIN_ROUTES.resources, { status: 'error' }),
+      }
+    // Drafts only a course's teacher can review, in courses that have none (D112). The fix is the
+    // same as for the courses themselves: give each one a teacher.
+    case 'drafts_without_teacher':
+      return {
+        message: `${counted(count, 'draft', 'drafts')} ${is(count)} waiting in ${count === 1 ? 'a course' : 'courses'} with no teacher to review ${count === 1 ? 'it' : 'them'}`,
+        severity: 'warning',
+        to: withQuery(ADMIN_ROUTES.courses, { teacher: 'none' }),
       }
     // Courses nobody teaches.
     case 'courses_without_teacher':

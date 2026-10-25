@@ -296,7 +296,7 @@ Keep it to one chart on the dashboard; the rest belong on Analytics.
   - The chart has a crosshair and tooltip (pointer or arrow keys) and a "Show as table" view with the same values. A period with nothing shows "Nothing was recorded in this period."
 - **Alerts:**
   - Failures count over the last 24 hours: failed AI jobs, failed notification deliveries, storage errors and security events.
-  - The other alerts count current records: active courses with no teacher, active classes in archived courses, and summaries in review longer than `platform_settings.review_alert_days` (default 3).
+  - The other alerts count current records: drafts waiting in a live class of an active course with no teacher (nobody can review them; D112), active courses with no teacher, active classes in archived courses, and summaries in review longer than `platform_settings.review_alert_days` (default 3).
   - Critical alerts (security and failures) come first, then warnings.
   - Each links to the screen that fixes it, filtered: `audit-logs?category=security`, `ai-summaries?job=failed`, `settings?tab=notifications`, `resources?status=error`, `courses?teacher=none`, `classes?course=archived`, `ai-summaries?status=in_review`.
   - With no alerts: "No alerts. Everything is running normally."

@@ -151,6 +151,63 @@ export function describeAlertServiceContract(name: string, create: CreateAlertSe
       ])
     })
 
+    // Proves a draft is reported when its course has no teacher, and only then (D112).
+    it('reports drafts waiting in a course nobody teaches', async () => {
+      // Arrange: c1 has a teacher; c2 has none; c3 has none but is archived. x1 is a draft in
+      // c1; x2 a draft in c2 (the one that counts); x3 a summary still being written in c2; x4 a
+      // draft in an archived class of c2; x5 a draft in the archived course c3.
+      const data = emptyPlatformData({
+        courses: [course('c1', 't1'), course('c2', null), course('c3', null, hoursAgo(48))],
+        classes: [
+          classRecord({ id: 'k1', courseId: 'c1' }),
+          classRecord({ id: 'k2', courseId: 'c2' }),
+          classRecord({ id: 'k3', courseId: 'c3' }),
+          classRecord({ id: 'k4', courseId: 'c2', archivedAt: hoursAgo(1) }),
+          classRecord({ id: 'k5', courseId: 'c2' }),
+        ],
+        summaries: [
+          {
+            id: 'x1',
+            classId: 'k1',
+            status: 'in_review',
+            inReviewSince: hoursAgo(1),
+            publishedAt: null,
+          },
+          {
+            id: 'x2',
+            classId: 'k2',
+            status: 'in_review',
+            inReviewSince: hoursAgo(1),
+            publishedAt: null,
+          },
+          { id: 'x3', classId: 'k5', status: 'processing', inReviewSince: null, publishedAt: null },
+          {
+            id: 'x4',
+            classId: 'k4',
+            status: 'in_review',
+            inReviewSince: hoursAgo(1),
+            publishedAt: null,
+          },
+          {
+            id: 'x5',
+            classId: 'k3',
+            status: 'in_review',
+            inReviewSince: hoursAgo(1),
+            publishedAt: null,
+          },
+        ],
+      })
+
+      // Act and assert: the stuck draft first, since it costs students a summary, then the
+      // course that has no teacher. k3 is a live class under the archived course c3, which has
+      // its own alert.
+      await expect(create(data, NOW).listAlerts()).resolves.toEqual([
+        { kind: 'drafts_without_teacher', count: 1 },
+        { kind: 'courses_without_teacher', count: 1 },
+        { kind: 'classes_in_archived_courses', count: 1 },
+      ])
+    })
+
     // Proves the review limit comes from the settings, and the alert carries it.
     it('reports summaries waiting in review past the limit in Settings', async () => {
       // Arrange: a 2-day limit; one summary waiting 3 days, one waiting 1 day, one published.

@@ -67,6 +67,7 @@ export const ALERT_KINDS = [
   'ai_jobs_failed',
   'notifications_failed',
   'storage_errors',
+  'drafts_without_teacher',
   'courses_without_teacher',
   'classes_in_archived_courses',
   'summaries_waiting_review',

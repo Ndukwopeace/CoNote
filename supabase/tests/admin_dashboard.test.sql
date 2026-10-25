@@ -53,6 +53,19 @@ insert into public.storage_errors (created_at) values (now() - interval '30 hour
 insert into public.enrollment_requests (course_id, student_id, status) values (:c4, :s2, 'pending'), (:c3, :s2, 'pending');
 update public.platform_settings set review_alert_days = 2;
 update public.summaries set in_review_since = now() - interval '3 days' where status = 'in_review';
+-- Drafts in courses nobody teaches (D112). Added after the review limit above, so they are not old
+-- enough to count as waiting too long. D0F4: a draft in C4 (no teacher, in use). D0F5: a summary
+-- still being written in C4, which is not a draft yet. D0F6: a draft in C3, which is archived and,
+-- here, also has no teacher.
+insert into public.class_sessions (id, course_id, number, title, starts_at, ends_at) values
+  ('00000000-0000-0000-0000-00000000d0f4', :c4, 1, 'Orphan one', now() - interval '2 days', now() - interval '2 days' + interval '1 hour'),
+  ('00000000-0000-0000-0000-00000000d0f5', :c4, 2, 'Orphan two', now() - interval '2 days', now() - interval '2 days' + interval '1 hour'),
+  ('00000000-0000-0000-0000-00000000d0f6', :c3, 1, 'Old course class', now() - interval '2 days', now() - interval '2 days' + interval '1 hour');
+insert into public.summaries (class_id, course_id, status, in_review_since, published_at) values
+  ('00000000-0000-0000-0000-00000000d0f4', :c4, 'in_review', now() - interval '1 day', null),
+  ('00000000-0000-0000-0000-00000000d0f5', :c4, 'processing', null, null),
+  ('00000000-0000-0000-0000-00000000d0f6', :c3, 'in_review', now() - interval '1 day', null);
+update public.courses set teacher_id = null where id = :c3;
 select tests.reset();
 select tests.login(:admin);
 select tests.is((select count from public.admin_alerts(now()) where kind = 'security_events'), 1, 'only the last 24 hours of security events count');
@@ -62,6 +75,8 @@ select tests.is((select count from public.admin_alerts(now()) where kind = 'enro
 select tests.is((select count from public.admin_alerts(now()) where kind = 'summaries_waiting_review'), 2, 'summaries past the review limit are counted');
 select tests.is((select days from public.admin_alerts(now()) where kind = 'summaries_waiting_review'), 2, 'with the limit from the settings');
 select tests.is((select count from public.admin_alerts(now()) where kind = 'courses_without_teacher'), 1, 'courses in use without a teacher are counted');
+select tests.is((select count from public.admin_alerts(now()) where kind = 'drafts_without_teacher'), 1, 'only a draft in an untaught course in use is counted: not drafts with a teacher, not a summary still being written, not an archived course');
+select tests.is((select days from public.admin_alerts(now()) where kind = 'drafts_without_teacher'), null::integer, 'and it carries no day limit');
 select tests.is((select count from public.admin_alerts(now() + interval '2 days') where kind = 'security_events'), 0, 'the clock can be pinned');
 select tests.reset();
 
