@@ -331,8 +331,10 @@ every one of these must be set again:
 - **Authentication → Email:** email confirmation **on**. "Email OTP Length" = **6**
   (the student app expects 6, and 6 is the minimum Supabase allows).
 - **Authentication → Email templates:** paste `supabase/templates/confirmation.html` (sign-up
-  code) and `supabase/templates/recovery.html` (password reset). The local stack reads these
-  files; the hosted project does not. Subject lines are in `supabase/config.toml`.
+  code), `supabase/templates/recovery.html` (password reset) and
+  `supabase/templates/magic_link.html` (the staff sign-in code, under "Magic Link"). The local
+  stack reads these files; the hosted project does not. Subject lines are in
+  `supabase/config.toml`.
 - **Authentication → URL configuration:** the Site URL and the redirect URLs for the three
   addresses above.
 - **Authentication → SMTP:** custom SMTP. Without it, Supabase only emails people on your
@@ -457,6 +459,8 @@ throwaway project before you need one.
 | Nobody gets the sign-up code email        | Custom SMTP in Supabase; the confirmation template; the email rate limit        |
 | Sign-up code is the wrong length          | "Email OTP Length" must be 6 (`SIGN_UP_CODE_LENGTH` in the student app)         |
 | Password-reset link fails                 | The recovery template is pasted in; redirect URLs match the three addresses     |
+| An invitation link opens the student site | The `APP_URL_*` secrets start with `https://` (without it Supabase ignores the redirect) and the three addresses are on the redirect list |
+| A teacher gets no sign-in code email      | The Magic Link template is pasted in; custom SMTP; the email rate limit. They can use the password link instead |
 | "Continue with Google" fails              | Google provider client ID/secret in Supabase; the redirect URI in Google Cloud  |
 | An app shows demo data, or "not connected to the database yet" | `VITE_DATA_SOURCE` and the two Supabase variables in that Vercel project; redeploy |
 | No summaries appear                       | The scheduled job (is it firing?); `PIPELINE_TOKEN` matches; `GROQ_API_KEY`; `process-ai-jobs` logs |

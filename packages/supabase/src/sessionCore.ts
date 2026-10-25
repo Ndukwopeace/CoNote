@@ -45,6 +45,23 @@ const INACTIVE = 'This account is not active. Contact your administrator.'
 export const OAUTH_NOT_FINISHED = 'Google sign-in did not finish. Please try again.'
 // Shown when a reset link cannot be used any more.
 export const LINK_EXPIRED = 'This reset link has expired. Request a new one.'
+// Shown when an emailed sign-in code is wrong, used, expired or made up. One message for all four,
+// so it reveals nothing about which one it was.
+export const CODE_REFUSED = 'That code is not right or has expired. Ask for a new one.'
+
+/**
+ * True when Supabase says it will not send a code because no account has this address. With
+ * `shouldCreateUser: false` it answers "Signups not allowed for otp". The code of that answer
+ * (`otp_disabled`) is also used when email codes are switched off for the whole project, so the
+ * wording decides: a project with codes switched off must still show an error, not wait silently
+ * for an email that will never come.
+ */
+function isNoAccountForCode(error: unknown): boolean {
+  // Only a plain object can carry a message.
+  if (typeof error !== 'object' || error === null) return false
+  const { message } = error as { message?: unknown }
+  return typeof message === 'string' && /signups not allowed/i.test(message)
+}
 
 /** What the core offers the app's own service. */
 export interface SessionCore {
@@ -59,6 +76,17 @@ export interface SessionCore {
    * brought back for a session, then checks the profile like any other sign-in.
    */
   completeOAuth: (code: string) => Promise<CoreSession>
+  /**
+   * Emails a sign-in code to an account that already exists (D114). Never creates an account, and
+   * answers the same whether or not the address has one.
+   */
+  requestSignInCode: (email: string) => Promise<void>
+  /**
+   * Signs in with the code from `requestSignInCode`. A right code proves the person owns the
+   * address, so an invited account is activated, as when a password is chosen. The caller has
+   * already validated the input.
+   */
+  signInWithCode: (email: string, code: string, remember: boolean) => Promise<CoreSession>
   /** Signs out everywhere on this computer, whatever the server says. */
   signOut: () => Promise<void>
   /** Sends the reset email; Supabase answers the same whether or not the account exists. */
@@ -87,6 +115,10 @@ export function createSessionCore({
   // True between opening a reset link and finishing the reset. Opening the link signs in a
   // temporary "recovery" session; the app must not treat it as a normal sign-in.
   let recovering = false
+  // How many code sign-ins are between "the code was accepted" and "the person was announced".
+  // Supabase reports the new session during that time, while an invited account still reads
+  // "pending"; handling that report would sign the person straight back out.
+  let codeSignIns = 0
   // Changes are handled one at a time, in the order they arrive.
   let queue: Promise<void> = Promise.resolve()
   // The stop function for the Supabase subscription, while anyone is listening.
@@ -139,7 +171,14 @@ export function createSessionCore({
   /** Handles one change reported by Supabase. */
   async function handle(event: AuthChangeEvent, session: SupabaseSession | null) {
     // A recovery session is not a sign-in, and the first report on subscribing is not a change.
-    if (recovering || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
+    if (
+      recovering ||
+      codeSignIns > 0 ||
+      event === 'INITIAL_SESSION' ||
+      event === 'TOKEN_REFRESHED'
+    ) {
+      return
+    }
     // The reset flow handles its own temporary session.
     if (event === 'PASSWORD_RECOVERY') return
     if (!session) {
@@ -263,6 +302,57 @@ export function createSessionCore({
       // SECURITY: the same checks as a password sign-in: an account that may not sign in
       // (suspended, or invited and not yet accepted) is signed out again and refused.
       return announce(data.user.id)
+    },
+
+    async requestSignInCode(email) {
+      try {
+        // SECURITY: `shouldCreateUser: false` means asking for a code can never make an account, so
+        // a stranger cannot create one by typing an address.
+        const { error } = await client.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: false },
+        })
+        // SECURITY: an address with no account is answered like one with an account, so this
+        // cannot be used to find out who has an account (account enumeration).
+        if (error && !isNoAccountForCode(error)) throw error
+      } catch (error) {
+        throw fromSupabaseError(error)
+      }
+    },
+
+    async signInWithCode(email, code, remember) {
+      // The choice must be recorded before the session is written.
+      rememberStorage.setRemember(remember)
+      // Hold back Supabase's own "signed in" report until the account has been checked below.
+      codeSignIns += 1
+      try {
+        let answer
+        try {
+          answer = await client.auth.verifyOtp({ email, token: code, type: 'email' })
+        } catch (error) {
+          throw fromSupabaseError(error)
+        }
+        const { data, error } = answer
+        if (error) {
+          const mapped = fromSupabaseError(error)
+          // A dropped connection says nothing about the code, so the person can simply retry.
+          if (mapped.kind === 'network') throw mapped
+          // Wrong, used, expired and made-up codes are all refused the same way.
+          throw new AppError('validation', CODE_REFUSED)
+        }
+        // A right code always brings a session; an answer without one is not a sign-in.
+        if (!data.session || !data.user) throw new AppError('validation', CODE_REFUSED)
+        // A right code proves the person owns the address, which is what accepting an invitation
+        // means: move an invited account from "pending" to "active". For anyone else this does
+        // nothing. A failure is not reported here: the checks below then refuse a pending account.
+        await client.rpc('accept_invitation')
+        // SECURITY: the same checks as a password sign-in: an account that may not sign in
+        // (suspended, or deactivated) is signed out again and refused.
+        return await announce(data.user.id)
+      } finally {
+        // From here on Supabase's reports are handled as usual.
+        codeSignIns -= 1
+      }
     },
 
     async signOut() {

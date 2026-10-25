@@ -28,6 +28,15 @@ export interface PasswordResetRequest {
   demoResetPath?: string
 }
 
+/** What a request for an emailed sign-in code returns. */
+export interface SignInCodeRequest {
+  /**
+   * Demo mode only: the code the email would have carried, because no email is sent. A real
+   * service leaves it out, so the page shows the shortcut only when it exists.
+   */
+  demoCode?: string
+}
+
 /** What the sign-in form sends. */
 export interface SignInInput {
   email: string
@@ -40,6 +49,16 @@ export interface AuthService {
   getSession(): Promise<Session | null>
   /** Signs in; rejects with a validation AppError for wrong details, never saying which was wrong. */
   signIn(input: SignInInput): Promise<Session>
+  /**
+   * Emails a sign-in code (D114). Resolves the same way whether or not an account exists, and
+   * never creates one; rejects only for a malformed email or a limit on how often emails go out.
+   */
+  requestSignInCode(email: string): Promise<SignInCodeRequest>
+  /**
+   * Signs in with a code from `requestSignInCode`. Every wrong, used or expired code is refused
+   * with the same validation AppError.
+   */
+  signInWithCode(email: string, code: string): Promise<Session>
   /** Signs out and forgets the session. */
   signOut(): Promise<void>
   /**

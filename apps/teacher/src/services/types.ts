@@ -6,7 +6,7 @@
 // The categories a notice can have.
 import type { NotificationType } from '@conote/domain'
 // Session shapes.
-import type { PasswordResetRequest, Session, SignInInput } from '@conote/portal'
+import type { PasswordResetRequest, Session, SignInCodeRequest, SignInInput } from '@conote/portal'
 // Review shapes.
 import type { ReviewDetails, ReviewQueueItem, SummaryDraft } from '@/types/review'
 // Course shapes.
@@ -18,6 +18,13 @@ export interface AuthService {
   getSession(): Promise<Session | null>
   /** Signs in; rejects with a validation AppError for wrong details, never saying which was wrong. */
   signIn(input: SignInInput): Promise<Session>
+  /**
+   * Emails a sign-in code (D114). Resolves the same way whether or not an account exists, and
+   * never creates one; rejects only for a malformed email or a limit on how often emails go out.
+   */
+  requestSignInCode(email: string): Promise<SignInCodeRequest>
+  /** Signs in with a code from `requestSignInCode`; every bad code is refused the same way. */
+  signInWithCode(email: string, code: string): Promise<Session>
   /** Signs out and forgets the session. */
   signOut(): Promise<void>
   /**

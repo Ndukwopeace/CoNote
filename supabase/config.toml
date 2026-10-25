@@ -53,6 +53,12 @@ content_path = "./supabase/templates/recovery.html"
 subject = "Your CoNote code: {{ .Token }}"
 content_path = "./supabase/templates/confirmation.html"
 
+# The sign-in code email for staff (D114): a code to type in, not a link. It is Supabase's "magic
+# link" email, sent by signInWithOtp to an account that already exists.
+[auth.email.template.magic_link]
+subject = "Your CoNote code: {{ .Token }}"
+content_path = "./supabase/templates/magic_link.html"
+
 # The summary pipeline's worker checks its own secret token instead of a sign-in token: the
 # scheduler that calls it is not a signed-in person (D90).
 [functions.process-ai-jobs]

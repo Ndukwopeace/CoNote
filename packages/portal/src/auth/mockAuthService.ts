@@ -14,7 +14,12 @@ import type { AccountStatus } from '@conote/domain'
 import { z } from 'zod'
 
 // The new-password rules, shared with the reset form.
-import { forgotPasswordSchema, newStaffPasswordSchema } from './authSchemas'
+import {
+  SIGN_IN_CODE_LENGTH,
+  forgotPasswordSchema,
+  newStaffPasswordSchema,
+  signInCodeSchema,
+} from './authSchemas'
 // Fake network delay.
 import { simulateLatency } from './latency'
 // Session shapes, and the interface implemented here.
@@ -25,6 +30,12 @@ const WRONG_DETAILS = 'Incorrect email or password.'
 
 /** The message for a reset link that is missing, made up, replaced or already used. */
 const EXPIRED_LINK = 'This reset link has expired. Request a new one.'
+
+/** The message for a sign-in code that is wrong, used, replaced or made up. */
+const CODE_REFUSED = 'That code is not right or has expired. Ask for a new one.'
+
+/** What the stored sign-in code record must look like. */
+const codeRecordSchema = z.object({ code: z.string().min(1), email: z.email().nullable() })
 
 /** What the stored reset record must look like. */
 const resetSchema = z.object({ code: z.string().min(1), email: z.email().nullable() })
@@ -127,6 +138,8 @@ export function createDemoAuthService({
   // Where changed passwords (by email) and the newest reset link live.
   const passwordsKey = `${demoDataPrefix}passwords`
   const resetKey = `${demoDataPrefix}reset`
+  // Where the newest sign-in code lives.
+  const codeKey = `${demoDataPrefix}signin-code`
   // Everyone listening for session changes.
   const listeners = new Set<(session: Session | null) => void>()
 
@@ -166,6 +179,56 @@ export function createDemoAuthService({
       // SECURITY: a deactivated or suspended account is refused even with the right password
       // (admin REQUIREMENTS section 6.2). Said only after the password matched, so it reveals
       // nothing to someone guessing.
+      const status = accountStatus?.(account.email) ?? 'active'
+      if (status !== 'active') {
+        throw new AppError('forbidden', 'This account is not active. Contact your administrator.')
+      }
+      // Keep a copy of the account as the session, then tell listeners.
+      const session: Session = { user: { ...account } }
+      store.setItem(sessionKey, JSON.stringify(session))
+      notify(session)
+      return session
+    },
+
+    async requestSignInCode(email) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // Only the format is checked: the same rule as the form.
+      const parsed = forgotPasswordSchema.safeParse({ email })
+      if (!parsed.success) throw new AppError('validation', 'Enter a valid email address.')
+      // The account, if any. SECURITY: the answer below never depends on it, so the form can't be
+      // used to find out who has an account (account enumeration).
+      const account = accounts.find((candidate) => candidate.email === parsed.data.email)
+      // SECURITY: an unpredictable code from the browser's random source, not Math.random. A new
+      // request replaces the old record, so only the newest code works.
+      const digits = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0
+      const code = String(digits % 10 ** SIGN_IN_CODE_LENGTH).padStart(SIGN_IN_CODE_LENGTH, '0')
+      demoStore.setItem(codeKey, JSON.stringify({ code, email: account?.email ?? null }))
+      // No email is sent in the demo, so hand the code back for the sign-in page to show.
+      return { demoCode: code }
+    },
+
+    async signInWithCode(email, code) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // The same rules as the forms, so the demo and the real service refuse the same input.
+      const parsedEmail = forgotPasswordSchema.safeParse({ email })
+      if (!parsedEmail.success) throw new AppError('validation', 'Enter a valid email address.')
+      const parsedCode = signInCodeSchema.safeParse({ code })
+      if (!parsedCode.success) {
+        throw new AppError('validation', parsedCode.error.issues[0]?.message ?? 'Check this value.')
+      }
+      // SECURITY: one message for a wrong code, a code meant for another address, an address with
+      // no account and a code already used, so nothing is revealed about which it was.
+      const record = readChecked(demoStore, codeKey, codeRecordSchema)
+      if (record?.email !== parsedEmail.data.email || record.code !== parsedCode.data.code) {
+        throw new AppError('validation', CODE_REFUSED)
+      }
+      // SECURITY: spend the code, so it cannot be used a second time.
+      demoStore.removeItem(codeKey)
+      const account = accounts.find((candidate) => candidate.email === record.email)
+      if (!account) throw new AppError('validation', CODE_REFUSED)
+      // SECURITY: a deactivated or suspended account is refused even with a right code.
       const status = accountStatus?.(account.email) ?? 'active'
       if (status !== 'active') {
         throw new AppError('forbidden', 'This account is not active. Contact your administrator.')

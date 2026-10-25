@@ -49,27 +49,26 @@ const COLUMNS: DataColumn<ProgrammeRequestItem, never>[] = [
 
 /** Approve and Decline for one request, and the toast that says what happened. */
 function RequestActions({ request }: Readonly<{ request: ProgrammeRequestItem }>) {
-  // The change, and the toasts that report it.
-  const decide = useDecideProgrammeRequest()
+  // The toasts that report what happened.
   const toast = useToast()
+  // The change. Its callbacks are the hook's own, so the toast still shows after this row has left
+  // the list and unmounted.
+  const decide = useDecideProgrammeRequest({
+    onDecided: (decision) => {
+      toast.success(
+        decision === 'approved'
+          ? `${request.studentName} joined ${request.programmeCode}.`
+          : `Request from ${request.studentName} declined.`,
+      )
+    },
+    onRefused: (error) => {
+      toast.error(programmeMessage(error))
+    },
+  })
 
-  /** Decides the request and says so; a refusal is explained in words. */
+  /** Decides the request; the hook says what happened. */
   function run(decision: 'approved' | 'declined') {
-    decide.mutate(
-      { requestId: request.id, decision },
-      {
-        onSuccess: () => {
-          toast.success(
-            decision === 'approved'
-              ? `${request.studentName} joined ${request.programmeCode}.`
-              : `Request from ${request.studentName} declined.`,
-          )
-        },
-        onError: (error) => {
-          toast.error(programmeMessage(error))
-        },
-      },
-    )
+    decide.mutate({ requestId: request.id, decision })
   }
 
   return (

@@ -220,6 +220,30 @@ describe('ProgrammesPage', () => {
     ).toEqual(['2', '2', '0'])
   })
 
+  // Proves the toast does not wait for the list to refresh. Approving removes the row, so its
+  // buttons unmount while the list reloads; a toast tied to them (or to the reload ending) is lost
+  // when the reload is slow, which made the browser test fail on a slow runner.
+  it('says a student joined even while the list is still refreshing', async () => {
+    const base = createTestServices(platform()).programmes
+    let decided = false
+    const { user } = renderProgrammes(platform(), {
+      programmes: {
+        ...base,
+        decideProgrammeRequest: async (requestId, decision) => {
+          decided = true
+          return base.decideProgrammeRequest(requestId, decision)
+        },
+        // After the decision the reload never finishes.
+        listProgrammeRequests: () =>
+          decided ? new Promise(() => undefined) : base.listProgrammeRequests(),
+      },
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Approve Student 02 for SWE-Y1' }))
+
+    expect(await screen.findByText('Student 02 joined SWE-Y1.')).toBeInTheDocument()
+  })
+
   // Proves declining enrols nobody.
   it('declines a request', async () => {
     const { user } = renderProgrammes()

@@ -68,6 +68,8 @@ export function AuthProvider({ auth, storagePrefix, children }: Readonly<AuthPro
     () => ({
       ...state,
       signIn: (input) => auth.signIn(input),
+      requestSignInCode: (email) => auth.requestSignInCode(email),
+      signInWithCode: (email, code) => auth.signInWithCode(email, code),
       requestPasswordReset: (email) => auth.requestPasswordReset(email),
       checkResetLink: (code) => auth.checkResetLink(code),
       resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),

@@ -15,16 +15,20 @@ export type {
   PasswordResetRequest,
   Session,
   SessionUser,
+  SignInCodeRequest,
   SignInInput,
 } from './auth/types'
 // The role guards.
 export { RedirectIfSignedIn, RequireRole, WrongRoleNotice } from './auth/guards'
 // The shared sign-in and password rules.
 export {
+  SIGN_IN_CODE_LENGTH,
   STAFF_MIN_PASSWORD_LENGTH,
+  cleanSignInCode,
   forgotPasswordSchema,
   newStaffPasswordSchema,
   resetPasswordSchema,
+  signInCodeSchema,
   signInSchema,
 } from './auth/authSchemas'
 // The demo auth service.
