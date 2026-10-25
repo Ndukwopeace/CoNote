@@ -134,3 +134,124 @@ describe('demo AuthService', () => {
     expect(answered).toBe(true)
   })
 })
+
+describe('demo sign-in code', () => {
+  // Proves the demo hands back the code, since no email is sent, and the code signs the person in.
+  it('returns a demo code that signs in', async () => {
+    const service = createTestAuth()
+    const request = await service.requestSignInCode(STAFF.email)
+
+    expect(request.demoCode).toMatch(/^\d{6}$/)
+    const session = await service.signInWithCode(STAFF.email, request.demoCode ?? '')
+    expect(session.user.email).toBe(STAFF.email)
+    await expect(service.getSession()).resolves.toEqual(session)
+  })
+
+  // Proves the email is matched as people type it, and a pasted code with a space works.
+  it('accepts the email in any letter case and the code with a space', async () => {
+    const service = createTestAuth()
+    const request = await service.requestSignInCode(`  ${STAFF.email.toUpperCase()} `)
+    const pasted = `${request.demoCode?.slice(0, 3) ?? ''} ${request.demoCode?.slice(3) ?? ''}`
+
+    await expect(service.signInWithCode(STAFF.email, pasted)).resolves.toBeDefined()
+  })
+
+  // SECURITY: proves a code works once, so a code seen over a shoulder cannot be used again.
+  it('spends the code', async () => {
+    const service = createTestAuth()
+    const code = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+    await service.signInWithCode(STAFF.email, code)
+
+    await expect(service.signInWithCode(STAFF.email, code)).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'That code is not right or has expired. Ask for a new one.',
+    })
+  })
+
+  // SECURITY: proves a new request replaces the old code, so only the newest email works.
+  it('replaces the code when a new one is asked for', async () => {
+    const service = createTestAuth()
+    const first = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+    let second = first
+    while (second === first) second = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+
+    await expect(service.signInWithCode(STAFF.email, first)).rejects.toMatchObject({
+      kind: 'validation',
+    })
+    await expect(service.signInWithCode(STAFF.email, second)).resolves.toBeDefined()
+  })
+
+  // SECURITY: proves a wrong code and a code for another address fail the same way.
+  it('refuses a wrong code and another address with one message', async () => {
+    const service = createTestAuth()
+    const code = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+    const wrong = code === '000000' ? '111111' : '000000'
+
+    for (const attempt of [
+      service.signInWithCode(STAFF.email, wrong),
+      service.signInWithCode(STUDENT.email, code),
+    ]) {
+      await expect(attempt).rejects.toMatchObject({
+        kind: 'validation',
+        message: 'That code is not right or has expired. Ask for a new one.',
+      })
+    }
+  })
+
+  // SECURITY: proves an address with no account is answered like one with an account, and its
+  // code opens nothing (account enumeration).
+  it('answers the same for an unknown address, and signs nobody in', async () => {
+    const service = createTestAuth()
+    const request = await service.requestSignInCode('nobody@example.com')
+
+    expect(request.demoCode).toMatch(/^\d{6}$/)
+    await expect(
+      service.signInWithCode('nobody@example.com', request.demoCode ?? ''),
+    ).rejects.toMatchObject({ kind: 'validation' })
+  })
+
+  // Proves bad input is refused before anything is checked.
+  it('checks the email and the code shape', async () => {
+    const service = createTestAuth()
+
+    await expect(service.requestSignInCode('not-an-email')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'Enter a valid email address.',
+    })
+    await expect(service.signInWithCode(STAFF.email, '12')).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'Enter the 6-digit code.',
+    })
+  })
+
+  // SECURITY: proves an account that is not active is refused even with a right code.
+  it('refuses an account that is not active', async () => {
+    const service = createTestAuth({ accountStatus: () => 'suspended' })
+    const code = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+
+    await expect(service.signInWithCode(STAFF.email, code)).rejects.toMatchObject({
+      kind: 'forbidden',
+    })
+    await expect(service.getSession()).resolves.toBeNull()
+  })
+
+  // Proves listeners hear about a code sign-in, like any other.
+  it('tells listeners about the sign-in', async () => {
+    const service = createTestAuth()
+    const heard: (string | undefined)[] = []
+    service.onAuthChange((session) => heard.push(session?.user.email))
+    const code = (await service.requestSignInCode(STAFF.email)).demoCode ?? ''
+    await service.signInWithCode(STAFF.email, code)
+
+    expect(heard).toEqual([STAFF.email])
+  })
+
+  // Proves an unreadable stored code is treated as absent.
+  it('ignores an unreadable stored code', async () => {
+    window.localStorage.setItem(`${CONFIG.demoDataPrefix}signin-code`, '{nope')
+
+    await expect(createTestAuth().signInWithCode(STAFF.email, '123456')).rejects.toMatchObject({
+      kind: 'validation',
+    })
+  })
+})

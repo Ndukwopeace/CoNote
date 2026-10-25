@@ -6,7 +6,7 @@
 import { createContext } from 'react'
 
 // Session shapes.
-import type { PasswordResetRequest, Session, SignInInput } from './types'
+import type { PasswordResetRequest, Session, SignInCodeRequest, SignInInput } from './types'
 
 /** Where sign-in stands: still checking, signed out, or signed in with a session. */
 export type AuthState =
@@ -17,6 +17,8 @@ export type AuthState =
 /** The state plus the actions that change it. */
 export type AuthContextValue = AuthState & {
   signIn: (input: SignInInput) => Promise<Session>
+  requestSignInCode: (email: string) => Promise<SignInCodeRequest>
+  signInWithCode: (email: string, code: string) => Promise<Session>
   requestPasswordReset: (email: string) => Promise<PasswordResetRequest>
   checkResetLink: (code: string | null) => Promise<boolean>
   resetPassword: (code: string, newPassword: string) => Promise<void>

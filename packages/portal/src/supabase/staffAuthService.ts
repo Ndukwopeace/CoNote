@@ -17,7 +17,7 @@ import type { RememberStorage } from '@conote/supabase/rememberStorage'
 import { createSessionCore } from '@conote/supabase/sessionCore'
 
 // The staff email and password rules, shared with the forms and the demo service.
-import { forgotPasswordSchema, newStaffPasswordSchema } from '../auth/authSchemas'
+import { forgotPasswordSchema, newStaffPasswordSchema, signInCodeSchema } from '../auth/authSchemas'
 // The interface this implementation must satisfy.
 import type { AuthService } from '../auth/types'
 
@@ -77,6 +77,24 @@ export function createSupabaseStaffAuthService({
         }
         throw error
       }
+    },
+
+    async requestSignInCode(email) {
+      await core.requestSignInCode(cleanEmail(email))
+      // A real service sends an email; there is no demo code.
+      return {}
+    },
+
+    async signInWithCode(email, code) {
+      const clean = cleanEmail(email)
+      // SECURITY: the same shape check as the form, so a request that skips the form can send
+      // Supabase nothing but six digits.
+      const parsed = signInCodeSchema.safeParse({ code })
+      if (!parsed.success) {
+        throw new AppError('validation', parsed.error.issues[0]?.message ?? 'Check this value.')
+      }
+      // SECURITY: staff sessions end with the tab, however they were started.
+      return core.signInWithCode(clean, parsed.data.code, false)
     },
 
     signOut: core.signOut,

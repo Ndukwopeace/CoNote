@@ -5,7 +5,8 @@
 
 // Connects the zod rules to the form.
 import { zodResolver } from '@hookform/resolvers/zod'
-// Form state.
+// Form state, and which way in is showing.
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 // Links, and the navigation state that may carry a notice.
 import { Link, useLocation } from 'react-router'
@@ -20,6 +21,8 @@ import { PasswordInput } from '@conote/ui/forms/PasswordInput'
 
 // The card around the page.
 import { AuthCard } from '../components/AuthCard'
+// Signing in with an emailed code.
+import { CodeSignIn } from './CodeSignIn'
 // Notices from other pages ("Your password has been updated").
 import { readAuthNotice } from '../auth/authNotice'
 // The form's rules.
@@ -52,6 +55,8 @@ export function LoginPage({ title, subtitle, forgotPasswordPath, demo }: Readonl
   const { signIn } = useAuth()
   // Pending and error state.
   const { error, isPending, run } = useAuthRequest(LOGIN_MESSAGES)
+  // Whether the emailed-code way in is showing instead of the password form (D114).
+  const [usingCode, setUsingCode] = useState(false)
   // A notice another page asked for. SECURITY: only known keys show (readAuthNotice).
   const notice = readAuthNotice(useLocation().state)
   // Form state with the zod rules; errors show once a field has been left.
@@ -72,47 +77,72 @@ export function LoginPage({ title, subtitle, forgotPasswordPath, demo }: Readonl
           {notice}
         </FormMessage>
       )}
-      {/* A failed attempt's message. */}
-      {error && (
-        <FormMessage tone="error" className="mt-4">
-          {error}
-        </FormMessage>
-      )}
-      {/* noValidate: the zod rules give the messages, not the browser. */}
-      <form
-        noValidate
-        onSubmit={(event) => void handleSubmit((values) => run(() => signIn(values)))(event)}
-        className="mt-6 space-y-4"
-      >
-        {/* Email. */}
-        <FormField id="email" label="Email" error={errors.email?.message}>
-          {(field) => (
-            <Input {...field} type="email" autoComplete="username" {...register('email')} />
+      {usingCode ? (
+        <CodeSignIn
+          onUsePassword={() => {
+            setUsingCode(false)
+          }}
+        />
+      ) : (
+        <>
+          {/* A failed attempt's message. */}
+          {error && (
+            <FormMessage tone="error" className="mt-4">
+              {error}
+            </FormMessage>
           )}
-        </FormField>
-        {/* Password, with a show toggle and the way to recover it. */}
-        <FormField
-          id="password"
-          label="Password"
-          error={errors.password?.message}
-          labelAside={
-            <Link
-              to={forgotPasswordPath}
-              className="text-sm font-medium text-primary hover:underline"
+          {/* noValidate: the zod rules give the messages, not the browser. */}
+          <form
+            noValidate
+            onSubmit={(event) => void handleSubmit((values) => run(() => signIn(values)))(event)}
+            className="mt-6 space-y-4"
+          >
+            {/* Email. */}
+            <FormField id="email" label="Email" error={errors.email?.message}>
+              {(field) => (
+                <Input {...field} type="email" autoComplete="username" {...register('email')} />
+              )}
+            </FormField>
+            {/* Password, with a show toggle and the way to recover it. */}
+            <FormField
+              id="password"
+              label="Password"
+              error={errors.password?.message}
+              labelAside={
+                <Link
+                  to={forgotPasswordPath}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              }
             >
-              Forgot password?
-            </Link>
-          }
-        >
-          {(field) => (
-            <PasswordInput {...field} autoComplete="current-password" {...register('password')} />
-          )}
-        </FormField>
-        {/* Submit; says what it's doing while busy. */}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Signing in…' : 'Sign In'}
-        </Button>
-      </form>
+              {(field) => (
+                <PasswordInput
+                  {...field}
+                  autoComplete="current-password"
+                  {...register('password')}
+                />
+              )}
+            </FormField>
+            {/* Submit; says what it's doing while busy. */}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? 'Signing in…' : 'Sign In'}
+            </Button>
+          </form>
+          {/* A second way in with no password to remember (D114). */}
+          <Button
+            type="button"
+            variant="link"
+            className="mt-4 h-auto p-0 text-sm"
+            onClick={() => {
+              setUsingCode(true)
+            }}
+          >
+            Email me a sign-in code
+          </Button>
+        </>
+      )}
       {/* Demo mode only: the demo account, so reviewers can get in. */}
       {demo && (
         <p className="mt-6 rounded-md bg-primary-light px-3 py-2 text-xs text-primary-dark">

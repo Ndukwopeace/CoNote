@@ -86,6 +86,9 @@ export function createFakeSupabase() {
     ),
     signInWithPassword: vi.fn<(c: unknown) => Promise<Answer>>(() => Promise.resolve(SIGNED_IN)),
     signUp: vi.fn<(c: unknown) => Promise<Answer>>(() => Promise.resolve(SIGNED_IN)),
+    signInWithOtp: vi.fn<(c: unknown) => Promise<Answer>>(() =>
+      Promise.resolve({ data: {}, error: null }),
+    ),
     signInWithOAuth: vi.fn<(c: unknown) => Promise<Answer>>(() =>
       Promise.resolve({ data: {}, error: null }),
     ),

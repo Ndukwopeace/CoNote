@@ -56,3 +56,35 @@ export const resetPasswordSchema = z
 
 /** The reset form's values after checking. */
 export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
+
+/**
+ * How many digits the emailed sign-in code has (D114). It must equal the Supabase project's
+ * "Email OTP Length" setting, which the student sign-up code (D99) already uses.
+ */
+export const SIGN_IN_CODE_LENGTH = 6
+
+/**
+ * A typed or pasted code with everything but its digits removed. People paste "482 913" or
+ * "482-913" from the email, and a phone's keyboard may add a space.
+ */
+export function cleanSignInCode(text: string): string {
+  // Keep the digits only.
+  return text.replaceAll(/\D/g, '')
+}
+
+/**
+ * The code form: the emailed digits, cleaned first, then counted.
+ * SECURITY: checked again by the service, so a request that skips the form can send Supabase
+ * nothing but six digits.
+ */
+export const signInCodeSchema = z.object({
+  // Cleaned before it is counted, so a pasted code with a space passes.
+  code: z
+    .string()
+    .transform(cleanSignInCode)
+    .pipe(
+      z
+        .string()
+        .length(SIGN_IN_CODE_LENGTH, `Enter the ${String(SIGN_IN_CODE_LENGTH)}-digit code.`),
+    ),
+})

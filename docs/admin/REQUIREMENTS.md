@@ -227,6 +227,7 @@ No student or teacher navigation appears anywhere.
 
 - **Heading:** "CoNote Admin"
 - **Subtitle:** "Sign in to manage the CoNote platform."
+- **Email code (D114):** the same "Email me a sign-in code" way in as the teacher portal: six digits by email, no password, no link, no account ever created, an unknown address answered like a known one.
 - **Fields:** Email and Password (with a show/hide toggle)
 - **Links and buttons:** a "Sign In" button and a "Forgot password?" link
 

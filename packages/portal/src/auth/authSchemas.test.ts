@@ -6,7 +6,14 @@
 import { describe, expect, it } from 'vitest'
 
 // The units under test.
-import { forgotPasswordSchema, resetPasswordSchema, signInSchema } from './authSchemas'
+import {
+  SIGN_IN_CODE_LENGTH,
+  cleanSignInCode,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  signInCodeSchema,
+  signInSchema,
+} from './authSchemas'
 
 /** Every message the schema gives for `value`, in order. */
 function messages(
@@ -72,5 +79,31 @@ describe('resetPasswordSchema', () => {
       message: 'Passwords do not match.',
       path: ['confirmPassword'],
     })
+  })
+})
+
+describe('signInCodeSchema', () => {
+  // Proves the code is six digits, the length the Supabase project's emails use.
+  it('is six digits long', () => {
+    expect(SIGN_IN_CODE_LENGTH).toBe(6)
+    expect(signInCodeSchema.parse({ code: '482913' })).toEqual({ code: '482913' })
+  })
+
+  // Proves a code pasted from the email, with a space or a dash, is cleaned before it is counted.
+  it('accepts a pasted code with spaces and dashes', () => {
+    expect(cleanSignInCode(' 482 913 ')).toBe('482913')
+    expect(signInCodeSchema.parse({ code: '482-913' })).toEqual({ code: '482913' })
+  })
+
+  // Proves a short, long or empty code is explained.
+  it('explains a code of the wrong length', () => {
+    expect(messages(signInCodeSchema, { code: '4829' })).toEqual(['Enter the 6-digit code.'])
+    expect(messages(signInCodeSchema, { code: '4829134' })).toEqual(['Enter the 6-digit code.'])
+    expect(messages(signInCodeSchema, { code: '' })).toEqual(['Enter the 6-digit code.'])
+  })
+
+  // SECURITY: proves letters never pass as digits, so only a code-shaped value reaches Supabase.
+  it('refuses letters', () => {
+    expect(messages(signInCodeSchema, { code: 'abcdef' })).toEqual(['Enter the 6-digit code.'])
   })
 })
