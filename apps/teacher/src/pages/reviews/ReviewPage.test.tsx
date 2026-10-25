@@ -1,6 +1,7 @@
 /**
- * Tests for the review screen (teacher REQUIREMENTS section 9): reading, editing, saving,
- * publishing, conflicts, the unsaved-changes question, and the read-only and not-found cases.
+ * Tests for the review screen (teacher REQUIREMENTS section 9): reading first (D113), editing,
+ * saving, publishing, conflicts, the unsaved-changes question, and the read-only and not-found
+ * cases.
  */
 
 // Queries and waiting.
@@ -30,8 +31,9 @@ function renderReview(platform = reviewPlatform(), summaryId = 's1') {
   })
 }
 
-/** Waits for the editor to show. */
-async function overview() {
+/** Opens the form from the reading view with Edit, and returns the Overview box. */
+async function openEditor(user: ReturnType<typeof renderReview>['user']) {
+  await user.click(await screen.findByRole('button', { name: 'Edit' }))
   return screen.findByRole('textbox', { name: 'Overview' })
 }
 
@@ -41,8 +43,9 @@ async function stored(services: ReturnType<typeof renderReview>['services']) {
 }
 
 describe('ReviewPage', () => {
-  // Proves the header and the draft show, with counts only: nothing of the notes themselves.
-  it('shows the draft with the counts behind it', async () => {
+  // Proves the draft opens as text to read, with counts only, one way to approve it and one to
+  // edit it: no form until the teacher asks for one (D113).
+  it('opens as text to read, with Approve & Publish and Edit', async () => {
     renderReview()
 
     expect(
@@ -50,17 +53,78 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Ready for your review')).toBeInTheDocument()
     expect(screen.getByText('Based on 18 notes from 14 students')).toBeInTheDocument()
-    expect(await overview()).toHaveValue('The AI overview.')
-    expect(screen.getByRole('textbox', { name: 'Concept 1 title' })).toHaveValue('Basis')
-    expect(screen.getByRole('textbox', { name: 'Confusion 1 point' })).toHaveValue(
-      'Span versus basis',
-    )
-    expect(screen.getByRole('textbox', { name: 'Topic 1 name' })).toHaveValue('Dimension')
+    // The draft as text.
+    expect(await screen.findByText('The AI overview.')).toBeInTheDocument()
+    expect(screen.getByText('Basis')).toBeInTheDocument()
+    expect(screen.getByText('Span versus basis')).toBeInTheDocument()
+    expect(screen.getByText('Dimension')).toBeInTheDocument()
+    // The two actions, and no form.
+    expect(screen.getByRole('button', { name: 'Approve & Publish' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument()
     // The way back is the course.
     expect(screen.getByRole('link', { name: 'MTH 202 Linear Algebra' })).toHaveAttribute(
       'href',
       '/teacher/courses/mth-202',
     )
+  })
+
+  // Proves Edit opens the form with the draft in it, and Back to reading returns without a
+  // question when nothing was changed.
+  it('opens the form from Edit, and goes back to reading when nothing changed', async () => {
+    const { user } = renderReview()
+
+    expect(await openEditor(user)).toHaveValue('The AI overview.')
+    expect(screen.getByRole('textbox', { name: 'Concept 1 title' })).toHaveValue('Basis')
+    expect(screen.getByRole('textbox', { name: 'Confusion 1 point' })).toHaveValue(
+      'Span versus basis',
+    )
+    expect(screen.getByRole('textbox', { name: 'Topic 1 name' })).toHaveValue('Dimension')
+
+    await user.click(screen.getByRole('button', { name: 'Back to reading' }))
+
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  // Proves going back to reading with unsaved edits asks first: Keep editing stays in the form
+  // with the edits, and Discard returns to the draft as it was.
+  it('asks before discarding edits when going back to reading', async () => {
+    const { user } = renderReview()
+    const box = await openEditor(user)
+    await user.type(box, ' Edited.')
+
+    await user.click(screen.getByRole('button', { name: 'Back to reading' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Discard your edits?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }))
+    expect(screen.getByRole('textbox', { name: 'Overview' })).toHaveValue(
+      'The AI overview. Edited.',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Back to reading' }))
+    const again = await screen.findByRole('alertdialog', { name: 'Discard your edits?' })
+    await user.click(within(again).getByRole('button', { name: 'Discard' }))
+
+    expect(await screen.findByText('The AI overview.')).toBeInTheDocument()
+    expect(screen.queryByText(/Edited\./)).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  // Proves a saved edit is what the reading view shows afterwards.
+  it('shows the saved text when going back to reading', async () => {
+    const { user } = renderReview()
+    const box = await openEditor(user)
+    await user.clear(box)
+    await user.type(box, 'Saved overview.')
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
+    await screen.findByText('Draft saved.')
+
+    await user.click(screen.getByRole('button', { name: 'Back to reading' }))
+
+    expect(await screen.findByText('Saved overview.')).toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
   // Proves a draft with flagged points says so, where the teacher reads, and points to the section.
@@ -78,7 +142,7 @@ describe('ReviewPage', () => {
     const none = reviewPlatform()
     none.summaries[0]!.draft.confusionAreas = []
     const first = renderReview(none)
-    await overview()
+    await screen.findByText('Based on 18 notes from 14 students')
     expect(screen.queryByText(/The AI flagged/)).toBeNull()
     first.unmount()
 
@@ -90,7 +154,7 @@ describe('ReviewPage', () => {
   // Proves saving keeps the edit, confirms it, and leaves the summary in review.
   it('saves an edit and keeps the stage', async () => {
     const { user, services } = renderReview()
-    const box = await overview()
+    const box = await openEditor(user)
 
     await user.clear(box)
     await user.type(box, 'My overview.')
@@ -113,7 +177,7 @@ describe('ReviewPage', () => {
   // Proves a blank required field blocks saving, names the field, and sends nothing.
   it('blocks saving a blank overview and says which field', async () => {
     const { user, services } = renderReview()
-    await user.clear(await overview())
+    await user.clear(await openEditor(user))
     await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     expect(await screen.findByText('Enter the overview.')).toBeInTheDocument()
@@ -127,7 +191,7 @@ describe('ReviewPage', () => {
   // Proves parts can be added and removed, and what is on screen is what is saved.
   it('adds and removes parts', async () => {
     const { user, services } = renderReview()
-    await overview()
+    await openEditor(user)
 
     // Add a concept, fill it in.
     await user.click(screen.getByRole('button', { name: 'Add key concept' }))
@@ -153,7 +217,7 @@ describe('ReviewPage', () => {
   // Proves a new concept left blank blocks saving and names the missing part.
   it('blocks saving an empty new concept', async () => {
     const { user } = renderReview()
-    await overview()
+    await openEditor(user)
 
     await user.click(screen.getByRole('button', { name: 'Add key concept' }))
     await user.click(screen.getByRole('button', { name: 'Save draft' }))
@@ -162,10 +226,10 @@ describe('ReviewPage', () => {
     expect(screen.getByText('Enter the concept explanation.')).toBeInTheDocument()
   })
 
-  // Proves Approve & Publish asks first, and cancelling changes nothing.
+  // Proves Approve & Publish, from the reading view, asks first, and cancelling changes nothing.
   it('asks before publishing, and Cancel publishes nothing', async () => {
     const { user, services } = renderReview()
-    await overview()
+    await screen.findByText('The AI overview.')
 
     await user.click(screen.getByRole('button', { name: 'Approve & Publish' }))
     const dialog = await screen.findByRole('alertdialog', { name: 'Publish this summary?' })
@@ -176,14 +240,63 @@ describe('ReviewPage', () => {
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     })
     await expect(stored(services)).resolves.toMatchObject({ status: 'in_review', version: 1 })
-    // Still editable.
-    expect(screen.getByRole('button', { name: 'Save draft' })).toBeInTheDocument()
+    // Still waiting for the teacher: the same two actions.
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve & Publish' })).toBeInTheDocument()
+  })
+
+  // Proves the teacher can approve the draft as the AI wrote it, from the reading view, with no
+  // editing at all, and the page turns read-only.
+  it('approves the draft as loaded, from the reading view', async () => {
+    const { user, services } = renderReview()
+    await screen.findByText('The AI overview.')
+
+    await user.click(screen.getByRole('button', { name: 'Approve & Publish' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Publish this summary?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Approve & Publish' }))
+
+    expect(await screen.findByText(/Published .* by Sarah Mbarga/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+    await expect(stored(services)).resolves.toMatchObject({
+      status: 'published',
+      draft: { overview: 'The AI overview.' },
+    })
+    await expect(services.review.listReviewQueue()).resolves.toEqual([])
+  })
+
+  // Proves approving a draft that changed in another tab is refused with Reload, nothing is
+  // overwritten, and Reload shows the newer text to read.
+  it('refuses to approve a draft that changed meanwhile, and Reload shows the new one', async () => {
+    const { user, services } = renderReview()
+    await screen.findByText('The AI overview.')
+    // Another tab saves first.
+    const current = await stored(services)
+    await services.review.saveDraft(
+      's1',
+      { ...current.draft, overview: 'Saved elsewhere.' },
+      current.version,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Approve & Publish' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Publish this summary?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Approve & Publish' }))
+
+    expect(
+      await screen.findByText(/This draft changed\. Reload to see the latest\./),
+    ).toBeInTheDocument()
+    await expect(stored(services)).resolves.toMatchObject({
+      status: 'in_review',
+      draft: { overview: 'Saved elsewhere.' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Reload' }))
+    expect(await screen.findByText('Saved elsewhere.')).toBeInTheDocument()
+    expect(screen.queryByText(/This draft changed/)).not.toBeInTheDocument()
   })
 
   // Proves confirming publishes what is on screen, even unsaved, and the page turns read-only.
   it('publishes the edited draft after confirmation and becomes read-only', async () => {
     const { user, services } = renderReview()
-    const box = await overview()
+    const box = await openEditor(user)
     await user.clear(box)
     await user.type(box, 'Final overview.')
 
@@ -208,7 +321,7 @@ describe('ReviewPage', () => {
   // Proves publishing is blocked, with the message, when a required field is blank.
   it('does not ask to publish an invalid draft', async () => {
     const { user } = renderReview()
-    await user.clear(await overview())
+    await user.clear(await openEditor(user))
 
     await user.click(screen.getByRole('button', { name: 'Approve & Publish' }))
 
@@ -220,7 +333,7 @@ describe('ReviewPage', () => {
   // Reload brings in the newer text.
   it('handles a draft that changed in another tab', async () => {
     const { user, services } = renderReview()
-    const box = await overview()
+    const box = await openEditor(user)
     // Another tab saves first.
     const current = await stored(services)
     await services.review.saveDraft(
@@ -250,7 +363,7 @@ describe('ReviewPage', () => {
   // Proves leaving with unsaved edits asks first, Keep editing stays, and Leave goes.
   it('asks before leaving with unsaved edits', async () => {
     const { user, router } = renderReview()
-    await user.type(await overview(), ' Edited.')
+    await user.type(await openEditor(user), ' Edited.')
 
     // Keep editing: stays on the review.
     await user.click(screen.getByRole('link', { name: 'MTH 202 Linear Algebra' }))
@@ -267,10 +380,10 @@ describe('ReviewPage', () => {
     })
   })
 
-  // Proves leaving without edits never asks.
+  // Proves leaving without edits never asks, in the reading view or the open form.
   it('does not ask when nothing was edited', async () => {
     const { user, router } = renderReview()
-    await overview()
+    await openEditor(user)
 
     await user.click(screen.getByRole('link', { name: 'MTH 202 Linear Algebra' }))
 
@@ -283,7 +396,7 @@ describe('ReviewPage', () => {
   // Proves signing out is never held up by the unsaved-changes question.
   it('lets the teacher sign out with unsaved edits', async () => {
     const { user, router } = renderReview()
-    await user.type(await overview(), ' Edited.')
+    await user.type(await openEditor(user), ' Edited.')
 
     await user.click(screen.getByRole('button', { name: 'Account menu for Sarah Mbarga' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
@@ -337,10 +450,17 @@ describe('ReviewPage', () => {
     expect(await screen.findByRole('status', { name: 'Loading the summary' })).toBeInTheDocument()
   })
 
-  // Proves the editor has no accessibility violations.
-  it('has no accessibility violations', async () => {
+  // Proves the reading view has no accessibility violations.
+  it('has no accessibility violations while reading', async () => {
     const { container } = renderReview()
-    await overview()
+    await screen.findByText('The AI overview.')
+    await expectNoAxeViolations(container)
+  })
+
+  // Proves the editor has none either.
+  it('has no accessibility violations while editing', async () => {
+    const { user, container } = renderReview()
+    await openEditor(user)
     await expectNoAxeViolations(container)
   })
 

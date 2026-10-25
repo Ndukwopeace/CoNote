@@ -315,7 +315,7 @@ Done between M5 and M6, before the admin portal starts. No change for students.
 
 - My courses and course details (classes with their summary stages).
 - The review queue: summaries waiting in `in_review` for the teacher's courses, longest wait first.
-- The review screen: read the draft, edit it, save the draft, and "Approve & Publish", which asks first. Only a teacher can publish; there is no publish action anywhere else.
+- The review screen: read the draft (it opens as text, D113), edit it on request, save the draft, and "Approve & Publish", which asks first. Only a teacher can publish; there is no publish action anywhere else.
 - The review service contract, written so the student's summary service and the backend read the same statuses.
 - Loading, empty, error and not-found states on every screen; Playwright covers the review flow.
 

@@ -22,7 +22,6 @@ import { Input } from '@conote/ui/input'
 import { Textarea } from '@conote/ui/textarea'
 import { ConfirmDialog } from '@conote/ui/common/ConfirmDialog'
 import { FormField } from '@conote/ui/forms/FormField'
-import { FormMessage } from '@conote/ui/forms/FormMessage'
 import { useToast } from '@conote/ui/toast'
 
 // Sign-in state: signing out is never blocked.
@@ -31,8 +30,8 @@ import { useAuth } from '@conote/portal'
 import { usePublishDraft, useSaveDraft } from '@/hooks/useReview'
 // The draft's rules.
 import { DRAFT_LIMITS, draftSchema } from '@/lib/draftSchema'
-// Standard wording for failures.
-import { errorMessage } from '@conote/portal'
+// A failed save or publish, said in words.
+import { DraftProblem } from './DraftProblem'
 // The shapes edited.
 import type { ReviewDetails, SummaryDraft } from '@/types/review'
 
@@ -41,10 +40,9 @@ interface DraftEditorProps {
   details: ReviewDetails
   // Loads the latest draft and restarts the form from it; used after a conflict.
   onReload: () => Promise<void>
+  // Closes the form and goes back to reading the draft (D113).
+  onBack: () => void
 }
-
-/** The message for a draft that changed under the teacher. */
-const STALE_MESSAGE = 'This draft changed. Reload to see the latest.'
 
 /** A new item's ID: unique within the draft, and never reused. */
 function newId(): string {
@@ -52,7 +50,7 @@ function newId(): string {
 }
 
 /** The review form. */
-export function DraftEditor({ details, onReload }: Readonly<DraftEditorProps>) {
+export function DraftEditor({ details, onReload, onBack }: Readonly<DraftEditorProps>) {
   // Short confirmations.
   const toast = useToast()
   // Sign-in state, so signing out isn't held up by the unsaved-changes question.
@@ -64,6 +62,8 @@ export function DraftEditor({ details, onReload }: Readonly<DraftEditorProps>) {
   const [problem, setProblem] = useState<AppError | null>(null)
   // Whether the publish question is showing.
   const [confirming, setConfirming] = useState(false)
+  // Whether the question about discarding edits is showing (going back to reading).
+  const [discarding, setDiscarding] = useState(false)
 
   // Form state with the draft's rules; errors show once a field has been left.
   const {
@@ -318,35 +318,33 @@ export function DraftEditor({ details, onReload }: Readonly<DraftEditorProps>) {
 
         {/* A failed save or publish. A changed draft offers Reload. */}
         {problem && (
-          <FormMessage tone="error">
-            {problem.kind === 'conflict' ? (
-              <span className="flex flex-wrap items-center gap-3">
-                {STALE_MESSAGE}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setProblem(null)
-                    void onReload()
-                  }}
-                >
-                  Reload
-                </Button>
-              </span>
-            ) : (
-              errorMessage(problem)
-            )}
-          </FormMessage>
+          <DraftProblem
+            problem={problem}
+            onReload={() => {
+              setProblem(null)
+              void onReload()
+            }}
+          />
         )}
 
-        {/* The two actions. Publishing is the second and asks first. */}
+        {/* The actions. Publishing asks first. Going back to reading asks only if edits would be lost. */}
         <div className="flex flex-wrap gap-3">
           <Button type="submit" variant="outline" disabled={busy}>
             {save.isPending ? 'Saving…' : 'Save draft'}
           </Button>
           <Button type="button" disabled={busy} onClick={() => void askToPublish()}>
             {publish.isPending ? 'Publishing…' : 'Approve & Publish'}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy}
+            onClick={() => {
+              if (isDirty) setDiscarding(true)
+              else onBack()
+            }}
+          >
+            Back to reading
           </Button>
         </div>
       </form>
@@ -360,6 +358,20 @@ export function DraftEditor({ details, onReload }: Readonly<DraftEditorProps>) {
         confirmLabel="Approve & Publish"
         confirmVariant="default"
         onConfirm={publishNow}
+      />
+
+      {/* Going back to reading with edits that were not saved. */}
+      <ConfirmDialog
+        open={discarding}
+        onOpenChange={setDiscarding}
+        title="Discard your edits?"
+        description="Your edits to this draft haven't been saved. The draft goes back to how it was."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={() => {
+          setDiscarding(false)
+          onBack()
+        }}
       />
 
       {/* The unsaved-changes question, when a link was clicked mid-edit. */}

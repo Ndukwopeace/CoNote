@@ -32,22 +32,28 @@ test('a teacher reviews, edits, saves and publishes a summary', async ({ page, i
   await expect(rows.nth(1)).toContainText('Class 5')
   await expectNoAxeViolations(page)
 
-  // Open the first: the draft, with counts and no notes.
+  // Open the first: the draft as text to read, with counts and no notes, and no form (D113).
   await page.getByRole('link', { name: 'Review MTH 202 class 4' }).click()
   await expect(page.getByRole('heading', { level: 1, name: /^Class 4:/ })).toBeVisible()
   await expect(page.getByText(/^Based on \d+ notes from \d+ students$/)).toBeVisible()
+  await expect(page.getByText(/^This class introduced/)).toBeVisible()
+  await expect(page.getByRole('textbox')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Approve & Publish' })).toBeVisible()
+  await expectNoAxeViolations(page)
+
+  // Edit opens the form with the same text in it.
+  await page.getByRole('button', { name: 'Edit' }).click()
   const overview = page.getByRole('textbox', { name: 'Overview' })
   await expect(overview).toHaveValue(/^This class introduced/)
   await expectNoAxeViolations(page)
 
-  // Edit and save; the edit survives a reload.
+  // Edit and save; the edit survives a reload, which opens to read the saved text.
   await overview.fill('Edited by the teacher.')
   await page.getByRole('button', { name: 'Save draft' }).click()
   await expect(page.getByText('Draft saved.')).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('textbox', { name: 'Overview' })).toHaveValue(
-    'Edited by the teacher.',
-  )
+  await expect(page.getByText('Edited by the teacher.')).toBeVisible()
+  await expect(page.getByRole('textbox')).toHaveCount(0)
 
   // Approve & Publish asks first. Cancel changes nothing.
   await page.getByRole('button', { name: 'Approve & Publish' }).click()
@@ -55,7 +61,7 @@ test('a teacher reviews, edits, saves and publishes a summary', async ({ page, i
   await expect(dialog).toContainText('Students in MTH 202 will see it.')
   await dialog.getByRole('button', { name: 'Cancel' }).click()
   await expect(dialog).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Save draft' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible()
 
   // Confirm: the summary is published and read-only.
   await page.getByRole('button', { name: 'Approve & Publish' }).click()
@@ -116,6 +122,7 @@ test('another teacher’s course and summary are not found', async ({ page }) =>
 test('leaving a review with unsaved edits asks first', async ({ page }) => {
   await page.goto('/teacher/reviews/summary-mth-202-4')
   await signInAs(page)
+  await page.getByRole('button', { name: 'Edit' }).click()
   await page.getByRole('textbox', { name: 'Overview' }).fill('Not saved.')
   // Leave through the link back to the course: asked first; Keep editing stays.
   await page.getByRole('link', { name: 'MTH 202 Linear Algebra' }).click()
@@ -127,9 +134,26 @@ test('leaving a review with unsaved edits asks first', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Leave' }).click()
   await expect(page).toHaveURL(/\/teacher\/courses\/mth-202$/)
   await page.goBack()
-  await expect(page.getByRole('textbox', { name: 'Overview' })).toHaveValue(
-    /^This class introduced/,
-  )
+  await expect(page.getByText(/^This class introduced/)).toBeVisible()
+})
+
+test('a teacher approves a draft as it is, without opening the form', async ({ page }) => {
+  // Watch for Content-Security-Policy breaks throughout.
+  const cspViolations = watchCspViolations(page)
+  await page.goto('/teacher/reviews/summary-mth-202-4')
+  await signInAs(page)
+
+  // Read it, then approve: one question, then it is published as loaded.
+  await expect(page.getByText(/^This class introduced/)).toBeVisible()
+  await page.getByRole('button', { name: 'Approve & Publish' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Approve & Publish' }).click()
+
+  await expect(page.getByText(/Published .* by Sarah Mbarga/)).toBeVisible()
+  await expect(page.getByText(/^This class introduced/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0)
+  await expectNoAxeViolations(page)
+  // SECURITY: the journey ran without the security policy blocking anything.
+  expect(cspViolations).toEqual([])
 })
 
 test('the bell tells a teacher a draft is ready and opens it', async ({ page }) => {
