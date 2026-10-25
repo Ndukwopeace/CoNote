@@ -52,6 +52,16 @@ export function createMockAlertService({ data, now, latencyMs }: MockAlertOption
         ).length,
         notifications_failed: data.deliveryFailures.filter((failure) => recent(failure.at)).length,
         storage_errors: data.storageErrors.filter((error) => recent(error.at)).length,
+        drafts_without_teacher: data.summaries.filter((summary) => {
+          // Only a draft in review can be stuck.
+          if (summary.status !== 'in_review') return false
+          // Its class, which must still be in use, and that class's course.
+          const cls = data.classes.find((candidate) => candidate.id === summary.classId)
+          if (cls?.archivedAt !== null) return false
+          const course = data.courses.find((candidate) => candidate.id === cls.courseId)
+          // The course must be in use and have no teacher.
+          return course?.archivedAt === null && course.teacherId === null
+        }).length,
         courses_without_teacher: data.courses.filter(
           (course) => course.archivedAt === null && course.teacherId === null,
         ).length,

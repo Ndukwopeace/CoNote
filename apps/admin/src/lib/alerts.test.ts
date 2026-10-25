@@ -32,6 +32,19 @@ describe('alertContent', () => {
     )
   })
 
+  // Proves the stuck-drafts alert says what is wrong and where to fix it: the untaught courses.
+  it('describes drafts waiting in courses with no teacher', () => {
+    expect(alertContent({ kind: 'drafts_without_teacher', count: 1 }).message).toBe(
+      '1 draft is waiting in a course with no teacher to review it',
+    )
+    expect(alertContent({ kind: 'drafts_without_teacher', count: 10 }).message).toBe(
+      '10 drafts are waiting in courses with no teacher to review them',
+    )
+    expect(alertContent({ kind: 'drafts_without_teacher', count: 10 }).to).toBe(
+      '/admin/courses?teacher=none',
+    )
+  })
+
   // Proves the join-request alert reads naturally and opens the courses with requests waiting.
   it('describes students waiting to join a course', () => {
     expect(alertContent({ kind: 'enrollment_requests_waiting', count: 1 }).message).toBe(

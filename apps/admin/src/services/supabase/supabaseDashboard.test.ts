@@ -120,10 +120,14 @@ describe('alerts', () => {
       { kind: 'enrollment_requests_waiting', count: 3, days: null },
       { kind: 'summaries_waiting_review', count: 2, days: 3 },
       { kind: 'storage_errors', count: 0, days: null },
+      { kind: 'courses_without_teacher', count: 2, days: null },
+      { kind: 'drafts_without_teacher', count: 4, days: null },
       { kind: 'security_events', count: 1, days: null },
     ])
     await expect(service.listAlerts()).resolves.toEqual([
       { kind: 'security_events', count: 1 },
+      { kind: 'drafts_without_teacher', count: 4 },
+      { kind: 'courses_without_teacher', count: 2 },
       { kind: 'summaries_waiting_review', count: 2, days: 3 },
       { kind: 'enrollment_requests_waiting', count: 3 },
     ])

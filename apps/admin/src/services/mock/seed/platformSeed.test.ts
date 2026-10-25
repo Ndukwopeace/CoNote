@@ -96,8 +96,12 @@ describe.each(nows)('createPlatformSeed at %s', (now) => {
     // Act.
     const alerts = await createMockAlertService({ data, now: () => now, latencyMs: 0 }).listAlerts()
 
-    // Assert.
-    expect(alerts.map((alert) => alert.kind)).toEqual([
+    // Assert. The stuck-drafts alert is left out of the comparison: whether an untaught demo
+    // course has a draft depends on how long ago its classes started, so it shows at some times
+    // of day and not others. The alert contract proves its rules exactly.
+    expect(
+      alerts.map((alert) => alert.kind).filter((kind) => kind !== 'drafts_without_teacher'),
+    ).toEqual([
       'security_events',
       'ai_jobs_failed',
       'notifications_failed',
