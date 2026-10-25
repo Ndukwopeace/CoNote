@@ -80,11 +80,24 @@ export function useProgrammeRequests() {
   })
 }
 
+/** What happens once a decision is answered, whichever way it went. */
+interface DecideCallbacks {
+  // The request was decided.
+  onDecided: (decision: 'approved' | 'declined') => void
+  // The decision was refused or failed.
+  onRefused: (error: unknown) => void
+}
+
 /**
  * Approves or declines a request. Approving enrols the student in the programme's courses, so the
  * course and user counts and the dashboard are refreshed along with the programmes.
+ *
+ * The callbacks belong to the hook, not to each `mutate` call: a decided request leaves the list,
+ * so the row that made the call unmounts while the list reloads, and TanStack Query drops the
+ * callbacks of a call whose component is gone. Hook-level callbacks always run, and run when the
+ * answer arrives, before the reload.
  */
-export function useDecideProgrammeRequest() {
+export function useDecideProgrammeRequest({ onDecided, onRefused }: DecideCallbacks) {
   // The programme service, and the cache to refresh.
   const { programmes } = useServices()
   const queryClient = useQueryClient()
@@ -96,6 +109,12 @@ export function useDecideProgrammeRequest() {
       requestId: string
       decision: 'approved' | 'declined'
     }) => appQuery(() => programmes.decideProgrammeRequest(requestId, decision)),
+    onSuccess: (_result, { decision }) => {
+      onDecided(decision)
+    },
+    onError: (error) => {
+      onRefused(error)
+    },
     onSettled: () => queryClient.invalidateQueries(),
   })
 }
