@@ -21,9 +21,9 @@ import { Skeleton } from '@conote/ui/skeleton'
 import { ErrorState, NotFoundPage } from '@conote/portal'
 // The stage label.
 import { StageBadge } from '@/components/reviews/StageBadge'
-// The form and the read-only view.
-import { DraftEditor } from '@/features/reviews/DraftEditor'
+// The draft to read or edit, and the read-only published view.
 import { PublishedDraft } from '@/features/reviews/PublishedDraft'
+import { ReviewDraft } from '@/features/reviews/ReviewDraft'
 // The summary.
 import { useReviewDetails } from '@/hooks/useReview'
 // Wording and rules.
@@ -107,7 +107,9 @@ export function ReviewPage() {
         </p>
       )}
       {/* The body for the stage. */}
-      {isEditable(data.status) && <DraftEditor key={reloads} details={data} onReload={reload} />}
+      {isEditable(data.status) && (
+        <ReviewDraft details={data} reloads={reloads} onReload={reload} />
+      )}
       {data.status === 'published' && <PublishedDraft details={data} />}
       {!isEditable(data.status) && data.status !== 'published' && (
         <EmptyState icon={Hourglass} title={`${stageLabel(data.status)}.`}>
