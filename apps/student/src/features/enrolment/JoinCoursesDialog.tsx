@@ -1,33 +1,16 @@
 /**
- * The "Join your courses" dialog (FR-ENR-1 to FR-ENR-3, FR-ENR-7): search the courses in use and
- * ask to join. Joining needs an admin's approval, so nothing here enrols the student.
+ * The "Join your programme" dialog (FR-ENR-1 to FR-ENR-3, D115): the student chooses the year they
+ * study in, then asks to join one of that year's programmes. Joining needs an administrator's
+ * approval, so nothing here enrols the student. There is no search for single courses: a student
+ * belongs to one programme, which brings all of its courses.
  */
 
-// Local state.
-import { useState } from 'react'
-
-// Buttons, badge, search box, dialog parts, loading blocks.
-import { Badge } from '@conote/ui/badge'
+// Buttons and dialog parts.
 import { Button } from '@conote/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@conote/ui/dialog'
-import { Input } from '@conote/ui/input'
-import { Skeleton } from '@conote/ui/skeleton'
-// Empty state and the inline message.
-import { EmptyState } from '@conote/ui/common/EmptyState'
-import { FormMessage } from '@conote/ui/forms/FormMessage'
-// Icon for the empty state.
-import { SearchX } from 'lucide-react'
 
-// Failed-load panel.
-import { LoadError } from '@/components/common/LoadError'
-// Data hooks.
-import { useCancelJoinRequest, useJoinableCourses, useRequestToJoin } from '@/hooks/useEnrolment'
-// Words for a refused request.
-import { joinMessage } from './joinMessage'
-// The programmes above the course search.
+// The year step and the programmes.
 import { ProgrammePicker } from './ProgrammePicker'
-// Shapes.
-import type { JoinableCourse } from '@/types/domain'
 
 /** What the dialog needs. */
 interface JoinCoursesDialogProps {
@@ -39,103 +22,18 @@ interface JoinCoursesDialogProps {
 
 /** The dialog. */
 export function JoinCoursesDialog({ open, onOpenChange }: Readonly<JoinCoursesDialogProps>) {
-  // The search text.
-  const [query, setQuery] = useState('')
-  // The last refused request's message, or null.
-  const [problem, setProblem] = useState<string | null>(null)
-  // The courses, and the two changes.
-  const courses = useJoinableCourses(query)
-  const request = useRequestToJoin()
-  const cancel = useCancelJoinRequest()
-  // True while either change runs, so a button can't be pressed twice.
-  const busy = request.isPending || cancel.isPending
-
-  /** Asks to join `courseId`; a refusal shows as a message. */
-  function ask(courseId: string) {
-    setProblem(null)
-    request.mutate(courseId, {
-      onError: (error) => {
-        setProblem(joinMessage(error))
-      },
-    })
-  }
-
-  /** Withdraws the request `requestId`. */
-  function withdraw(requestId: string) {
-    setProblem(null)
-    cancel.mutate(requestId, {
-      onError: (error) => {
-        setProblem(joinMessage(error))
-      },
-    })
-  }
-
-  /** The list, or the state in its place. */
-  function body() {
-    // First load failed: the message and a retry.
-    if (courses.isError) {
-      return <LoadError error={courses.error} onRetry={() => void courses.refetch()} />
-    }
-    // First load: rows of blocks, announced once.
-    if (courses.isPending) {
-      return (
-        <output aria-label="Loading courses" className="block space-y-2">
-          {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-16" />
-          ))}
-        </output>
-      )
-    }
-    // Nothing matches the search.
-    if (courses.data.length === 0) {
-      return <EmptyState icon={SearchX} title="No courses match your search." />
-    }
-    return (
-      <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
-        {courses.data.map((course) => (
-          <CourseRow
-            key={course.id}
-            course={course}
-            busy={busy}
-            onAsk={() => {
-              ask(course.id)
-            }}
-            onCancel={(requestId) => {
-              withdraw(requestId)
-            }}
-          />
-        ))}
-      </ul>
-    )
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Taller than a phone with the programmes above the courses, so it scrolls inside the screen. */}
+      {/* Scrolls inside the screen when the programmes are taller than a phone. */}
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         {/* The title names the dialog. */}
         <DialogTitle>Join your programme</DialogTitle>
         <DialogDescription className="text-sm text-muted-foreground">
-          Ask to join the year you study in. Once an administrator approves, you are added to all of
-          its courses. Missing one? Ask to join it on its own; each request needs approval too.
+          Choose the year you study in, then ask to join your programme. Once an administrator
+          approves, you are added to all of its courses.
         </DialogDescription>
-        {/* The programmes: one tap joins every course of a year (D105). */}
+        {/* The year, then that year's programmes (D115). */}
         <ProgrammePicker />
-        {/* Or one course at a time: search by code or title. */}
-        <h3 className="text-sm font-semibold">Or request a single course</h3>
-        <Input
-          type="search"
-          aria-label="Search courses to join"
-          placeholder="Code or title"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-          }}
-        />
-        {/* A refused request. */}
-        {problem && <FormMessage tone="error">{problem}</FormMessage>}
-        {/* The courses. */}
-        {body()}
         {/* Leave without asking, or when done. */}
         <div className="flex justify-end">
           <Button
@@ -150,60 +48,5 @@ export function JoinCoursesDialog({ open, onOpenChange }: Readonly<JoinCoursesDi
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-/** One course in the list, with the action its standing allows (FR-ENR-3). */
-function CourseRow({
-  course,
-  busy,
-  onAsk,
-  onCancel,
-}: Readonly<{
-  course: JoinableCourse
-  busy: boolean
-  onAsk: () => void
-  onCancel: (requestId: string) => void
-}>) {
-  return (
-    <li className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
-      {/* Name first, then the code small, then the teacher (D110). */}
-      <div className="min-w-0">
-        <p className="line-clamp-2 font-semibold">{course.title}</p>
-        <p className="text-xs text-muted-foreground">{course.code}</p>
-        <p className="truncate text-xs text-muted-foreground">{course.teacherName}</p>
-      </div>
-      {/* The standing and its action. The words carry the meaning, not colour. */}
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        {course.membership === 'enrolled' && <Badge variant="success">Joined</Badge>}
-        {course.membership === 'pending' && (
-          <>
-            <Badge variant="warning">Requested</Badge>
-            <Button
-              type="button"
-              variant="link"
-              disabled={busy}
-              aria-label={`Cancel request for ${course.title}`}
-              onClick={() => {
-                if (course.requestId !== null) onCancel(course.requestId)
-              }}
-            >
-              Cancel request
-            </Button>
-          </>
-        )}
-        {course.membership === 'declined' && <Badge variant="destructive">Declined</Badge>}
-        {(course.membership === 'none' || course.membership === 'declined') && (
-          <Button
-            type="button"
-            disabled={busy}
-            aria-label={`${course.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${course.title}`}
-            onClick={onAsk}
-          >
-            {course.membership === 'declined' ? 'Request again' : 'Request to join'}
-          </Button>
-        )}
-      </div>
-    </li>
   )
 }

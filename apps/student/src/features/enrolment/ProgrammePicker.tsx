@@ -1,9 +1,13 @@
 /**
- * "Join programme" (D105, D106), the top of the join dialog: the programmes an administrator has
- * opened, each with the courses joining it adds. A student asks, an administrator approves, and
- * only then are the courses added. A student belongs to one programme, so once they are in one it
- * is the only one shown, and while a request waits no other can be asked for.
+ * "Join programme" (D105, D106, D115), the whole body of the join dialog: the student chooses the
+ * year they study in, then sees only that year's open programmes, each with the courses joining it
+ * adds. A student asks, an administrator approves, and only then are the courses added. A student
+ * belongs to one programme, so once they are in one it is the only thing shown, and while a request
+ * waits only that request is shown; withdrawing it brings the choice back.
  */
+
+// The chosen year.
+import { useState } from 'react'
 
 // Badge, button and loading block.
 import { Badge } from '@conote/ui/badge'
@@ -20,10 +24,33 @@ import {
   useJoinableProgrammes,
   useRequestProgramme,
 } from '@/hooks/useEnrolment'
+// The year a programme is in, and its words.
+import { programmeYear, yearLabel } from '@/lib/programmeYear'
 // Words for a refused request.
 import { joinMessage } from './joinMessage'
 // Shapes.
 import type { JoinableProgramme } from '@/types/domain'
+
+/** A year's button: the year, or "other" for programmes whose code names none. */
+type YearKey = number | 'other'
+
+/** Groups the programmes by year, years from the lowest and "other" last. */
+function groupByYear(programmes: readonly JoinableProgramme[]) {
+  // Each year's programmes, in the order the service listed them.
+  const groups = new Map<YearKey, JoinableProgramme[]>()
+  for (const programme of programmes) {
+    // A programme with no year in its code is kept, not hidden: it goes under "other".
+    const key: YearKey = programmeYear(programme.code) ?? 'other'
+    groups.set(key, [...(groups.get(key) ?? []), programme])
+  }
+  // Numbers ascending, then "other".
+  const keys = [...groups.keys()].sort((a, b) => {
+    if (a === 'other') return 1
+    if (b === 'other') return -1
+    return a - b
+  })
+  return { groups, keys }
+}
 
 /** The programme section. */
 export function ProgrammePicker() {
@@ -31,6 +58,8 @@ export function ProgrammePicker() {
   const programmes = useJoinableProgrammes()
   const request = useRequestProgramme()
   const cancel = useCancelProgrammeRequest()
+  // The year the student chose, or null while they have not.
+  const [chosen, setChosen] = useState<YearKey | null>(null)
   // True while either change runs, so a button can't be pressed twice.
   const busy = request.isPending || cancel.isPending
 
@@ -38,51 +67,113 @@ export function ProgrammePicker() {
   if (programmes.isPending) {
     return <Skeleton className="h-20" aria-label="Loading programmes" />
   }
-  // Failed: the message and a retry; the courses below still work.
+  // Failed: the message and a retry.
   if (programmes.isError) {
     return <LoadError error={programmes.error} onRetry={() => void programmes.refetch()} />
   }
-  // Nothing open: the section is left out, and the course search below is the way in.
-  if (programmes.data.length === 0) return null
+  // Nothing open: say so, so the dialog is not an empty box.
+  if (programmes.data.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No programme is open to join yet. Ask your administrator.
+      </p>
+    )
+  }
 
-  // A student belongs to one programme: once in one, it is the only one shown.
+  // A student belongs to one programme, and only one request waits at a time: whichever applies is
+  // the only thing shown, with no year to choose.
   const mine = programmes.data.find((programme) => programme.membership === 'enrolled')
-  const shown = mine ? [mine] : programmes.data
-  // One request waits at a time, so the others wait their turn.
-  const waiting = programmes.data.some((programme) => programme.membership === 'pending')
+  const waiting = programmes.data.find((programme) => programme.membership === 'pending')
+  const fixed = mine ?? waiting
+  // A refused request, shown with whatever step is on screen.
+  const problem =
+    request.isError || cancel.isError ? (
+      <FormMessage tone="error">{joinMessage(request.error ?? cancel.error)}</FormMessage>
+    ) : null
 
+  /** Asks to join, or withdraws, for the rows below. */
+  const rowActions = {
+    busy,
+    onAsk: (programmeId: string) => {
+      request.mutate(programmeId)
+    },
+    onCancel: (requestId: string) => {
+      cancel.mutate(requestId)
+    },
+  }
+
+  if (fixed) {
+    return (
+      // min-w-0: a fieldset otherwise grows to its widest line and pushes the dialog off a phone.
+      <fieldset className="min-w-0 space-y-2">
+        <legend className="text-sm font-semibold">Choose your programme</legend>
+        <p className="text-xs text-muted-foreground">
+          {mine
+            ? "You're in this programme. To change it, ask an administrator."
+            : 'One request waits at a time. Cancel it to choose a different programme.'}
+        </p>
+        {problem}
+        <ul className="space-y-2">
+          <ProgrammeRow programme={fixed} {...rowActions} />
+        </ul>
+      </fieldset>
+    )
+  }
+
+  const { groups, keys } = groupByYear(programmes.data)
+  // The programmes of the chosen year; none until a year is chosen (or if it has since gone).
+  const inYear = chosen === null ? undefined : groups.get(chosen)
+
+  // Step one: the year.
+  if (!inYear) {
+    return (
+      <fieldset className="min-w-0 space-y-2">
+        <legend className="text-sm font-semibold">Choose your year</legend>
+        <p className="text-xs text-muted-foreground">
+          Pick the year you study in. You will then see the programmes of that year.
+        </p>
+        {problem}
+        <div className="grid grid-cols-2 gap-2">
+          {keys.map((key) => (
+            <Button
+              key={key}
+              type="button"
+              variant="outline"
+              className="h-auto min-h-11 whitespace-normal"
+              onClick={() => {
+                setChosen(key)
+              }}
+            >
+              {key === 'other' ? 'Other programmes' : yearLabel(key)}
+            </Button>
+          ))}
+        </div>
+      </fieldset>
+    )
+  }
+
+  // Step two: that year's programmes.
   return (
-    // min-w-0: a fieldset otherwise grows to its widest line and pushes the dialog off a phone.
     <fieldset className="min-w-0 space-y-2">
       <legend className="text-sm font-semibold">Choose your programme</legend>
       <p className="text-xs text-muted-foreground">
-        {mine
-          ? "You're in this programme. To change it, ask an administrator."
-          : 'Ask to join the year you study in. Once an administrator approves, you are added to all of its courses.'}
+        Ask to join the programme you study. Once an administrator approves, you are added to all of
+        its courses.
       </p>
-      {waiting && (
-        <p className="text-xs text-muted-foreground">
-          One request waits at a time. Cancel it to ask for a different programme.
-        </p>
-      )}
-      {/* A refused request. */}
-      {(request.isError || cancel.isError) && (
-        <FormMessage tone="error">{joinMessage(request.error ?? cancel.error)}</FormMessage>
-      )}
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto p-0 text-xs"
+        onClick={() => {
+          setChosen(null)
+        }}
+      >
+        Change year
+      </Button>
+      {problem}
       <ul className="space-y-2">
-        {shown.map((programme) => (
-          <ProgrammeRow
-            key={programme.id}
-            programme={programme}
-            busy={busy}
-            othersWaiting={waiting && programme.membership !== 'pending'}
-            onAsk={() => {
-              request.mutate(programme.id)
-            }}
-            onCancel={(requestId) => {
-              cancel.mutate(requestId)
-            }}
-          />
+        {inYear.map((programme) => (
+          <ProgrammeRow key={programme.id} programme={programme} {...rowActions} />
         ))}
       </ul>
     </fieldset>
@@ -93,15 +184,12 @@ export function ProgrammePicker() {
 function ProgrammeRow({
   programme,
   busy,
-  othersWaiting,
   onAsk,
   onCancel,
 }: Readonly<{
   programme: JoinableProgramme
   busy: boolean
-  // True when a request for a different programme is waiting.
-  othersWaiting: boolean
-  onAsk: () => void
+  onAsk: (programmeId: string) => void
   onCancel: (requestId: string) => void
 }>) {
   const count = programme.courseCount
@@ -139,9 +227,11 @@ function ProgrammeRow({
         {canAsk && (
           <Button
             type="button"
-            disabled={busy || othersWaiting}
+            disabled={busy}
             aria-label={`${programme.membership === 'declined' ? 'Request again to join' : 'Request to join'} ${programme.name}`}
-            onClick={onAsk}
+            onClick={() => {
+              onAsk(programme.id)
+            }}
           >
             {programme.membership === 'declined' ? 'Request again' : 'Request to join'}
           </Button>

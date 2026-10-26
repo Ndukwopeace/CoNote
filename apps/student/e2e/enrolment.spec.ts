@@ -1,6 +1,6 @@
 /**
- * J1 browser tests (docs/MILESTONES.md, D76): a new student signs up, asks to join courses from the
- * dialog, and sees the requests wait for approval. Each runs on desktop and on a phone, against the
+ * J1 browser tests (docs/MILESTONES.md, D76): a new student signs up and is asked for their year
+ * in the join dialog, with no course search. Each runs on desktop and on a phone, against the
  * production build with the production security headers.
  */
 
@@ -22,51 +22,37 @@ async function signUp(page: Page) {
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 
-test('a new student asks to join courses, and the requests wait for approval', async ({ page }) => {
+test('a new student is asked for the year first, with no course search', async ({ page }) => {
   // Watch for Content-Security-Policy breaks throughout.
   const cspViolations = watchCspViolations(page)
   await signUp(page)
 
-  // The dialog opens by itself, lists courses in use and nothing finished or archived.
+  // The dialog opens by itself and asks for the year. There is no course search and no course list:
+  // a student joins one programme, which brings its courses (D115).
   const dialog = page.getByRole('dialog', { name: 'Join your programme' })
   await expect(dialog).toBeVisible()
-  await expect(dialog.getByText('Linear Algebra')).toBeVisible()
-  await expect(dialog.getByText('Calculus I')).toHaveCount(0)
-  await expect(dialog.getByText('Communication in English')).toHaveCount(0)
+  const years = dialog.getByRole('group', { name: 'Choose your year' })
+  await expect(years.getByRole('button', { name: 'Year 1' })).toBeVisible()
+  await expect(years.getByRole('button', { name: 'Year 3' })).toBeVisible()
+  await expect(dialog.getByRole('searchbox')).toHaveCount(0)
+  await expect(dialog.getByText('Linear Algebra')).toHaveCount(0)
   await expectNoAxeViolations(page)
 
-  // Search, then ask for two courses and withdraw one.
-  await dialog.getByRole('searchbox', { name: 'Search courses to join' }).fill('mth')
-  // The programme above names "Software Engineering, Year 3", so match the course title exactly.
-  await expect(dialog.getByText('Software Engineering', { exact: true })).toHaveCount(0)
-  await dialog.getByRole('button', { name: 'Request to join Linear Algebra' }).click()
-  await expect(dialog.getByText('Requested')).toBeVisible()
-  await dialog.getByRole('searchbox').fill('')
-  await dialog.getByRole('button', { name: 'Request to join General Physics' }).click()
-  await expect(dialog.getByText('Requested')).toHaveCount(2)
-  await dialog.getByRole('button', { name: 'Cancel request for General Physics' }).click()
-  await expect(dialog.getByText('Requested')).toHaveCount(1)
-
-  // Not now: the dashboard says one request is waiting, and nothing is enrolled.
+  // Not now: the dashboard has no courses and no upcoming classes, and nothing is enrolled.
   await dialog.getByRole('button', { name: 'Not now' }).click()
   await expect(dialog).toBeHidden()
-  await expect(page.getByText(/1 request is waiting for approval/)).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Upcoming Classes' })).toHaveCount(0)
 
-  // My Courses lists the request as waiting, still with no course in it, and survives a reload.
+  // My Courses says so too, and "Join programme" opens the same year step again.
   await page.goto('/courses')
   await expect(page.getByRole('heading', { level: 1, name: 'My Courses' })).toBeVisible()
-  await page.reload()
-  const requested = page.getByRole('region', { name: 'Requested courses' })
-  await expect(requested).toContainText('MTH 202 · Linear Algebra')
-  await expect(requested).toContainText('Waiting for approval')
   await expect(page.getByText(/not enrolled in any courses yet/)).toBeVisible()
   await expectNoAxeViolations(page)
-
-  // "Join programme" opens the dialog again, with the request shown.
   await page.getByRole('button', { name: 'Join programme' }).click()
   await expect(
-    page.getByRole('dialog', { name: 'Join your programme' }).getByText('Requested'),
+    page
+      .getByRole('dialog', { name: 'Join your programme' })
+      .getByRole('group', { name: 'Choose your year' }),
   ).toBeVisible()
 
   // SECURITY: the whole journey ran without the security policy blocking anything.
@@ -82,9 +68,9 @@ test('a returning student with courses is not prompted, and can still find more'
   // No dialog on arrival.
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // My Courses offers Join programme, and the four courses read as Joined.
+  // My Courses offers Join programme, which asks for the year like it does for anyone.
   await page.goto('/courses')
   await page.getByRole('button', { name: 'Join programme' }).click()
   const dialog = page.getByRole('dialog', { name: 'Join your programme' })
-  await expect(dialog.getByText('Joined')).toHaveCount(4)
+  await expect(dialog.getByRole('group', { name: 'Choose your year' })).toBeVisible()
 })
