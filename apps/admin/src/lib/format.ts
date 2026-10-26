@@ -18,5 +18,5 @@ export function joinWords(items: readonly string[]): string {
   // Nothing, or one: as it is.
   if (items.length <= 1) return items[0] ?? ''
   // Two or more: commas, then "and" before the last.
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] ?? ''}`
+  return `${items.slice(0, -1).join(', ')} and ${items.at(-1) ?? ''}`
 }

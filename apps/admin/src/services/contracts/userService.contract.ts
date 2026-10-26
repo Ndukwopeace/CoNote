@@ -294,19 +294,22 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
       const svc = service()
       const before = (await svc.listUsers({ role: 'teacher' })).total
 
-      for (const courseIds of [['c1', 'no-such-course'], ['c3']]) {
-        await expect(
-          svc.inviteUser({
-            role: 'teacher',
-            fullName: 'Ngozi Eze',
-            email: 'ngozi@conote.example',
-            courseIds,
+      // Both are refused before anything is created, so they can be asked for together.
+      await Promise.all(
+        [['c1', 'no-such-course'], ['c3']].map((courseIds) =>
+          expect(
+            svc.inviteUser({
+              role: 'teacher',
+              fullName: 'Ngozi Eze',
+              email: 'ngozi@conote.example',
+              courseIds,
+            }),
+          ).rejects.toMatchObject({
+            kind: 'validation',
+            message: 'One of the chosen courses is not available.',
           }),
-        ).rejects.toMatchObject({
-          kind: 'validation',
-          message: 'One of the chosen courses is not available.',
-        })
-      }
+        ),
+      )
 
       expect((await svc.listUsers({ role: 'teacher' })).total).toBe(before)
     })
@@ -314,19 +317,22 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
     // SECURITY: courses are for teachers only, whatever the caller sends.
     it('refuses courses for a student or an administrator', async () => {
       const svc = service()
-      for (const role of ['student', 'admin'] as const) {
-        await expect(
-          svc.inviteUser({
-            role,
-            fullName: 'Ngozi Eze',
-            email: `${role}@conote.example`,
-            courseIds: ['c1'],
+      // Each is refused before anything is created, so they can be asked for together.
+      await Promise.all(
+        (['student', 'admin'] as const).map((role) =>
+          expect(
+            svc.inviteUser({
+              role,
+              fullName: 'Ngozi Eze',
+              email: `${role}@conote.example`,
+              courseIds: ['c1'],
+            }),
+          ).rejects.toMatchObject({
+            kind: 'validation',
+            message: 'Only teachers can be given courses.',
           }),
-        ).rejects.toMatchObject({
-          kind: 'validation',
-          message: 'Only teachers can be given courses.',
-        })
-      }
+        ),
+      )
     })
 
     // Proves an email can't be invited twice, whatever its case, and bad input is refused.

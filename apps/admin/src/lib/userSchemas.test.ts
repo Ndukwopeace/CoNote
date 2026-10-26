@@ -41,11 +41,11 @@ describe('inviteUserSchema', () => {
   it('accepts courses for a teacher, or none', () => {
     expect(
       firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: ['c1', 'c2'] }),
-    ).toBe(undefined)
-    expect(firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: [] })).toBe(
-      undefined,
-    )
-    expect(firstError(inviteUserSchema, { ...valid, role: 'teacher' })).toBe(undefined)
+    ).toBeUndefined()
+    expect(
+      firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: [] }),
+    ).toBeUndefined()
+    expect(firstError(inviteUserSchema, { ...valid, role: 'teacher' })).toBeUndefined()
   })
 
   // SECURITY: courses are for teachers only, so the form and the service refuse them for anyone else.

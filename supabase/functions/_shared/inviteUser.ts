@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 // The shared steps and answers.
 import { adminHandler, type FunctionDeps } from './admin.ts'
+import type { Clients } from './clients.ts'
 import { resetAddress } from './env.ts'
 import { json, refuse } from './http.ts'
 
@@ -32,6 +33,46 @@ const bodySchema = z
     path: ['courseIds'],
   })
 
+/**
+ * Refuses unless every chosen course is in use (D116). The answer to send back, or null when all
+ * are fine. Nothing is created yet at this point, so a refusal leaves nothing behind.
+ */
+async function refuseUnusableCourses(
+  service: Clients['service'],
+  courseIds: string[],
+): Promise<Response | null> {
+  // Nothing chosen, nothing to check.
+  if (courseIds.length === 0) return null
+  const found = await service
+    .from('courses')
+    .select('id')
+    .in('id', courseIds)
+    .is('archived_at', null)
+  if (found.error) return refuse('unknown', 'Something went wrong. Try again.')
+  // A course that is gone or archived is simply not in the answer.
+  if (found.data.length !== courseIds.length) {
+    return refuse('validation', 'One of the chosen courses is not available.')
+  }
+  return null
+}
+
+/**
+ * Keeps the chosen courses with the new account, for accept_invitation to hand over (D116). False
+ * when they could not be kept.
+ */
+async function keepCourses(
+  service: Clients['service'],
+  userId: string,
+  courseIds: string[],
+): Promise<boolean> {
+  // Nothing chosen, nothing to keep.
+  if (courseIds.length === 0) return true
+  const chosen = await service
+    .from('invited_courses')
+    .insert(courseIds.map((courseId) => ({ user_id: userId, course_id: courseId })))
+  return !chosen.error
+}
+
 /** Builds the handler. */
 export function inviteUserHandler(deps: FunctionDeps) {
   return adminHandler(deps, bodySchema, async ({ actorId, body }) => {
@@ -46,17 +87,8 @@ export function inviteUserHandler(deps: FunctionDeps) {
     // The courses chosen for a teacher, each once. They are checked before anything is created, so
     // a course that is gone or archived refuses the whole invitation and leaves nothing behind.
     const courseIds = [...new Set(body.courseIds ?? [])]
-    if (courseIds.length > 0) {
-      const found = await service
-        .from('courses')
-        .select('id')
-        .in('id', courseIds)
-        .is('archived_at', null)
-      if (found.error) return refuse('unknown', 'Something went wrong. Try again.')
-      if (found.data.length !== courseIds.length) {
-        return refuse('validation', 'One of the chosen courses is not available.')
-      }
-    }
+    const unusable = await refuseUnusableCourses(service, courseIds)
+    if (unusable) return unusable
     // The login, without a password. The sign-up trigger makes the profile, always as a student.
     const created = await service.auth.admin.createUser({
       email: body.email,
@@ -89,14 +121,9 @@ export function inviteUserHandler(deps: FunctionDeps) {
     // The chosen courses are kept with the invitation, not given now: a course may only go to an
     // active teacher, so accept_invitation hands them over when the teacher accepts. If they
     // cannot be kept, the account is removed, like any other failed step.
-    if (courseIds.length > 0) {
-      const chosen = await service
-        .from('invited_courses')
-        .insert(courseIds.map((courseId) => ({ user_id: userId, course_id: courseId })))
-      if (chosen.error) {
-        await service.auth.admin.deleteUser(userId)
-        return refuse('unknown', 'Something went wrong. Try again.')
-      }
+    if (!(await keepCourses(service, userId, courseIds))) {
+      await service.auth.admin.deleteUser(userId)
+      return refuse('unknown', 'Something went wrong. Try again.')
     }
     // The email with the link to choose a password. It is the one Supabase sends for a password
     // reset; its wording changes for an invited person (supabase/templates/recovery.html).
