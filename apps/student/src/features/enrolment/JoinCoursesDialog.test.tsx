@@ -1,6 +1,7 @@
 /**
- * Tests for asking to join courses (FR-ENR-1 to FR-ENR-7, D76): the dialog a new student sees,
- * the dashboard and My Courses entry points, and the Requested courses section.
+ * Tests for joining a programme (FR-ENR-1 to FR-ENR-7, D105, D106, D115): the dialog a new student
+ * sees (the year first, then that year's programmes), the dashboard and My Courses entry points,
+ * and the Requested courses section.
  */
 
 // Queries and waiting.
@@ -25,6 +26,8 @@ import {
 } from '@/test/renderWithRouter'
 // Service overrides type.
 import type { Services } from '@/services/types'
+// The programme shape the service returns.
+import type { JoinableProgramme } from '@/types/domain'
 
 /** Renders `path` for a brand-new student: in no courses, with no requests. */
 function renderNewStudent(path = '/dashboard', services: Partial<Services> = {}) {
@@ -37,100 +40,46 @@ async function dialog() {
   return screen.findByRole('dialog', { name: 'Join your programme' })
 }
 
+/** A programme as the service lists it, for tests that need one the demo does not have. */
+function programme(overrides: Partial<JoinableProgramme>): JoinableProgramme {
+  return {
+    id: 'p1',
+    code: 'SWE-Y3',
+    name: 'Software Engineering, Year 3',
+    courseCount: 3,
+    courseCodes: ['BUS 207', 'CSE 205', 'SWE 311'],
+    membership: 'none',
+    requestId: null,
+    ...overrides,
+  }
+}
+
 describe('Join your programme dialog', () => {
-  // Proves a new student sees the dialog on arriving, with courses in use and nothing completed
-  // or archived (FR-ENR-1).
-  it('opens for a new student, listing courses in use', async () => {
+  // Proves a new student sees the dialog on arriving, and that it asks for the year first. The
+  // demo has programmes in Years 1 and 3 that are open, so those two years are offered (D115).
+  it('opens for a new student on the year step', async () => {
     renderNewStudent()
 
     const box = await dialog()
-    expect(await within(box).findByText('Linear Algebra')).toBeInTheDocument()
-    expect(within(box).getByText('Sarah Mbarga')).toBeInTheDocument()
-    expect(within(box).getByText('Software Engineering')).toBeInTheDocument()
-    // Completed and archived courses are not open for requests.
-    expect(within(box).queryByText('Calculus I')).not.toBeInTheDocument()
-    expect(within(box).queryByText('Communication in English')).not.toBeInTheDocument()
+    const years = await within(box).findByRole('group', { name: 'Choose your year' })
+    expect(within(years).getByRole('button', { name: 'Year 1' })).toBeInTheDocument()
+    expect(within(years).getByRole('button', { name: 'Year 3' })).toBeInTheDocument()
+    // No programme has a Year 2 in the demo, so the year is not offered.
+    expect(within(years).queryByRole('button', { name: 'Year 2' })).not.toBeInTheDocument()
+    // The programmes wait until a year is chosen.
+    expect(within(box).queryByText('Software Engineering, Year 3')).not.toBeInTheDocument()
   })
 
-  // Proves the search narrows the list, and says so when nothing matches (FR-ENR-1, FR-ENR-7).
-  it('searches by code or title', async () => {
-    const { user } = renderNewStudent()
+  // Proves single courses cannot be asked for from the dialog any more: no search box, no list.
+  it('has no course search and lists no courses', async () => {
+    renderNewStudent()
     const box = await dialog()
-    await within(box).findByText('Linear Algebra')
+    await within(box).findByRole('group', { name: 'Choose your year' })
 
-    await user.type(within(box).getByRole('searchbox', { name: 'Search courses to join' }), 'mth')
-    await waitFor(() => {
-      expect(within(box).queryByText('Software Engineering')).not.toBeInTheDocument()
-    })
-    expect(within(box).getByText('Linear Algebra')).toBeInTheDocument()
-
-    await user.type(within(box).getByRole('searchbox'), '-nothing')
-    expect(await within(box).findByText('No courses match your search.')).toBeInTheDocument()
-  })
-
-  // Proves a request shows as Requested with a way to cancel, and cancelling restores the button
-  // (FR-ENR-3).
-  it('requests a course and cancels the request', async () => {
-    const { user } = renderNewStudent()
-    const box = await dialog()
-
-    await user.click(
-      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
-    )
-
-    expect(await within(box).findByText('Requested')).toBeInTheDocument()
-    await user.click(within(box).getByRole('button', { name: 'Cancel request for Linear Algebra' }))
-    expect(
-      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
-    ).toBeInTheDocument()
-    expect(within(box).queryByText('Requested')).not.toBeInTheDocument()
-  })
-
-  // Proves a request the service refuses shows its reason, in the service's own words (FR-ENR-5).
-  it('shows why a request was refused', async () => {
-    const real = createTestServices().enrolment
-    const { user } = renderNewStudent('/dashboard', {
-      enrolment: {
-        ...real,
-        requestToJoin: () =>
-          Promise.reject(new AppError('validation', "This course isn't open for requests.")),
-      },
-    })
-    const box = await dialog()
-
-    await user.click(
-      await within(box).findByRole('button', { name: 'Request to join Linear Algebra' }),
-    )
-
-    expect(await within(box).findByRole('alert')).toHaveTextContent(
-      "This course isn't open for requests.",
-    )
-  })
-
-  // Proves a failed load shows a fixed message with Retry, never the raw error (FR-ENR-7).
-  it('shows an error with Retry when the list fails', async () => {
-    const real = createTestServices().enrolment
-    renderNewStudent('/dashboard', {
-      enrolment: {
-        ...real,
-        listJoinableCourses: () => Promise.reject(new AppError('network', 'down')),
-      },
-    })
-    const box = await dialog()
-
-    expect(await within(box).findByRole('button', { name: 'Try again' })).toBeInTheDocument()
-    expect(within(box).queryByText('down')).not.toBeInTheDocument()
-  })
-
-  // Proves the loading state is announced before the list arrives.
-  it('shows a loading state first', async () => {
-    const real = createTestServices().enrolment
-    renderNewStudent('/dashboard', {
-      enrolment: { ...real, listJoinableCourses: () => new Promise(() => undefined) },
-    })
-    const box = await dialog()
-
-    expect(within(box).getByRole('status', { name: 'Loading courses' })).toBeInTheDocument()
+    expect(within(box).queryByRole('searchbox')).not.toBeInTheDocument()
+    expect(within(box).queryByText(/single course/i)).not.toBeInTheDocument()
+    expect(within(box).queryByText('Linear Algebra')).not.toBeInTheDocument()
+    expect(within(box).queryByRole('button', { name: /Request to join Linear/ })).toBeNull()
   })
 
   // Proves the dialog can be skipped, and then stays closed on the next page (FR-ENR-1).
@@ -160,8 +109,8 @@ describe('Join your programme dialog', () => {
     expect(await dialog()).toBeInTheDocument()
   })
 
-  // Proves a student who already asked isn't prompted again, and sees the request waiting
-  // on the dashboard and on My Courses (FR-ENR-1, FR-ENR-4).
+  // Proves a student who already asked for a course isn't prompted again, and sees the request
+  // waiting on the dashboard and on My Courses (FR-ENR-1, FR-ENR-4).
   it('does not open for a student with a request, and lists it on My Courses', async () => {
     const services = createTestServices()
     startNewStudent(window.localStorage)
@@ -182,8 +131,9 @@ describe('Join your programme dialog', () => {
     expect(within(section).getByText('Waiting for approval')).toBeInTheDocument()
   })
 
-  // Proves a declined request is shown as declined, with a way to ask again (FR-ENR-3, FR-ENR-4).
-  it('shows a declined request, and lets the student ask again', async () => {
+  // Proves a declined course request is still shown as declined on My Courses (FR-ENR-4). Asking
+  // again is for programmes now, so the section only reports what happened.
+  it('shows a declined request on My Courses', async () => {
     startNewStudent(window.localStorage)
     const services = createTestServices()
     const request = await services.enrolment.requestToJoin('mth-202')
@@ -200,49 +150,75 @@ describe('Join your programme dialog', () => {
         ),
       }),
     )
-    const { user, router } = renderWithRouter({
-      routes,
-      path: '/courses',
-      session: makeSession(),
-      services,
-    })
+    renderWithRouter({ routes, path: '/courses', session: makeSession(), services })
 
     const section = await screen.findByRole('region', { name: 'Requested courses' })
-    expect(within(section).getByText('Declined')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Join programme' }))
-    const box = await dialog()
-    await user.click(
-      await within(box).findByRole('button', { name: 'Request again to join Linear Algebra' }),
-    )
 
-    expect(await within(box).findByText('Requested')).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/courses')
+    expect(within(section).getByText('Declined')).toBeInTheDocument()
   })
 
-  // Proves the dialog has no accessibility violations.
-  it('has no accessibility violations', async () => {
+  // Proves the year step has no accessibility violations.
+  it('has no accessibility violations on the year step', async () => {
     renderNewStudent()
     const box = await dialog()
-    await within(box).findByText('Linear Algebra')
+    await within(box).findByRole('group', { name: 'Choose your year' })
 
     await expectNoAxeViolations(box)
   })
 
-  // Proves a student already in courses is not prompted, and My Courses offers Join programme.
+  // Proves a student already in courses is not prompted, and My Courses offers Join programme,
+  // which asks for the year like it does for anyone who has no programme yet.
   it('offers Join programme on My Courses to a student who has courses', async () => {
     const { user } = renderWithRouter({ routes, path: '/courses', session: makeSession() })
 
     await user.click(await screen.findByRole('button', { name: 'Join programme' }))
 
     const box = await dialog()
-    // The four courses the student is in read as Joined.
-    expect(await within(box).findAllByText('Joined')).toHaveLength(4)
+    expect(await within(box).findByRole('group', { name: 'Choose your year' })).toBeInTheDocument()
+  })
+
+  // Proves the loading state is announced before the programmes arrive.
+  it('shows a loading state first', async () => {
+    const real = createTestServices().enrolment
+    renderNewStudent('/dashboard', {
+      enrolment: { ...real, listJoinableProgrammes: () => new Promise(() => undefined) },
+    })
+    const box = await dialog()
+
+    expect(within(box).getByLabelText('Loading programmes')).toBeInTheDocument()
+  })
+
+  // Proves a failed load shows a fixed message with Retry, never the raw error (FR-ENR-7).
+  it('shows an error with Retry when the programmes fail to load', async () => {
+    const real = createTestServices().enrolment
+    renderNewStudent('/dashboard', {
+      enrolment: {
+        ...real,
+        listJoinableProgrammes: () => Promise.reject(new AppError('network', 'down')),
+      },
+    })
+    const box = await dialog()
+
+    expect(await within(box).findByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    expect(within(box).queryByText('down')).not.toBeInTheDocument()
+  })
+
+  // Proves a school with no open programme says so, instead of showing an empty dialog.
+  it('says so when no programme is open', async () => {
+    const real = createTestServices().enrolment
+    renderNewStudent('/dashboard', {
+      enrolment: { ...real, listJoinableProgrammes: () => Promise.resolve([]) },
+    })
+    const box = await dialog()
+
+    expect(await within(box).findByText(/No programme is open to join yet/)).toBeInTheDocument()
+    expect(within(box).queryByRole('group')).not.toBeInTheDocument()
   })
 })
 
-describe('Join your programme', () => {
-  /** Opens the dialog for a new student and returns the programme group. */
-  async function openGroup(
+describe('Join your programme: year, then programmes', () => {
+  /** Opens the dialog for a new student; returns the dialog and the year group. */
+  async function openYears(
     path = '/dashboard',
     services: Partial<Services> = {},
     student: { startNew: boolean } = { startNew: true },
@@ -250,18 +226,31 @@ describe('Join your programme', () => {
     if (student.startNew) startNewStudent(window.localStorage)
     const view = renderWithRouter({ routes, path, session: makeSession(), services })
     const box = await dialog()
-    const group = await within(box).findByRole('group', { name: 'Choose your programme' })
-    return { ...view, box, group }
+    const years = await within(box).findByRole('group', { name: 'Choose your year' })
+    return { ...view, box, years }
   }
 
-  // Proves the dialog offers the open programmes first, with what joining adds, and hides a
-  // closed one (D105).
-  it('offers the open programmes with their courses', async () => {
-    const { group } = await openGroup()
+  /** Opens the dialog and picks `year`; returns the programme group. */
+  async function openGroup(
+    year = 'Year 3',
+    services: Partial<Services> = {},
+    student: { startNew: boolean } = { startNew: true },
+  ) {
+    const opened = await openYears('/dashboard', services, student)
+    await opened.user.click(within(opened.years).getByRole('button', { name: year }))
+    const group = await within(opened.box).findByRole('group', { name: 'Choose your programme' })
+    return { ...opened, group }
+  }
+
+  // Proves choosing a year shows only that year's open programmes, with what joining adds, and
+  // leaves out other years and closed programmes (D105, D115).
+  it('shows only the programmes of the chosen year', async () => {
+    const { group } = await openGroup('Year 3')
 
     expect(within(group).getByText('Software Engineering, Year 3')).toBeInTheDocument()
-    expect(within(group).getByText('Biomedical Sciences, Year 1')).toBeInTheDocument()
-    // Closed programmes are not offered.
+    expect(within(group).getByText(/Cloud Security and Data Protection Engineering/)).toBeVisible()
+    // Another year's programme, and closed ones, are not shown.
+    expect(within(group).queryByText('Biomedical Sciences, Year 1')).not.toBeInTheDocument()
     expect(within(group).queryByText('Law, Year 1')).not.toBeInTheDocument()
     // The courses in use, by code; the completed and archived ones are left out.
     expect(within(group).getByText('3 courses: BUS 207, CSE 205, SWE 311')).toBeInTheDocument()
@@ -271,46 +260,85 @@ describe('Join your programme', () => {
     ).toBeInTheDocument()
   })
 
+  // Proves the other year shows its own programmes.
+  it('shows the programmes of Year 1 when Year 1 is chosen', async () => {
+    const { group } = await openGroup('Year 1')
+
+    expect(within(group).getByText('Biomedical Sciences, Year 1')).toBeInTheDocument()
+    expect(within(group).queryByText('Software Engineering, Year 3')).not.toBeInTheDocument()
+  })
+
+  // Proves a wrong year can be changed, which brings the year step back.
+  it('goes back to the years from Change year', async () => {
+    const { user, box, group } = await openGroup('Year 3')
+
+    await user.click(within(group).getByRole('button', { name: 'Change year' }))
+
+    expect(await within(box).findByRole('group', { name: 'Choose your year' })).toBeInTheDocument()
+    expect(within(box).queryByRole('group', { name: 'Choose your programme' })).toBeNull()
+  })
+
   // Proves asking records a waiting request and says an administrator decides; nothing is
-  // enrolled, so the student's Home does not change.
-  it('asks to join, shows the request as waiting and enrols nothing', async () => {
-    const { user, group } = await openGroup()
+  // enrolled, so the student's Home does not change. Only the programme asked for stays in view:
+  // a student can hold one request at a time and belong to one programme.
+  it('asks to join, shows only that programme as waiting and enrols nothing', async () => {
+    const { user, box, group } = await openGroup('Year 3')
 
     await user.click(
       within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
     )
 
     expect(await screen.findByText('Request sent. An administrator will approve it.')).toBeVisible()
-    expect(await within(group).findByText('Requested')).toBeInTheDocument()
+    expect(await within(box).findByText('Requested')).toBeInTheDocument()
     // Still the no-courses Home: the dialog stays open on the request.
     expect(screen.getByRole('dialog', { name: 'Join your programme' })).toBeInTheDocument()
-    // One request waits at a time: the others cannot be asked for yet.
-    expect(
-      within(group).getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
-    ).toBeDisabled()
-    expect(within(group).getByText(/One request waits at a time/)).toBeInTheDocument()
+    // The other programmes, in this year and in others, are out of the way.
+    expect(within(box).queryByText(/Cloud Security and Data Protection/)).not.toBeInTheDocument()
+    expect(within(box).queryByRole('group', { name: 'Choose your year' })).not.toBeInTheDocument()
+    expect(within(box).getByText(/One request waits at a time/)).toBeInTheDocument()
   })
 
-  // Proves a waiting request can be withdrawn, which frees the other programmes.
-  it('withdraws a request', async () => {
-    const { user, group } = await openGroup()
+  // Proves a waiting request can be withdrawn, which brings back the programmes of that year and
+  // lets the student change year.
+  it('withdraws a request and offers the programmes again', async () => {
+    const { user, box, group } = await openGroup('Year 3')
     await user.click(
       within(group).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
     )
-    await within(group).findByText('Requested')
+    await within(box).findByText('Requested')
 
     await user.click(
-      within(group).getByRole('button', {
-        name: 'Cancel request for Software Engineering, Year 3',
-      }),
+      within(box).getByRole('button', { name: 'Cancel request for Software Engineering, Year 3' }),
     )
 
-    await waitFor(() => {
-      expect(within(group).queryByText('Requested')).not.toBeInTheDocument()
-    })
+    const again = await within(box).findByRole('group', { name: 'Choose your programme' })
+    expect(within(again).getByText(/Cloud Security and Data Protection/)).toBeVisible()
     expect(
-      within(group).getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
+      within(again).getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
     ).toBeEnabled()
+    await user.click(within(again).getByRole('button', { name: 'Change year' }))
+    await user.click(await within(box).findByRole('button', { name: 'Year 1' }))
+    expect(await within(box).findByText('Biomedical Sciences, Year 1')).toBeInTheDocument()
+  })
+
+  // Proves a student who already has a request waiting opens the dialog on it, with no year step.
+  it('opens on the waiting request, without asking for the year again', async () => {
+    const services = createTestServices()
+    startNewStudent(window.localStorage)
+    await services.enrolment.requestProgramme('swe-y3')
+    const { user } = renderWithRouter({
+      routes,
+      path: '/courses',
+      session: makeSession(),
+      services,
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Join programme' }))
+    const box = await dialog()
+
+    expect(await within(box).findByText('Requested')).toBeInTheDocument()
+    expect(within(box).getByText('Software Engineering, Year 3')).toBeInTheDocument()
+    expect(within(box).queryByRole('group', { name: 'Choose your year' })).not.toBeInTheDocument()
   })
 
   // Proves an approved student sees only their programme, as joined, and is told how to change it.
@@ -334,21 +362,22 @@ describe('Join your programme', () => {
     )
     const { user } = renderWithRouter({ routes, path: '/courses', session: makeSession() })
     await user.click(await screen.findByRole('button', { name: 'Join programme' }))
-    const group = await within(await dialog()).findByRole('group', {
-      name: 'Choose your programme',
-    })
+    const box = await dialog()
+    const group = await within(box).findByRole('group', { name: 'Choose your programme' })
 
     expect(within(group).getByText('Software Engineering, Year 3')).toBeInTheDocument()
     expect(within(group).getByText('Joined')).toBeInTheDocument()
     expect(within(group).queryByText('Biomedical Sciences, Year 1')).not.toBeInTheDocument()
     expect(within(group).queryByRole('button', { name: /Request to join/ })).not.toBeInTheDocument()
     expect(within(group).getByText(/To change it, ask an administrator/)).toBeInTheDocument()
+    // No year to choose: the student has one.
+    expect(within(box).queryByRole('group', { name: 'Choose your year' })).not.toBeInTheDocument()
   })
 
   // Proves a refused request says why, in words written for people.
   it('shows why a programme could not be requested', async () => {
     const real = createTestServices().enrolment
-    const { user, group } = await openGroup('/dashboard', {
+    const { user, group } = await openGroup('Year 3', {
       enrolment: {
         ...real,
         requestProgramme: () =>
@@ -366,21 +395,11 @@ describe('Join your programme', () => {
   // Proves a declined request shows as declined and can be sent again.
   it('shows a declined request and offers to ask again', async () => {
     const real = createTestServices().enrolment
-    const { group } = await openGroup('/dashboard', {
+    const { group } = await openGroup('Year 3', {
       enrolment: {
         ...real,
         listJoinableProgrammes: () =>
-          Promise.resolve([
-            {
-              id: 'swe-y3',
-              code: 'SWE-Y3',
-              name: 'Software Engineering, Year 3',
-              courseCount: 3,
-              courseCodes: ['BUS 207', 'CSE 205', 'SWE 311'],
-              membership: 'declined' as const,
-              requestId: null,
-            },
-          ]),
+          Promise.resolve([programme({ membership: 'declined' as const })]),
       },
     })
 
@@ -392,48 +411,54 @@ describe('Join your programme', () => {
     ).toBeEnabled()
   })
 
-  // Proves a failed load of the programmes shows a retry, while the courses still list.
-  it('shows an error with Retry when the programmes fail to load', async () => {
+  // Proves a programme whose code names no year is still reachable, under "Other programmes",
+  // and is not put in a wrong year.
+  it('keeps a programme without a year under Other programmes', async () => {
     const real = createTestServices().enrolment
-    startNewStudent(window.localStorage)
-    renderWithRouter({
-      routes,
-      path: '/dashboard',
-      session: makeSession(),
-      services: {
-        enrolment: {
-          ...real,
-          listJoinableProgrammes: () => Promise.reject(new AppError('network', 'down')),
-        },
+    const { user, box, years } = await openYears('/dashboard', {
+      enrolment: {
+        ...real,
+        listJoinableProgrammes: () =>
+          Promise.resolve([
+            programme({ id: 'p1', code: 'SWE-Y3', name: 'Software Engineering, Year 3' }),
+            programme({ id: 'p2', code: 'LAW', name: 'Law foundation' }),
+          ]),
       },
     })
-    const box = await dialog()
 
-    expect(await within(box).findByRole('button', { name: 'Try again' })).toBeInTheDocument()
-    expect(await within(box).findByText('Linear Algebra')).toBeInTheDocument()
+    expect(within(years).getByRole('button', { name: 'Year 3' })).toBeInTheDocument()
+    await user.click(within(years).getByRole('button', { name: 'Other programmes' }))
+
+    const group = await within(box).findByRole('group', { name: 'Choose your programme' })
+    expect(within(group).getByText('Law foundation')).toBeInTheDocument()
+    expect(within(group).queryByText('Software Engineering, Year 3')).not.toBeInTheDocument()
   })
 
-  // Proves a school with no open programme shows no programme section at all.
-  it('shows nothing when no programme is open', async () => {
+  // Proves the year buttons are in order, lowest first, whatever order the service lists them in.
+  it('lists the years from the lowest', async () => {
     const real = createTestServices().enrolment
-    startNewStudent(window.localStorage)
-    renderWithRouter({
-      routes,
-      path: '/dashboard',
-      session: makeSession(),
-      services: { enrolment: { ...real, listJoinableProgrammes: () => Promise.resolve([]) } },
+    const { years } = await openYears('/dashboard', {
+      enrolment: {
+        ...real,
+        listJoinableProgrammes: () =>
+          Promise.resolve([
+            programme({ id: 'a', code: 'SWE-Y3', name: 'A' }),
+            programme({ id: 'b', code: 'SWE-Y1', name: 'B' }),
+            programme({ id: 'c', code: 'SWE-Y2', name: 'C' }),
+          ]),
+      },
     })
-    const box = await dialog()
-    await within(box).findByText('Linear Algebra')
 
     expect(
-      within(box).queryByRole('group', { name: 'Choose your programme' }),
-    ).not.toBeInTheDocument()
+      within(years)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Year 1', 'Year 2', 'Year 3'])
   })
 
-  // Proves the section has no accessibility violations.
-  it('has no accessibility violations', async () => {
-    const { box } = await openGroup()
+  // Proves the programme step has no accessibility violations.
+  it('has no accessibility violations on the programme step', async () => {
+    const { box } = await openGroup('Year 3')
 
     await expectNoAxeViolations(box)
   })

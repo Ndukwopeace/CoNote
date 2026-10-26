@@ -26,10 +26,15 @@ test('a new student asks to join a programme and nothing is enrolled until it is
   await page.getByRole('button', { name: 'Sign up' }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
 
-  // The dialog offers the open programmes first; the closed one is not there.
+  // The dialog asks for the year first (D115), then shows that year's programmes only.
   const dialog = page.getByRole('dialog', { name: 'Join your programme' })
+  await dialog
+    .getByRole('group', { name: 'Choose your year' })
+    .getByRole('button', { name: 'Year 3' })
+    .click()
   const group = dialog.getByRole('group', { name: 'Choose your programme' })
   await expect(group.getByText('Software Engineering, Year 3')).toBeVisible()
+  await expect(group.getByText('Biomedical Sciences, Year 1')).toHaveCount(0)
   await expect(group.getByText('3 courses: BUS 207, CSE 205, SWE 311')).toBeVisible()
   await expect(group.getByText('Law, Year 1')).toHaveCount(0)
   await expectNoAxeViolations(page)
@@ -43,13 +48,12 @@ test('a new student asks to join a programme and nothing is enrolled until it is
   }
   await expect(group.getByText('Cloud Security and Data Protection Engineering')).toBeVisible()
 
-  // Asking records a waiting request. It does not enrol: the dialog stays, and the others wait.
+  // Asking records a waiting request. It does not enrol: the dialog stays, and only the programme
+  // asked for is left in view.
   await group.getByRole('button', { name: 'Request to join Software Engineering, Year 3' }).click()
   await expect(page.getByText('Request sent. An administrator will approve it.')).toBeVisible()
-  await expect(group.getByText('Requested')).toBeVisible()
-  await expect(
-    group.getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
-  ).toBeDisabled()
+  await expect(dialog.getByText('Requested')).toBeVisible()
+  await expect(dialog.getByText('Cloud Security and Data Protection Engineering')).toHaveCount(0)
   await expect(dialog).toBeVisible()
 
   // The request survives a reload, and the student still has no courses.
@@ -58,16 +62,22 @@ test('a new student asks to join a programme and nothing is enrolled until it is
   await page.goto('/courses')
   await expect(page.getByText(/not enrolled in any courses yet/)).toBeVisible()
   await page.getByRole('button', { name: 'Join programme' }).click()
-  const again = page
-    .getByRole('dialog', { name: 'Join your programme' })
-    .getByRole('group', { name: 'Choose your programme' })
+  const again = page.getByRole('dialog', { name: 'Join your programme' })
   await expect(again.getByText('Requested')).toBeVisible()
+  // It opens on the waiting request, with no year to choose.
+  await expect(again.getByRole('group', { name: 'Choose your year' })).toHaveCount(0)
 
-  // Withdrawing frees the other programmes.
+  // Withdrawing brings the choice back, starting from the year again after a reload.
   await again
     .getByRole('button', { name: 'Cancel request for Software Engineering, Year 3' })
     .click()
   await expect(again.getByText('Requested')).toHaveCount(0)
+  await again.getByRole('button', { name: 'Year 3' }).click()
+  await expect(
+    again.getByRole('button', { name: 'Request to join Software Engineering, Year 3' }),
+  ).toBeEnabled()
+  await again.getByRole('button', { name: 'Change year' }).click()
+  await again.getByRole('button', { name: 'Year 1' }).click()
   await expect(
     again.getByRole('button', { name: 'Request to join Biomedical Sciences, Year 1' }),
   ).toBeEnabled()
