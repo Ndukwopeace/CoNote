@@ -79,6 +79,8 @@ const userRow = z.object({
 })
 // A course in use, as the user screens name it.
 const courseRow = z.object({ id: z.string(), code: z.string(), title: z.string() })
+// A course chosen for an invited teacher, from the invited-courses view (D116).
+const invitedCourseRow = z.object({ course_id: z.string(), code: z.string(), title: z.string() })
 // A department, from the departments view.
 const departmentRow = z.object({ department: z.string() })
 // One entry of an account's status history, from the audit log.
@@ -180,6 +182,25 @@ export function createSupabaseUserService({
     )
   }
 
+  /** The courses chosen for an invited teacher, which become theirs when they accept (D116). */
+  async function invitedCoursesOf(row: UserRow): Promise<CourseRef[]> {
+    // Only an invited teacher can have any, so nobody else costs a request.
+    if (row.role !== 'teacher' || row.status !== 'pending') return []
+    const chosen = await readRows(
+      client
+        .from('admin_invited_courses')
+        .select('course_id, code, title')
+        .eq('user_id', row.id)
+        .order('code'),
+      invitedCourseRow,
+    )
+    return chosen.map((course) => ({
+      id: course.course_id,
+      code: course.code,
+      title: course.title,
+    }))
+  }
+
   /** `row`'s status history, oldest first, from the audit log. */
   async function historyOf(row: UserRow): Promise<StatusChange[]> {
     const entries = await readRows(
@@ -220,8 +241,19 @@ export function createSupabaseUserService({
 
   /** The details page for the account in `row`. */
   async function toDetails(row: UserRow): Promise<UserDetails> {
-    const [courses, statusHistory] = await Promise.all([coursesIn(row.course_ids), historyOf(row)])
-    return { ...toListItem(row), level: row.level, phone: row.phone, courses, statusHistory }
+    const [courses, invitedCourses, statusHistory] = await Promise.all([
+      coursesIn(row.course_ids),
+      invitedCoursesOf(row),
+      historyOf(row),
+    ])
+    return {
+      ...toListItem(row),
+      level: row.level,
+      phone: row.phone,
+      courses,
+      invitedCourses,
+      statusHistory,
+    }
   }
 
   return {
@@ -272,9 +304,23 @@ export function createSupabaseUserService({
 
     async inviteUser(input) {
       // The form rules first, so a mistake costs no request.
-      const values = parseOrThrow(inviteUserSchema, input)
-      // The function checks the caller, creates the account, sends the email and records it.
-      const answer = invitedSchema.parse(unwrap(await invoke('invite-user', values)))
+      const { courseIds, ...values } = parseOrThrow(inviteUserSchema, input)
+      // SECURITY: a course ID that is not a UUID never reaches the function, and is answered like a
+      // course that is not there. Each course counts once.
+      const chosen = [...new Set(courseIds ?? [])]
+      if (!chosen.every((courseId) => isUuid(courseId))) {
+        throw new AppError('validation', 'One of the chosen courses is not available.')
+      }
+      // The function checks the caller and the courses, creates the account, keeps the courses
+      // for when the teacher accepts, sends the email and records it.
+      const answer = invitedSchema.parse(
+        unwrap(
+          await invoke(
+            'invite-user',
+            chosen.length > 0 ? { ...values, courseIds: chosen } : values,
+          ),
+        ),
+      )
       return toDetails(await findRow(answer.userId))
     },
 

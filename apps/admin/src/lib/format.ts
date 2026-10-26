@@ -12,3 +12,11 @@ export function formatDate(iso: string | null, fallback = '—'): string {
     year: 'numeric',
   })
 }
+
+/** "A", "A and B", "A, B and C": `items` as a short sentence part. */
+export function joinWords(items: readonly string[]): string {
+  // Nothing, or one: as it is.
+  if (items.length <= 1) return items[0] ?? ''
+  // Two or more: commas, then "and" before the last.
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] ?? ''}`
+}

@@ -352,7 +352,7 @@ function folder holds only a thin `index.ts`.
 
 | Function               | Who calls it                | What it does                                                        |
 | ---------------------- | --------------------------- | ------------------------------------------------------------------- |
-| `invite-user`          | Admin                       | Creates an invited account and sends the invitation                 |
+| `invite-user`          | Admin                       | Creates an invited account (a teacher with the courses chosen) and sends the invitation |
 | `set-user-status`      | Admin                       | Suspends or reactivates an account                                  |
 | `send-password-reset`  | Admin                       | Sends a reset email; also resends a pending invitation              |
 | `delete-invitation`    | Admin                       | Removes an invitation that is still `pending`                       |

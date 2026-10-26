@@ -647,6 +647,8 @@ export function createPlatformSeed(now: Date): PlatformData {
         status: 'pending' as const,
         createdAt: clock.ago((index + 1) * 3 * HOUR),
       })),
+    // Nobody is invited with courses at the start (D116).
+    invitedCourses: [],
     auditLog: buildAuditLog(users, clock),
     courses,
     resources: buildResources(courses, clock),

@@ -24,6 +24,8 @@ import {
 } from '@/services/platformData'
 // Service types.
 import type { Services } from '@/services/types'
+// What an invitation carries.
+import type { InviteUserInput } from '@/types/users'
 // Session builder.
 import { makeSession } from '@/test/factories'
 // Render helper.
@@ -249,6 +251,163 @@ describe('UsersPage', () => {
     expect(await screen.findByText('Invitation sent to ngozi@conote.example.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(await screen.findByText('Showing 1–20 of 26')).toBeInTheDocument()
+  })
+
+  /** The platform with three courses: one taught, one not, and one archived (D116). */
+  function withCourses(): PlatformData {
+    return {
+      ...platform(),
+      courses: [
+        courseRecord({ id: 'c1', code: 'CSC 101', title: 'Programming', teacherId: 't1' }),
+        courseRecord({ id: 'c2', code: 'ENG 101', title: 'Writing', teacherId: null }),
+        courseRecord({
+          id: 'c3',
+          code: 'OLD 100',
+          title: 'Retired',
+          teacherId: null,
+          archivedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      ],
+    }
+  }
+
+  /** Opens the invite dialog on the Students tab, with the courses loaded. */
+  async function openInvite(data = withCourses(), overrides: Partial<Services> = {}) {
+    const view = renderUsers('/admin/users', data, overrides)
+    await tableRows()
+    await view.user.click(screen.getByRole('button', { name: 'Invite user' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Invite a user' })
+    return { ...view, dialog }
+  }
+
+  // Proves courses are offered only when inviting a teacher, and only courses in use (D116).
+  it('offers courses only for a teacher, and only those in use', async () => {
+    const { user, dialog } = await openInvite()
+    // A student is invited without courses.
+    expect(within(dialog).queryByRole('group', { name: /Courses they will teach/ })).toBeNull()
+
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+
+    const group = await within(dialog).findByRole('group', { name: /Courses they will teach/ })
+    expect(await within(group).findByRole('checkbox', { name: /CSC 101/ })).toBeInTheDocument()
+    expect(within(group).getByRole('checkbox', { name: /ENG 101/ })).toBeInTheDocument()
+    // An archived course is not offered.
+    expect(within(group).queryByRole('checkbox', { name: /OLD 100/ })).toBeNull()
+    // The words warn that a taken course moves.
+    expect(within(group).getByText(/already has a teacher moves/)).toBeInTheDocument()
+
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'student')
+    expect(within(dialog).queryByRole('group', { name: /Courses they will teach/ })).toBeNull()
+  })
+
+  // Proves a teacher is invited with their courses, and the confirmation names them.
+  it('invites a teacher with courses and says which', async () => {
+    const real = createTestServices(withCourses()).users
+    const inviteUser = vi.fn((input: InviteUserInput) => real.inviteUser(input))
+    const { user, dialog } = await openInvite(withCourses(), { users: { ...real, inviteUser } })
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
+    await user.type(within(dialog).getByLabelText('Email'), 'ngozi@conote.example')
+    await user.click(await within(dialog).findByRole('checkbox', { name: /CSC 101/ }))
+    await user.click(within(dialog).getByRole('checkbox', { name: /ENG 101/ }))
+
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+
+    expect(
+      await screen.findByText(
+        'Invitation sent to ngozi@conote.example. CSC 101 and ENG 101 will be theirs when they first sign in.',
+      ),
+    ).toBeInTheDocument()
+    expect(inviteUser).toHaveBeenCalledWith({
+      role: 'teacher',
+      fullName: 'Ngozi Eze',
+      email: 'ngozi@conote.example',
+      courseIds: ['c1', 'c2'],
+    })
+  })
+
+  // Proves a teacher can still be invited with no course, as before.
+  it('invites a teacher with no course', async () => {
+    const { user, dialog } = await openInvite()
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
+    await user.type(within(dialog).getByLabelText('Email'), 'ngozi@conote.example')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+
+    expect(await screen.findByText('Invitation sent to ngozi@conote.example.')).toBeInTheDocument()
+  })
+
+  // Proves the list can be narrowed by typing, and a course picked stays picked while it is hidden.
+  it('narrows the course list and keeps what was picked', async () => {
+    const real = createTestServices(withCourses()).users
+    const inviteUser = vi.fn((input: InviteUserInput) => real.inviteUser(input))
+    const { user, dialog } = await openInvite(withCourses(), { users: { ...real, inviteUser } })
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.click(await within(dialog).findByRole('checkbox', { name: /CSC 101/ }))
+
+    await user.type(within(dialog).getByRole('searchbox', { name: 'Find a course' }), 'writing')
+    expect(within(dialog).queryByRole('checkbox', { name: /CSC 101/ })).toBeNull()
+    await user.click(within(dialog).getByRole('checkbox', { name: /ENG 101/ }))
+    await user.clear(within(dialog).getByRole('searchbox', { name: 'Find a course' }))
+
+    expect(within(dialog).getByRole('checkbox', { name: /CSC 101/ })).toBeChecked()
+    expect(within(dialog).getByRole('checkbox', { name: /ENG 101/ })).toBeChecked()
+    await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
+    await user.type(within(dialog).getByLabelText('Email'), 'ngozi@conote.example')
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+    await screen.findByText(/will be theirs/)
+    expect(inviteUser.mock.calls[0]?.[0]).toMatchObject({ courseIds: ['c1', 'c2'] })
+  })
+
+  // Proves changing the role back to student drops the courses that were picked.
+  it('sends no courses when the role is changed back to student', async () => {
+    const real = createTestServices(withCourses()).users
+    const inviteUser = vi.fn((input: InviteUserInput) => real.inviteUser(input))
+    const { user, dialog } = await openInvite(withCourses(), { users: { ...real, inviteUser } })
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.click(await within(dialog).findByRole('checkbox', { name: /CSC 101/ }))
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'student')
+    await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
+    await user.type(within(dialog).getByLabelText('Email'), 'ngozi@conote.example')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+
+    expect(await screen.findByText('Invitation sent to ngozi@conote.example.')).toBeInTheDocument()
+    expect(inviteUser.mock.calls[0]?.[0]).not.toHaveProperty('courseIds')
+  })
+
+  // Proves a course the service refuses is explained in the dialog, which stays open.
+  it('explains a refused course', async () => {
+    const real = createTestServices(withCourses()).users
+    const { user, dialog } = await openInvite(withCourses(), {
+      users: {
+        ...real,
+        inviteUser: () =>
+          Promise.reject(new AppError('validation', 'One of the chosen courses is not available.')),
+      },
+    })
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await user.type(within(dialog).getByLabelText('Full name'), 'Ngozi Eze')
+    await user.type(within(dialog).getByLabelText('Email'), 'ngozi@conote.example')
+    await user.click(await within(dialog).findByRole('checkbox', { name: /CSC 101/ }))
+
+    await user.click(within(dialog).getByRole('button', { name: 'Send invitation' }))
+
+    expect(
+      await within(dialog).findByText('One of the chosen courses is not available.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Invite a user' })).toBeInTheDocument()
+  })
+
+  // Proves the dialog with the course list has no accessibility violations.
+  it('has no accessibility violations with the course list', async () => {
+    const { user, dialog } = await openInvite()
+    await user.selectOptions(within(dialog).getByLabelText('Role'), 'teacher')
+    await within(dialog).findByRole('checkbox', { name: /CSC 101/ })
+
+    await expectNoAxeViolations(dialog)
   })
 
   // Proves suspending asks first, then shows the new status.

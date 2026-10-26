@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 // The unit under test.
 import { inviteUserHandler } from './inviteUser.ts'
 import { NEW_ID, NOW, bodyOf, post, route, sentTo, setupFunction } from '../testSupport.ts'
+import { made } from '@conote/testing/fakeTables'
 
 /** A valid invitation. */
 const INVITE = {
@@ -152,5 +153,136 @@ describe('invite-user', () => {
   it('reports a failed audit entry', async () => {
     const { handler } = build({ 'audit_logs:insert': { data: null, error: { code: 'XX000' } } })
     expect((await handler(post(INVITE))).status).toBe(502)
+  })
+})
+
+/** Two courses an administrator chose, as the database knows them. */
+const COURSE_A = '44444444-4444-4444-8444-444444444444'
+const COURSE_B = '55555555-5555-4555-8555-555555555555'
+
+/** A handler where the courses named in `found` are in use, so the lookup finds exactly those. */
+function buildWithCourses(routes = {}, found = [COURSE_A, COURSE_B]) {
+  return build({
+    'courses:select': { data: found.map((id) => ({ id })), error: null },
+    ...routes,
+  })
+}
+
+describe('invite-user: courses for a teacher (D116)', () => {
+  // Proves the courses are looked up first, in use only, and kept with the invitation for the
+  // moment the teacher accepts it.
+  it('keeps the chosen courses with the invitation', async () => {
+    const { handler, queries } = buildWithCourses()
+    const response = await handler(post({ ...INVITE, courseIds: [COURSE_A, COURSE_B] }))
+    expect(response.status).toBe(200)
+    // The lookup asked for exactly these courses, and not archived ones.
+    const lookup = queries.find((query) => query.table === 'courses')
+    expect(lookup && made(lookup, 'in', 'id', [COURSE_A, COURSE_B])).toBe(true)
+    expect(lookup && made(lookup, 'is', 'archived_at', null)).toBe(true)
+    // The choice is written for the new account.
+    expect(sentTo(queries, 'invited_courses', 'insert')).toEqual([
+      { user_id: NEW_ID, course_id: COURSE_A },
+      { user_id: NEW_ID, course_id: COURSE_B },
+    ])
+    // The audit entry says which courses were chosen.
+    expect(sentTo(queries, 'audit_logs', 'insert')).toMatchObject({
+      metadata: { role: 'teacher', status: 'pending', courseIds: [COURSE_A, COURSE_B] },
+    })
+  })
+
+  // Proves the courses are not assigned now: the course rule needs an active teacher, so the
+  // function writes no course.
+  it('does not change any course now', async () => {
+    const { handler, queries } = buildWithCourses({}, [COURSE_A])
+    const response = await handler(post({ ...INVITE, courseIds: [COURSE_A] }))
+    expect(response.status).toBe(200)
+    expect(sentTo(queries, 'courses', 'update')).toBeUndefined()
+  })
+
+  // Proves an invitation with no courses touches neither table, as before.
+  it('looks up and stores nothing when no course is chosen', async () => {
+    const { handler, queries } = buildWithCourses()
+    await handler(post(INVITE))
+    expect(queries.some((query) => query.table === 'courses')).toBe(false)
+    expect(queries.some((query) => query.table === 'invited_courses')).toBe(false)
+    await handler(post({ ...INVITE, courseIds: [] }))
+    expect(queries.some((query) => query.table === 'invited_courses')).toBe(false)
+  })
+
+  // Proves the same course chosen twice counts once.
+  it('counts a course chosen twice once', async () => {
+    const { handler, queries } = build({
+      'courses:select': { data: [{ id: COURSE_A }], error: null },
+    })
+    const response = await handler(post({ ...INVITE, courseIds: [COURSE_A, COURSE_A] }))
+    expect(response.status).toBe(200)
+    expect(sentTo(queries, 'invited_courses', 'insert')).toEqual([
+      { user_id: NEW_ID, course_id: COURSE_A },
+    ])
+  })
+
+  // Proves an unknown or archived course refuses the whole invitation, before anything is created.
+  it('refuses a course that is missing or archived, creating nothing', async () => {
+    const { handler, admin, resetPasswordForEmail } = build({
+      'courses:select': { data: [{ id: COURSE_A }], error: null },
+    })
+    const response = await handler(post({ ...INVITE, courseIds: [COURSE_A, COURSE_B] }))
+    expect(response.status).toBe(400)
+    await expect(bodyOf(response)).resolves.toMatchObject({
+      error: { kind: 'validation', message: 'One of the chosen courses is not available.' },
+    })
+    expect(admin.createUser).not.toHaveBeenCalled()
+    expect(resetPasswordForEmail).not.toHaveBeenCalled()
+  })
+
+  // Proves a failed course lookup is reported and creates nothing.
+  it('reports a failed course lookup, creating nothing', async () => {
+    const { handler, admin } = build({
+      'courses:select': { data: null, error: { code: 'XX000' } },
+    })
+    expect((await handler(post({ ...INVITE, courseIds: [COURSE_A] }))).status).toBe(502)
+    expect(admin.createUser).not.toHaveBeenCalled()
+  })
+
+  // SECURITY: courses are for teachers only, so a student or administrator invitation that carries
+  // some is refused, whatever the console sent.
+  it.each(['student', 'admin'])('refuses courses for a %s', async (role) => {
+    const { handler, admin } = buildWithCourses()
+    const response = await handler(post({ ...INVITE, role, courseIds: [COURSE_A] }))
+    expect(response.status).toBe(400)
+    await expect(bodyOf(response)).resolves.toMatchObject({
+      error: { kind: 'validation', message: 'Only teachers can be given courses.' },
+    })
+    expect(admin.createUser).not.toHaveBeenCalled()
+  })
+
+  // SECURITY: an ID that is not a UUID, or a long list, never reaches the database.
+  it.each([
+    [['not-a-uuid']],
+    [
+      Array.from(
+        { length: 21 },
+        (_, index) => `${String(index).padStart(8, '0')}-4444-4444-8444-444444444444`,
+      ),
+    ],
+  ])('refuses a bad course list %#', async (courseIds) => {
+    const { handler, admin, queries } = buildWithCourses()
+    const response = await handler(post({ ...INVITE, courseIds }))
+    expect(response.status).toBe(400)
+    expect(admin.createUser).not.toHaveBeenCalled()
+    expect(queries.some((query) => query.table === 'courses')).toBe(false)
+  })
+
+  // Proves a choice that cannot be saved removes the half-made account, like any other failed step.
+  it('removes the login when the choice cannot be saved', async () => {
+    const { handler, admin, resetPasswordForEmail } = buildWithCourses(
+      { 'invited_courses:insert': { data: null, error: { code: 'XX000' } } },
+      [COURSE_A],
+    )
+    const response = await handler(post({ ...INVITE, courseIds: [COURSE_A] }))
+    expect(response.status).toBe(502)
+    expect(admin.deleteUser).toHaveBeenCalledWith(NEW_ID)
+    // No email goes to someone whose account was just removed.
+    expect(resetPasswordForEmail).not.toHaveBeenCalled()
   })
 })

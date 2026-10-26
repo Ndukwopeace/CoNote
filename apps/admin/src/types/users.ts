@@ -74,6 +74,9 @@ export interface UserDetails extends UserListItem {
   phone: string | null
   // Enrolled in (students) or taught (teachers).
   courses: CourseRef[]
+  // The courses an invited teacher gets when they accept the invitation (D116); empty for everyone
+  // else, and once the invitation is accepted.
+  invitedCourses: CourseRef[]
   // Oldest first.
   statusHistory: StatusChange[]
 }
@@ -91,6 +94,9 @@ export interface InviteUserInput {
   email: string
   // Students' and teachers' department.
   department?: string | undefined
+  // The courses a new teacher will teach (D116). They are kept with the invitation and handed
+  // over when the teacher accepts it, because a course may only go to an active teacher.
+  courseIds?: string[] | undefined
 }
 
 /** The profile fields an administrator can change. */

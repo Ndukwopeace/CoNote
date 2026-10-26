@@ -215,6 +215,12 @@ export interface PlatformSettings {
   reviewAlertDays: number
 }
 
+/** A course chosen for an invited teacher, handed over when they accept the invitation (D116). */
+export interface InvitedCourseRecord {
+  userId: string
+  courseId: string
+}
+
 /** Everything the dashboard services read. */
 export interface PlatformData {
   users: UserRecord[]
@@ -227,6 +233,8 @@ export interface PlatformData {
   programmeMembers: ProgrammeMemberRecord[]
   // Students' requests to join programmes (D106).
   programmeRequests: ProgrammeRequestRecord[]
+  // The courses chosen for invited teachers, not yet theirs (D116).
+  invitedCourses: InvitedCourseRecord[]
   auditLog: AuditEntry[]
   courses: CourseRecord[]
   resources: ResourceRecord[]
@@ -250,6 +258,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     programmeCourses: [],
     programmeMembers: [],
     programmeRequests: [],
+    invitedCourses: [],
     auditLog: [],
     courses: [],
     resources: [],

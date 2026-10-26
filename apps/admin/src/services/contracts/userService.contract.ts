@@ -241,6 +241,94 @@ export function describeUserServiceContract(name: string, create: CreateUserServ
       await expect(names(svc, 'teacher')).resolves.toContain('Ngozi Eze')
     })
 
+    // Proves the courses chosen at invitation are kept with it, shown to the administrator, and not
+    // given yet: a course may only go to an active teacher, so they are handed over on acceptance
+    // (D116). Nothing else about the courses changes.
+    it('invites a teacher with courses, kept for when they accept', async () => {
+      const svc = service()
+
+      const invited = await svc.inviteUser({
+        role: 'teacher',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+        courseIds: ['c1', 'c2'],
+      })
+
+      expect(invited.invitedCourses.map((course) => course.code)).toEqual(['CSC 101', 'ENG 101'])
+      await expect(svc.getUser(invited.id)).resolves.toMatchObject({
+        invitedCourses: invited.invitedCourses,
+        // Not theirs yet.
+        courses: [],
+        courseCount: 0,
+      })
+      // The courses keep their teachers until the invitation is accepted.
+      await expect(svc.getUser('t1')).resolves.toMatchObject({
+        courses: [{ code: 'CSC 101' }],
+      })
+    })
+
+    // Proves a course chosen twice counts once, and an invitation without courses lists none.
+    it('counts a course chosen twice once, and lists none when none was chosen', async () => {
+      const svc = service()
+
+      const twice = await svc.inviteUser({
+        role: 'teacher',
+        fullName: 'Ngozi Eze',
+        email: 'ngozi@conote.example',
+        courseIds: ['c1', 'c1'],
+      })
+      const plain = await svc.inviteUser({
+        role: 'teacher',
+        fullName: 'Tunde Bello',
+        email: 'tunde@conote.example',
+      })
+
+      expect(twice.invitedCourses).toHaveLength(1)
+      expect(plain.invitedCourses).toEqual([])
+      await expect(svc.getUser('t1')).resolves.toMatchObject({ invitedCourses: [] })
+    })
+
+    // Proves a course that does not exist or is archived refuses the whole invitation, and nobody
+    // is invited.
+    it('refuses a course that is missing or archived, inviting nobody', async () => {
+      const svc = service()
+      const before = (await svc.listUsers({ role: 'teacher' })).total
+
+      for (const courseIds of [['c1', 'no-such-course'], ['c3']]) {
+        await expect(
+          svc.inviteUser({
+            role: 'teacher',
+            fullName: 'Ngozi Eze',
+            email: 'ngozi@conote.example',
+            courseIds,
+          }),
+        ).rejects.toMatchObject({
+          kind: 'validation',
+          message: 'One of the chosen courses is not available.',
+        })
+      }
+
+      expect((await svc.listUsers({ role: 'teacher' })).total).toBe(before)
+    })
+
+    // SECURITY: courses are for teachers only, whatever the caller sends.
+    it('refuses courses for a student or an administrator', async () => {
+      const svc = service()
+      for (const role of ['student', 'admin'] as const) {
+        await expect(
+          svc.inviteUser({
+            role,
+            fullName: 'Ngozi Eze',
+            email: `${role}@conote.example`,
+            courseIds: ['c1'],
+          }),
+        ).rejects.toMatchObject({
+          kind: 'validation',
+          message: 'Only teachers can be given courses.',
+        })
+      }
+    })
+
     // Proves an email can't be invited twice, whatever its case, and bad input is refused.
     it('refuses a taken email and invalid input', async () => {
       const svc = service()
