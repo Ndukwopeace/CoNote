@@ -10,7 +10,7 @@ import { z } from 'zod'
 // The shared steps and answers.
 import { adminHandler, type FunctionDeps } from './admin.ts'
 import type { Clients } from './clients.ts'
-import { resetAddress } from './env.ts'
+import { loginAddress, resetAddress } from './env.ts'
 import { json, refuse } from './http.ts'
 
 /** The most courses one invitation may carry; the console's list is far shorter. */
@@ -90,10 +90,18 @@ export function inviteUserHandler(deps: FunctionDeps) {
     const unusable = await refuseUnusableCourses(service, courseIds)
     if (unusable) return unusable
     // The login, without a password. The sign-up trigger makes the profile, always as a student.
+    // Staff are told to sign in with an emailed code instead of following a link (D118), so their
+    // user data holds the address of the sign-in page, which the invitation email shows. A student
+    // still chooses a password through the link.
+    const loginUrl = body.role === 'student' ? null : loginAddress(deps.env, body.role)
     const created = await service.auth.admin.createUser({
       email: body.email,
       email_confirm: true,
-      user_metadata: { full_name: body.fullName, invited: true },
+      user_metadata: {
+        full_name: body.fullName,
+        invited: true,
+        ...(loginUrl === null ? {} : { login_url: loginUrl }),
+      },
     })
     const userId = created.data.user?.id
     if (created.error || !userId) {

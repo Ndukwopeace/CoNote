@@ -51,6 +51,8 @@ export interface SignedInUser {
   fullName: string
   email: string
   avatarUrl?: string
+  // Present (true) while the account was invited and has not chosen a password yet (D118).
+  mustSetPassword?: boolean
 }
 
 /** Checks a row from the database. Throws if it is malformed. */

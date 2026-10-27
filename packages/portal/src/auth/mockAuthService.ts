@@ -50,6 +50,8 @@ const sessionSchema = z.object({
     role: z.enum(['student', 'teacher', 'admin']),
     fullName: z.string().min(1),
     email: z.email(),
+    // Kept, so an invited account is still asked for a password after the page reloads (D118).
+    mustSetPassword: z.boolean().optional(),
   }),
 })
 
@@ -123,6 +125,15 @@ export function readStoredSession(store: Storage, sessionKey: string): Session |
   return null
 }
 
+/** A copy of `user` without the "must choose a password" mark (D118). */
+function withoutMark(user: SessionUser): SessionUser {
+  // Copy first, so the caller's object is left as it was.
+  const plain = { ...user }
+  // The mark is optional, so removing it is allowed.
+  delete plain.mustSetPassword
+  return plain
+}
+
 /** Builds a portal's demo AuthService. */
 export function createDemoAuthService({
   accounts,
@@ -151,6 +162,17 @@ export function createDemoAuthService({
   /** The password `email` currently has: a changed one if any, otherwise the demo password. */
   function passwordFor(email: string) {
     return readChecked(demoStore, passwordsKey, passwordsSchema)?.[email] ?? demoPassword
+  }
+
+  /**
+   * The account as a session user: an invited account carries the mark until a password has been
+   * chosen for it (D118), and then never again.
+   */
+  function sessionUserFor(account: SessionUser): SessionUser {
+    // Someone who has chosen a password, or was never invited, is not asked.
+    const chosen =
+      readChecked(demoStore, passwordsKey, passwordsSchema)?.[account.email] !== undefined
+    return chosen || !account.mustSetPassword ? withoutMark(account) : { ...account }
   }
 
   /** The newest reset record, if any: its code, and the account it is for (null if unknown). */
@@ -184,7 +206,7 @@ export function createDemoAuthService({
         throw new AppError('forbidden', 'This account is not active. Contact your administrator.')
       }
       // Keep a copy of the account as the session, then tell listeners.
-      const session: Session = { user: { ...account } }
+      const session: Session = { user: sessionUserFor(account) }
       store.setItem(sessionKey, JSON.stringify(session))
       notify(session)
       return session
@@ -234,7 +256,7 @@ export function createDemoAuthService({
         throw new AppError('forbidden', 'This account is not active. Contact your administrator.')
       }
       // Keep a copy of the account as the session, then tell listeners.
-      const session: Session = { user: { ...account } }
+      const session: Session = { user: sessionUserFor(account) }
       store.setItem(sessionKey, JSON.stringify(session))
       notify(session)
       return session
@@ -289,6 +311,27 @@ export function createDemoAuthService({
       // Save the new password for that account.
       const passwords = readChecked(demoStore, passwordsKey, passwordsSchema) ?? {}
       demoStore.setItem(passwordsKey, JSON.stringify({ ...passwords, [reset.email]: newPassword }))
+    },
+
+    async setPassword(newPassword) {
+      // Behave like a network call.
+      await simulateLatency(latencyMs)
+      // SECURITY: the same strength rules as the form, enforced here too.
+      assertRule(newStaffPasswordSchema, newPassword)
+      // SECURITY: only a signed-in person can choose a password, and only for themselves.
+      const current = readStoredSession(store, sessionKey)
+      if (!current) throw new AppError('unauthorized', 'Sign in again to continue.')
+      // Save the new password for that account, as a real service would.
+      const passwords = readChecked(demoStore, passwordsKey, passwordsSchema) ?? {}
+      demoStore.setItem(
+        passwordsKey,
+        JSON.stringify({ ...passwords, [current.user.email]: newPassword }),
+      )
+      // The same person, without the mark. Keep the stored copy in step, then tell listeners.
+      const session: Session = { user: withoutMark(current.user) }
+      store.setItem(sessionKey, JSON.stringify(session))
+      notify(session)
+      return session
     },
 
     onAuthChange(listener) {

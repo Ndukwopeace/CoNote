@@ -73,6 +73,7 @@ export function AuthProvider({ auth, storagePrefix, children }: Readonly<AuthPro
       requestPasswordReset: (email) => auth.requestPasswordReset(email),
       checkResetLink: (code) => auth.checkResetLink(code),
       resetPassword: (code, newPassword) => auth.resetPassword(code, newPassword),
+      setPassword: (newPassword) => auth.setPassword(newPassword),
       signOut: async () => {
         try {
           await auth.signOut()

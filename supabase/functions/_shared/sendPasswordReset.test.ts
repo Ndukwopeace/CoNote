@@ -76,6 +76,45 @@ describe('send-password-reset', () => {
     })
   })
 
+  // Proves an invited teacher or administrator is given the sign-in address before the email goes
+  // out, so an invitation sent before D118 still shows it (D118).
+  it('gives an invited teacher the sign-in address first', async () => {
+    const { handler, admin, resetPasswordForEmail } = build({
+      ...STUDENT,
+      role: 'teacher',
+      status: 'pending',
+    })
+    await handler(post({ userId: OTHER_ID }))
+    expect(admin.updateUserById).toHaveBeenCalledWith(OTHER_ID, {
+      user_metadata: { login_url: 'https://teacher.example/teacher/login' },
+    })
+    expect(admin.updateUserById.mock.invocationCallOrder[0]).toBeLessThan(
+      resetPasswordForEmail.mock.invocationCallOrder[0] ?? 0,
+    )
+  })
+
+  // Proves accounts that are active, and invited students, are left as they are.
+  it.each([
+    ['active teacher', { role: 'teacher', status: 'active' }],
+    ['invited student', { role: 'student', status: 'pending' }],
+  ])('leaves the user data of an %s alone', async (_name, account) => {
+    const { handler, admin } = build({ ...STUDENT, ...account })
+    await handler(post({ userId: OTHER_ID }))
+    expect(admin.updateUserById).not.toHaveBeenCalled()
+  })
+
+  // Proves no email is sent if the sign-in address could not be saved.
+  it('sends nothing when the sign-in address cannot be saved', async () => {
+    const { handler, admin, resetPasswordForEmail } = build({
+      ...STUDENT,
+      role: 'teacher',
+      status: 'pending',
+    })
+    admin.updateUserById.mockResolvedValueOnce({ data: {}, error: { code: 'unexpected_failure' } })
+    expect((await handler(post({ userId: OTHER_ID }))).status).toBe(502)
+    expect(resetPasswordForEmail).not.toHaveBeenCalled()
+  })
+
   // Proves only accounts that can sign in, or are waiting to, get a link.
   it.each(['suspended', 'inactive'])('refuses a %s account', async (status) => {
     const { handler, resetPasswordForEmail } = build({ ...STUDENT, status })

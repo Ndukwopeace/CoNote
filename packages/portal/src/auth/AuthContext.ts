@@ -22,6 +22,7 @@ export type AuthContextValue = AuthState & {
   requestPasswordReset: (email: string) => Promise<PasswordResetRequest>
   checkResetLink: (code: string | null) => Promise<boolean>
   resetPassword: (code: string, newPassword: string) => Promise<void>
+  setPassword: (newPassword: string) => Promise<Session>
   /** Never rejects; the route guard decides where to go next. */
   signOut: () => Promise<void>
 }

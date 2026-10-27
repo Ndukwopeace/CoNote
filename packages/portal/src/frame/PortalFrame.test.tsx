@@ -3,7 +3,7 @@
  */
 
 // Queries.
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 // Vitest building blocks.
 import { describe, expect, it } from 'vitest'
 
@@ -16,7 +16,15 @@ import { ErrorState } from '../components/ErrorState'
 import { NotFoundPage } from '../components/NotFoundPage'
 import { RouteErrorBoundary } from '../components/RouteErrorBoundary'
 import { PortalFrame } from './PortalFrame'
-import { PATHS, STAFF, renderPortal, testRoutes } from '../test/harness'
+import {
+  INVITED,
+  PATHS,
+  PASSWORD,
+  STAFF,
+  renderPortal,
+  storedSession,
+  testRoutes,
+} from '../test/harness'
 
 describe('PortalFrame', () => {
   // Proves the sidebar lists the portal's sections, named after the portal.
@@ -104,6 +112,84 @@ describe('PortalFrame', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Go home' })).toHaveAttribute('href', PATHS.home)
     expect(screen.getByRole('navigation', { name: 'Test navigation' })).toBeInTheDocument()
+  })
+})
+
+describe('first-time password dialog (D118)', () => {
+  // Proves nobody is asked for a password unless their account needs one.
+  it('does not show for an ordinary account', async () => {
+    renderPortal({ path: PATHS.home, session: { user: STAFF } })
+
+    await screen.findByRole('heading', { level: 1, name: 'Home page' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  // Proves an invited account is asked at once, and the dialog cannot be dismissed or skipped.
+  it('opens at once for an invited account, and cannot be closed', async () => {
+    const { user } = renderPortal({ path: PATHS.home, session: { user: INVITED } })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Set your password' })
+    expect(within(dialog).queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('dialog', { name: 'Set your password' })).toBeInTheDocument()
+  })
+
+  // Proves saving a password closes the dialog and keeps the person signed in.
+  it('closes once a password is saved', async () => {
+    const { user } = renderPortal({ path: PATHS.home, session: { user: INVITED } })
+    const dialog = await screen.findByRole('dialog', { name: 'Set your password' })
+
+    await user.type(
+      within(dialog).getByLabelText('New password', { exact: true }),
+      PASSWORD + 'abcd',
+    )
+    await user.type(
+      within(dialog).getByLabelText('Confirm new password', { exact: true }),
+      PASSWORD + 'abcd',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Save password' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(storedSession()?.user.mustSetPassword).toBeUndefined()
+  })
+
+  // Proves a rule-breaking password is explained and the dialog stays.
+  it('explains a password that breaks the rules', async () => {
+    const { user } = renderPortal({ path: PATHS.home, session: { user: INVITED } })
+    const dialog = await screen.findByRole('dialog', { name: 'Set your password' })
+
+    await user.type(within(dialog).getByLabelText('New password', { exact: true }), 'short1')
+    await user.type(
+      within(dialog).getByLabelText('Confirm new password', { exact: true }),
+      'short1',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Save password' }))
+
+    // The rules line and the field's own message both say it.
+    expect(await within(dialog).findAllByText(/at least 12 characters/i)).toHaveLength(2)
+    expect(storedSession()?.user.mustSetPassword).toBe(true)
+  })
+
+  // Proves a person who cannot choose a password now can still leave.
+  it('offers sign out, so nobody is trapped', async () => {
+    const { user } = renderPortal({ path: PATHS.home, session: { user: INVITED } })
+    const dialog = await screen.findByRole('dialog', { name: 'Set your password' })
+
+    await user.click(within(dialog).getByRole('button', { name: 'Sign out' }))
+
+    await waitFor(() => {
+      expect(storedSession()).toBeNull()
+    })
+  })
+
+  // Proves the dialog passes the accessibility check.
+  it('has no accessibility violations', async () => {
+    renderPortal({ path: PATHS.home, session: { user: INVITED } })
+    const dialog = await screen.findByRole('dialog', { name: 'Set your password' })
+
+    await expectNoAxeViolations(dialog)
   })
 })
 

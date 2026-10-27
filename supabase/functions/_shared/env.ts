@@ -75,6 +75,18 @@ export function resetAddress(env: FunctionEnv, role: keyof typeof RESET_PATHS): 
   return `${env.appUrls[role]}${RESET_PATHS[role]}`
 }
 
+/** The sign-in page of each app, by the role of the person it is for (D118). */
+const LOGIN_PATHS = {
+  student: '/login',
+  teacher: '/teacher/login',
+  admin: '/admin/login',
+} as const
+
+/** The address of the sign-in page for someone with `role`, which an invitation email shows. */
+export function loginAddress(env: FunctionEnv, role: keyof typeof LOGIN_PATHS): string {
+  return `${env.appUrls[role]}${LOGIN_PATHS[role]}`
+}
+
 /** What the summary pipeline needs beyond the common settings. */
 export interface PipelineEnv {
   // SECURITY: the language model's key. It stays in this runtime and is sent only to the model's

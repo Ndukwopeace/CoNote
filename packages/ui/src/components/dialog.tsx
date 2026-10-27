@@ -27,8 +27,14 @@ function DialogClose(props: Readonly<React.ComponentProps<typeof DialogPrimitive
 function DialogContent({
   className,
   children,
+  hideClose = false,
   ...props
-}: Readonly<React.ComponentProps<typeof DialogPrimitive.Content>>) {
+}: Readonly<
+  React.ComponentProps<typeof DialogPrimitive.Content> & {
+    // Leaves out the corner close button, for a dialog that must be answered (D118).
+    hideClose?: boolean
+  }
+>) {
   return (
     // Rendered at the end of <body>, so no parent's overflow or stacking can clip it.
     <DialogPrimitive.Portal>
@@ -45,13 +51,15 @@ function DialogContent({
       >
         {/* The caller's content. */}
         {children}
-        {/* Close button in the top-right corner. */}
-        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
-          {/* Decorative icon. */}
-          <XIcon aria-hidden="true" className="size-5" />
-          {/* The button's name for screen readers. */}
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
+        {/* Close button in the top-right corner, unless the dialog must be answered. */}
+        {!hideClose && (
+          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
+            {/* Decorative icon. */}
+            <XIcon aria-hidden="true" className="size-5" />
+            {/* The button's name for screen readers. */}
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   )

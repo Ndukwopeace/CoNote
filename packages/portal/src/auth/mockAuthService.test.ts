@@ -8,7 +8,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 // The shared rules, and the test portal's accounts and storage.
 import { describeAuthServiceContract } from './authService.contract'
-import { CONFIG, PASSWORD, SESSION_KEY, STAFF, STUDENT, createTestAuth } from '../test/harness'
+import {
+  CONFIG,
+  INVITED,
+  PASSWORD,
+  SESSION_KEY,
+  STAFF,
+  STUDENT,
+  createTestAuth,
+} from '../test/harness'
 
 // The unit under test.
 import { readStoredSession } from './mockAuthService'
@@ -252,6 +260,84 @@ describe('demo sign-in code', () => {
 
     await expect(createTestAuth().signInWithCode(STAFF.email, '123456')).rejects.toMatchObject({
       kind: 'validation',
+    })
+  })
+})
+
+describe('demo first-time password (D118)', () => {
+  /** Signs the invited account in with a code, as it does on its first visit. */
+  async function signInInvitedWithCode(service = createTestAuth()) {
+    const { demoCode } = await service.requestSignInCode(INVITED.email)
+    return service.signInWithCode(INVITED.email, demoCode ?? '')
+  }
+
+  // Proves an invited account is told it has no password yet, and an ordinary account is not.
+  it('flags an invited account on its first sign-in, and nobody else', async () => {
+    const first = await signInInvitedWithCode()
+    expect(first.user.mustSetPassword).toBe(true)
+
+    const service = createTestAuth()
+    const { demoCode } = await service.requestSignInCode(STAFF.email)
+    const ordinary = await service.signInWithCode(STAFF.email, demoCode ?? '')
+    expect(ordinary.user.mustSetPassword).toBeUndefined()
+  })
+
+  // Proves the flag survives a reload of the page, as the session does.
+  it('keeps the flag in the stored session', async () => {
+    await signInInvitedWithCode()
+
+    await expect(createTestAuth().getSession()).resolves.toMatchObject({
+      user: { id: INVITED.id, mustSetPassword: true },
+    })
+  })
+
+  // Proves choosing a password clears the flag, in the answer, the stored session and for
+  // listeners, and that the new password then signs in.
+  it('clears the flag once a password is chosen, and the password works', async () => {
+    const service = createTestAuth()
+    await signInInvitedWithCode(service)
+    const heard: (boolean | undefined)[] = []
+    service.onAuthChange((session) => heard.push(session?.user.mustSetPassword))
+
+    const session = await service.setPassword('chosen-password-2026')
+
+    expect(session.user.mustSetPassword).toBeUndefined()
+    expect(heard).toEqual([undefined])
+    await expect(createTestAuth().getSession()).resolves.toMatchObject({
+      user: { id: INVITED.id },
+    })
+    expect((await createTestAuth().getSession())?.user.mustSetPassword).toBeUndefined()
+    await expect(
+      createTestAuth().signIn({ email: INVITED.email, password: 'chosen-password-2026' }),
+    ).resolves.toMatchObject({ user: { id: INVITED.id } })
+  })
+
+  // Proves the dialog does not come back on a later code sign-in.
+  it('does not ask again on the next sign-in', async () => {
+    const service = createTestAuth()
+    await signInInvitedWithCode(service)
+    await service.setPassword('chosen-password-2026')
+    await service.signOut()
+
+    const again = await signInInvitedWithCode(createTestAuth())
+
+    expect(again.user.mustSetPassword).toBeUndefined()
+  })
+
+  // SECURITY: proves the staff password rules apply here too, and a refused password changes nothing.
+  it('refuses a weak password and keeps the flag', async () => {
+    const service = createTestAuth()
+    await signInInvitedWithCode(service)
+
+    await expect(service.setPassword('short1')).rejects.toMatchObject({ kind: 'validation' })
+
+    expect((await createTestAuth().getSession())?.user.mustSetPassword).toBe(true)
+  })
+
+  // SECURITY: proves nobody can set a password without being signed in.
+  it('refuses when nobody is signed in', async () => {
+    await expect(createTestAuth().setPassword('chosen-password-2026')).rejects.toMatchObject({
+      kind: 'unauthorized',
     })
   })
 })

@@ -33,6 +33,8 @@ interface NewPasswordFormProps {
   isPending: boolean
   // Saves a valid password.
   onSubmit: (password: string) => void | Promise<void>
+  // The submit button's words; "Update password" unless the page says otherwise.
+  submitLabel?: string
 }
 
 /** Empty starting values. */
@@ -45,6 +47,7 @@ export function NewPasswordForm({
   error,
   isPending,
   onSubmit,
+  submitLabel = 'Update password',
 }: Readonly<NewPasswordFormProps>) {
   // The form. Errors appear when a field loses focus and on submit.
   const {
@@ -93,7 +96,7 @@ export function NewPasswordForm({
         </FormField>
         {/* Submit; disabled and relabelled while in flight. */}
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Updating…' : 'Update password'}
+          {isPending ? 'Updating…' : submitLabel}
         </Button>
       </form>
     </>

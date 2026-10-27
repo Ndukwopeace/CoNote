@@ -331,7 +331,7 @@ every one of these must be set again:
 - **Authentication → Email:** email confirmation **on**. "Email OTP Length" = **6**
   (the student app expects 6, and 6 is the minimum Supabase allows).
 - **Authentication → Email templates:** paste `supabase/templates/confirmation.html` (sign-up
-  code), `supabase/templates/recovery.html` (password reset) and
+  code), `supabase/templates/recovery.html` (password reset, and the staff invitation) and
   `supabase/templates/magic_link.html` (the staff sign-in code, under "Magic Link"). The local
   stack reads these files; the hosted project does not. Subject lines are in
   `supabase/config.toml`.

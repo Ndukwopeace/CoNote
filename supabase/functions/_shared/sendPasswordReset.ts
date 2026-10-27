@@ -10,7 +10,7 @@ import { z } from 'zod'
 
 // The shared steps and answers.
 import { adminHandler, type FunctionDeps } from './admin.ts'
-import { resetAddress } from './env.ts'
+import { loginAddress, resetAddress } from './env.ts'
 import { json, refuse } from './http.ts'
 import { canSendPasswordReset, type AccountStatus } from './rules.ts'
 
@@ -36,6 +36,15 @@ export function sendPasswordResetHandler(deps: FunctionDeps) {
     }
     // The email, pointing at the person's own app.
     const role = found.data.role as 'student' | 'teacher' | 'admin'
+    // An invited teacher or administrator is told to sign in with a code, not to follow a link
+    // (D118). An invitation sent before that has no sign-in address in its user data, so it is
+    // added first; the email then shows it. A student still chooses a password through the link.
+    if (status === 'pending' && role !== 'student') {
+      const saved = await service.auth.admin.updateUserById(body.userId, {
+        user_metadata: { login_url: loginAddress(deps.env, role) },
+      })
+      if (saved.error) return refuse('unknown', 'Something went wrong. Try again.')
+    }
     const sent = await anon.auth.resetPasswordForEmail(found.data.email as string, {
       redirectTo: resetAddress(deps.env, role),
     })

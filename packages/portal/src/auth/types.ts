@@ -12,6 +12,9 @@ export interface SessionUser {
   role: Role
   fullName: string
   email: string
+  // True while the account was invited and has not chosen a password yet (D118). The frame then
+  // asks for one before anything else.
+  mustSetPassword?: boolean | undefined
 }
 
 /** A signed-in session. Wraps the user so tokens can be added later without breaking callers. */
@@ -70,6 +73,12 @@ export interface AuthService {
   checkResetLink(code: string | null): Promise<boolean>
   /** Sets a new password with `code`, checking both again; the code then stops working. */
   resetPassword(code: string, newPassword: string): Promise<void>
+  /**
+   * Sets the signed-in person's password, and records that they have chosen one so they are not
+   * asked again (D118). Rejects with a validation AppError for a password that breaks the rules,
+   * and with `unauthorized` when nobody is signed in. Resolves with the updated session.
+   */
+  setPassword(newPassword: string): Promise<Session>
   /** Calls `listener` whenever the session changes. Returns a function that stops listening. */
   onAuthChange(listener: (session: Session | null) => void): () => void
 }

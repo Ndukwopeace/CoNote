@@ -134,7 +134,10 @@ describe('password reset', () => {
     const { service, auth } = setup()
     await service.resetPassword('code', 'new-password-2026')
     expect(auth.verifyOtp).toHaveBeenCalledWith({ type: 'recovery', token_hash: 'code' })
-    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'new-password-2026' })
+    expect(auth.updateUser).toHaveBeenCalledWith({
+      password: 'new-password-2026',
+      data: { invited: false },
+    })
     expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
   })
 
@@ -346,5 +349,88 @@ describe('signInWithCode', () => {
     service.onAuthChange(() => undefined)
     await service.signInWithCode('admin@conote.example', '482913')
     expect(auth.signOut).not.toHaveBeenCalled()
+  })
+})
+
+/** A Supabase session whose account is (or is not) marked as invited, as the stored one would be. */
+function sessionWithInvited(invited: boolean | undefined) {
+  const base = supabaseSession()
+  return {
+    ...base,
+    user: { ...base.user, user_metadata: invited === undefined ? {} : { invited } },
+  }
+}
+
+describe('first-time password (D118)', () => {
+  // Proves an account still marked invited is told to choose a password, and others are not.
+  it('flags a session whose account is still marked invited', async () => {
+    const { service, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: sessionWithInvited(true) }, error: null })
+    const flagged = await service.signInWithCode('admin@conote.example', '482913')
+    expect(flagged.user.mustSetPassword).toBe(true)
+
+    auth.getSession.mockResolvedValue({ data: { session: sessionWithInvited(false) }, error: null })
+    const plain = await service.signInWithCode('admin@conote.example', '482913')
+    expect(plain.user.mustSetPassword).toBeUndefined()
+
+    auth.getSession.mockResolvedValue({
+      data: { session: sessionWithInvited(undefined) },
+      error: null,
+    })
+    const unmarked = await service.signInWithCode('admin@conote.example', '482913')
+    expect(unmarked.user.mustSetPassword).toBeUndefined()
+  })
+
+  // SECURITY: proves the staff password rules are checked before Supabase is asked to change it.
+  it('checks the staff password rules before changing anything', async () => {
+    const { service, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: sessionWithInvited(true) }, error: null })
+
+    await expect(service.setPassword('short1')).rejects.toMatchObject({ kind: 'validation' })
+
+    expect(auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  // Proves the password and the "no longer invited" mark are saved together, and the new session
+  // is announced without the flag.
+  it('saves the password and clears the invited mark', async () => {
+    const { service, auth } = setup()
+    auth.getSession
+      .mockResolvedValueOnce({ data: { session: sessionWithInvited(true) }, error: null })
+      .mockResolvedValue({ data: { session: sessionWithInvited(false) }, error: null })
+    const heard: (boolean | undefined)[] = []
+    service.onAuthChange((session) => heard.push(session?.user.mustSetPassword))
+
+    const session = await service.setPassword('chosen-password-2026')
+
+    expect(auth.updateUser).toHaveBeenCalledWith({
+      password: 'chosen-password-2026',
+      data: { invited: false },
+    })
+    expect(session.user.mustSetPassword).toBeUndefined()
+    expect(heard).toEqual([undefined])
+  })
+
+  // SECURITY: proves nobody can change a password without a session.
+  it('refuses when nobody is signed in', async () => {
+    const { service, auth } = setup()
+
+    await expect(service.setPassword('chosen-password-2026')).rejects.toMatchObject({
+      kind: 'unauthorized',
+    })
+
+    expect(auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  // Proves a refusal from Supabase is reported, not swallowed.
+  it('reports a refusal from Supabase', async () => {
+    const { service, auth } = setup()
+    auth.getSession.mockResolvedValue({ data: { session: sessionWithInvited(true) }, error: null })
+    auth.updateUser.mockResolvedValueOnce({
+      data: {},
+      error: { name: 'AuthApiError', code: 'same_password', status: 422, message: 'same' },
+    })
+
+    await expect(service.setPassword('chosen-password-2026')).rejects.toBeInstanceOf(Error)
   })
 })
