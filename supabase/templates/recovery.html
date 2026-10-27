@@ -3,9 +3,24 @@
      default link, it works in any browser (a student often asks on a laptop and opens the email on
      a phone), and a mail scanner that opens the link does not use the token up. In the hosted
      project, paste this into Authentication > Emails > Templates > Reset Password.
-     The same email serves two cases: someone who forgot their password, and someone an
-     administrator has just invited (such an account is marked "invited" in its user data). -->
-{{ if .Data.invited }}
+     The same email serves three cases:
+     1. A teacher or administrator an administrator has just invited (D118). Their user data holds
+        "invited" and "login_url", the address of their sign-in page. They are told to sign in with
+        an emailed code, not given a link, and are asked to choose a password after signing in.
+        Once they have chosen one, "invited" is cleared and they get case 3 like everyone else.
+     2. A student an administrator has just invited: "invited" without "login_url". They choose a
+        password through the link.
+     3. Someone who forgot their password. -->
+{{ if and .Data.invited .Data.login_url }}
+<h2>You've been invited to CoNote</h2>
+<p>An administrator has set up a CoNote account for you. To get in:</p>
+<ol>
+  <li>Open <a href="{{ .Data.login_url }}">{{ .Data.login_url }}</a></li>
+  <li>Choose <strong>Email me a sign-in code</strong> and enter this email address.</li>
+  <li>Enter the 6-digit code we send you. You will then choose a password.</li>
+</ol>
+<p>If you were not expecting this invitation, ignore this email and nothing happens.</p>
+{{ else if .Data.invited }}
 <h2>You've been invited to CoNote</h2>
 <p>An administrator has set up a CoNote account for you. Choose a password to get started:</p>
 <p><a href="{{ .RedirectTo }}?code={{ .TokenHash }}">Choose a password</a></p>

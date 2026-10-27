@@ -54,6 +54,15 @@ export const STUDENT: SessionUser = {
   email: 'student@conote.example',
 }
 
+/** An invited teacher who has not chosen a password yet (D118): the first sign-in asks for one. */
+export const INVITED: SessionUser = {
+  id: 'invited-1',
+  role: 'teacher',
+  fullName: 'Ife Invited',
+  email: 'invited@conote.example',
+  mustSetPassword: true,
+}
+
 /** The test portal's addresses. */
 export const PATHS = {
   login: '/t/login',
@@ -64,7 +73,7 @@ export const PATHS = {
 
 /** The demo service's configuration. */
 export const CONFIG = {
-  accounts: [STAFF, STUDENT],
+  accounts: [STAFF, STUDENT, INVITED],
   password: PASSWORD,
   sessionKey: SESSION_KEY,
   demoDataPrefix: 'conote-test-demo:',

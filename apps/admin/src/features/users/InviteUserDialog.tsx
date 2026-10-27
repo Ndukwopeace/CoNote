@@ -126,7 +126,7 @@ export function InviteUserDialog({ open, onOpenChange, role }: Readonly<InviteUs
       open={open}
       onOpenChange={onOpenChange}
       title="Invite a user"
-      description="They'll get an email with a link to set their password. Until then, the account shows as Invited."
+      description="They'll get an email to get started. Teachers and administrators sign in with an emailed code and choose a password the first time; students follow the link in the email. Until then, the account shows as Invited."
     >
       {/* A fresh form each time it opens. */}
       {open && (

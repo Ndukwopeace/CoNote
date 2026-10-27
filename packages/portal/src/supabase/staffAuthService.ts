@@ -117,6 +117,16 @@ export function createSupabaseStaffAuthService({
       await core.resetPassword(code, newPassword)
     },
 
+    async setPassword(newPassword) {
+      // SECURITY: the same strength rules as the form, checked first so a weak password never
+      // reaches Supabase.
+      const parsed = newStaffPasswordSchema.safeParse(newPassword)
+      if (!parsed.success) {
+        throw new AppError('validation', parsed.error.issues[0]?.message ?? 'Check this value.')
+      }
+      return core.setPassword(newPassword)
+    },
+
     onAuthChange: core.onAuthChange,
   }
 }

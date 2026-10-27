@@ -6,7 +6,14 @@
 import { describe, expect, it } from 'vitest'
 
 // The unit under test.
-import { DEFAULT_GROQ_MODEL, readEnv, readModelEnv, readPipelineEnv, resetAddress } from './env.ts'
+import {
+  DEFAULT_GROQ_MODEL,
+  loginAddress,
+  readEnv,
+  readModelEnv,
+  readPipelineEnv,
+  resetAddress,
+} from './env.ts'
 
 /** A full set of settings. */
 const FULL: Record<string, string> = {
@@ -41,6 +48,16 @@ describe('readEnv', () => {
         name === 'APP_URL_ADMIN' || name === 'SUPABASE_URL' ? undefined : FULL[name],
       ),
     ).toThrow('Missing settings: SUPABASE_URL, APP_URL_ADMIN')
+  })
+})
+
+describe('loginAddress', () => {
+  // Proves each app's sign-in page address is built from its own app address (D118).
+  it('points each role at its own sign-in page', () => {
+    const env = readEnv((name) => FULL[name])
+    expect(loginAddress(env, 'student')).toBe('https://app.example/login')
+    expect(loginAddress(env, 'teacher')).toBe('https://teacher.example/teacher/login')
+    expect(loginAddress(env, 'admin')).toBe('https://admin.example/admin/login')
   })
 })
 

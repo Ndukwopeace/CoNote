@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@conote/ui/tooltip'
 import { useAuth } from '../auth/useAuth'
 // Phone navigation and the account menu.
 import { MobileNav } from './MobileNav'
+// Asked of an invited person on their first sign-in (D118).
+import { SetPasswordDialog } from './SetPasswordDialog'
 import { UserMenu } from './UserMenu'
 // What the portal gives the frame.
 import type { PortalConfig } from './navItems'
@@ -105,10 +107,12 @@ export function PortalFrame(config: Readonly<PortalConfig>) {
   // The guard admits only signed-in users; this only satisfies the type.
   if (auth.status !== 'signedIn') return <FullPageLoader />
   // Who is signed in.
-  const { fullName, email } = auth.session.user
+  const { fullName, email, mustSetPassword } = auth.session.user
 
   return (
     <div className="min-h-dvh">
+      {/* An invited person who signed in with a code has no password yet: ask before anything else. */}
+      {mustSetPassword === true && <SetPasswordDialog />}
       {/* Skip link: hidden until focused, lets keyboard users jump past the navigation. */}
       <a
         href="#main"

@@ -432,7 +432,11 @@ describe('password reset', () => {
   it('sets the password and ends the temporary session', async () => {
     const { service, auth } = setup()
     await service.resetPassword('hash', 'password1')
-    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'password1' })
+    // The invited mark is cleared with the password (D118), so a later sign-in does not ask again.
+    expect(auth.updateUser).toHaveBeenCalledWith({
+      password: 'password1',
+      data: { invited: false },
+    })
     expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
   })
 

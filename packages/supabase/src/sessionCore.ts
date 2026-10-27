@@ -95,6 +95,12 @@ export interface SessionCore {
   checkResetLink: (code: string | null) => Promise<boolean>
   /** Sets a new password with `code`, then ends the temporary session. */
   resetPassword: (code: string, newPassword: string) => Promise<void>
+  /**
+   * Sets the signed-in person's password and records that they have chosen one (D118), then tells
+   * listeners. Rejects with `unauthorized` when nobody is signed in. The caller has already
+   * validated the password.
+   */
+  setPassword: (newPassword: string) => Promise<CoreSession>
   /** Reads the profile again and tells listeners (a renamed person sees the new name at once). */
   refreshUser: () => Promise<void>
   /** Calls `listener` whenever the session changes. Returns a function that stops listening. */
@@ -143,6 +149,18 @@ export function createSessionCore({
   }
 
   /**
+   * True when the signed-in account was invited and has not chosen a password yet (D118): the
+   * invitation marks it `invited` in its user data, and choosing a password clears the mark. This
+   * only decides whether the app asks for a password. Nothing is allowed or refused because of it,
+   * so a person who edits their own user data gains nothing.
+   */
+  async function mustChoosePassword(): Promise<boolean> {
+    // The stored session carries the user data, so this makes no request.
+    const { data } = await client.auth.getSession()
+    return data.session?.user.user_metadata.invited === true
+  }
+
+  /**
    * Reads the profile of account `id` and builds the session. An account that may not sign in
    * is signed out again and refused. SECURITY: the check reads the profile row, which only an
    * administrator can change, never anything the browser sends.
@@ -156,8 +174,9 @@ export function createSessionCore({
       await client.auth.signOut({ scope: 'local' })
       throw new AppError('forbidden', INACTIVE)
     }
-    // The person as the app sees them.
-    return { user: toSessionUser(profile) }
+    // The person as the app sees them, with the mark when they still have to choose a password.
+    const user = toSessionUser(profile)
+    return { user: (await mustChoosePassword()) ? { ...user, mustSetPassword: true } : user }
   }
 
   /** Announces the session of account `id` unless the same person was announced already. */
@@ -382,7 +401,11 @@ export function createSessionCore({
       // SECURITY: the link is checked again here, not only when the page opened.
       const ok = await checkResetLink(code)
       if (!ok) throw new AppError('validation', LINK_EXPIRED)
-      const { error } = await client.auth.updateUser({ password: newPassword })
+      // The invited mark is cleared with the password, so a later sign-in does not ask again.
+      const { error } = await client.auth.updateUser({
+        password: newPassword,
+        data: { invited: false },
+      })
       if (error) {
         const mapped = fromSupabaseError(error)
         // The temporary session timed out while the form was open.
@@ -398,6 +421,22 @@ export function createSessionCore({
       linkChecks.delete(code)
       recovering = false
       await client.auth.signOut({ scope: 'local' })
+    },
+
+    async setPassword(newPassword) {
+      // Only a signed-in person can choose a password for their own account.
+      const { data: current } = await client.auth.getSession()
+      if (!current.session) throw new AppError('unauthorized', 'Sign in again to continue.')
+      // The password and the "no longer invited" mark are saved together.
+      const { error } = await client.auth.updateUser({
+        password: newPassword,
+        data: { invited: false },
+      })
+      if (error) throw fromSupabaseError(error)
+      // The same person, now without the mark. Announced even though the ID has not changed.
+      const session = await loadSession(current.session.user.id)
+      emit(session)
+      return session
     },
 
     async refreshUser() {

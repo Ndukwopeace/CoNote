@@ -36,6 +36,8 @@ export interface AuthService {
   checkResetLink(code: string | null): Promise<boolean>
   /** Sets a new password with `code`, checking both again; the code then stops working. */
   resetPassword(code: string, newPassword: string): Promise<void>
+  /** Sets the signed-in person's password and records that they have chosen one (D118). */
+  setPassword(newPassword: string): Promise<Session>
   /** Calls `listener` whenever the session changes. Returns a function that stops listening. */
   onAuthChange(listener: (session: Session | null) => void): () => void
 }

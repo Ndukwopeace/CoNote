@@ -40,7 +40,7 @@ export function supabaseSession(): SupabaseSession {
     refresh_token: 'r',
     expires_in: 3600,
     token_type: 'bearer',
-    user: { id: USER_ID, email: 'student@conote.example' },
+    user: { id: USER_ID, email: 'student@conote.example', user_metadata: {} },
   } as SupabaseSession
 }
 

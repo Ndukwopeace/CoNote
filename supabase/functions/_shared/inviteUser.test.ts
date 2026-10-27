@@ -37,7 +37,13 @@ describe('invite-user', () => {
     expect(admin.createUser).toHaveBeenCalledWith({
       email: 'ngozi@conote.example',
       email_confirm: true,
-      user_metadata: { full_name: 'Ngozi Eze', invited: true },
+      // A teacher's also holds the address of the sign-in page, which the invitation email shows
+      // instead of a link (D118).
+      user_metadata: {
+        full_name: 'Ngozi Eze',
+        invited: true,
+        login_url: 'https://teacher.example/teacher/login',
+      },
     })
     // SECURITY: the role is set on the profile by the server.
     expect(sentTo(queries, 'profiles', 'update')).toEqual({
@@ -69,6 +75,21 @@ describe('invite-user', () => {
     expect(resetPasswordForEmail).toHaveBeenCalledWith('ngozi@conote.example', {
       redirectTo: 'https://admin.example/admin/reset-password',
     })
+  })
+
+  // Proves an administrator's invitation carries the admin sign-in page, and a student's carries
+  // none, because a student still chooses a password through the link (D118).
+  it('gives staff a sign-in address and students none', async () => {
+    const staff = build()
+    await staff.handler(post({ ...INVITE, role: 'admin' }))
+    expect(staff.admin.createUser.mock.calls[0]?.[0]).toMatchObject({
+      user_metadata: { login_url: 'https://admin.example/admin/login' },
+    })
+    const student = build()
+    await student.handler(post({ ...INVITE, role: 'student' }))
+    const attributes = student.admin.createUser.mock.calls[0]?.[0]
+    expect(attributes).toMatchObject({ user_metadata: { full_name: 'Ngozi Eze', invited: true } })
+    expect(attributes).not.toHaveProperty('user_metadata.login_url')
   })
 
   // Proves a student's email goes to the student app.
