@@ -116,6 +116,20 @@ export function createMockUserService({
       })
   }
 
+  /** The courses in use chosen for `user` at their invitation, which become theirs on acceptance. */
+  function invitedCoursesOf(user: UserRecord): CourseRef[] {
+    // Only an invited teacher can have any (D116).
+    if (user.role !== 'teacher' || user.status !== 'pending') return []
+    const courses = activeCourses()
+    return data.invitedCourses
+      .filter((chosen) => chosen.userId === user.id)
+      .flatMap((chosen) => {
+        const course = courses.get(chosen.courseId)
+        return course ? [{ id: course.id, code: course.code, title: course.title }] : []
+      })
+      .sort((a, b) => a.code.localeCompare(b.code))
+  }
+
   /** The IDs of a course's students, or of its teacher when listing teachers. */
   function membersOf(courseId: string, role: UserFilter['role']): Set<string | null> {
     // The teacher who teaches it.
@@ -172,6 +186,7 @@ export function createMockUserService({
       level: user.level,
       phone: user.phone,
       courses: coursesOf(user),
+      invitedCourses: invitedCoursesOf(user),
       statusHistory: historyOf(user),
     }
   }
@@ -274,6 +289,13 @@ export function createMockUserService({
       if (data.users.some((user) => user.email.toLowerCase() === values.email)) {
         throw new AppError('conflict', 'An account with this email already exists.')
       }
+      // The courses chosen for a teacher, each once. Checked before anything is created, so a course
+      // that is gone or archived refuses the whole invitation (D116).
+      const courseIds = [...new Set(values.courseIds ?? [])]
+      const inUse = activeCourses()
+      if (courseIds.some((courseId) => !inUse.has(courseId))) {
+        throw new AppError('validation', 'One of the chosen courses is not available.')
+      }
       // A pending account: the invitation email (sent by Supabase Auth later) lets them sign in.
       const user: UserRecord = {
         id: `user-${crypto.randomUUID()}`,
@@ -290,6 +312,9 @@ export function createMockUserService({
         lastActiveAt: null,
       }
       data.users.push(user)
+      // The chosen courses are kept with the invitation, not given now: a course may only go to an
+      // active teacher, so they become the teacher's when the invitation is accepted.
+      for (const courseId of courseIds) data.invitedCourses.push({ userId: user.id, courseId })
       record(actor, 'user.invited', user, { role: user.role, status: 'pending' })
       return toDetails(user)
     },
@@ -367,6 +392,8 @@ export function createMockUserService({
       // Remove the account. An invitation has no enrolments or courses, but clear any anyway.
       data.users.splice(data.users.indexOf(user), 1)
       data.enrollments = data.enrollments.filter((enrollment) => enrollment.studentId !== user.id)
+      // The courses chosen for them go with the invitation.
+      data.invitedCourses = data.invitedCourses.filter((chosen) => chosen.userId !== user.id)
       // Save the platform, as every change does.
       onChange?.()
     },
@@ -390,6 +417,8 @@ export function createMockUserService({
       data.enrollmentRequests = data.enrollmentRequests.filter(
         (request) => request.studentId !== user.id,
       )
+      // Courses once chosen for them as an invited teacher go too.
+      data.invitedCourses = data.invitedCourses.filter((chosen) => chosen.userId !== user.id)
       for (const course of data.courses) {
         if (course.teacherId === user.id) course.teacherId = null
       }

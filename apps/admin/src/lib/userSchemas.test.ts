@@ -37,6 +37,37 @@ describe('inviteUserSchema', () => {
     expect(firstError(inviteUserSchema, { ...valid, ...change })).toBe(message)
   })
 
+  // Proves a teacher can be invited with courses, and with none (D116).
+  it('accepts courses for a teacher, or none', () => {
+    expect(
+      firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: ['c1', 'c2'] }),
+    ).toBeUndefined()
+    expect(
+      firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: [] }),
+    ).toBeUndefined()
+    expect(firstError(inviteUserSchema, { ...valid, role: 'teacher' })).toBeUndefined()
+  })
+
+  // SECURITY: courses are for teachers only, so the form and the service refuse them for anyone else.
+  it.each(['student', 'admin'])('refuses courses for a %s', (role) => {
+    expect(firstError(inviteUserSchema, { ...valid, role, courseIds: ['c1'] })).toBe(
+      'Only teachers can be given courses.',
+    )
+    // An empty list is the same as none.
+    expect(firstError(inviteUserSchema, { ...valid, role, courseIds: [] })).toBeUndefined()
+  })
+
+  // Proves a long list and a blank ID are refused.
+  it('refuses more than 20 courses and a blank course', () => {
+    const many = Array.from({ length: 21 }, (_, index) => `c${String(index)}`)
+    expect(firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: many })).toBe(
+      'Choose at most 20 courses.',
+    )
+    expect(
+      firstError(inviteUserSchema, { ...valid, role: 'teacher', courseIds: [''] }),
+    ).toBeDefined()
+  })
+
   // Proves nobody is asked for a department: every role is invited without one.
   it.each(['student', 'teacher', 'admin'])('invites a %s without a department', (role) => {
     expect(firstError(inviteUserSchema, { ...valid, role })).toBeUndefined()

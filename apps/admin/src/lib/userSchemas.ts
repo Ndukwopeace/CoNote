@@ -25,13 +25,30 @@ const optionalText = z.preprocess(
     .transform((value) => (value === '' ? null : value)),
 )
 
-/** Inviting someone: their role, name and email. No one is asked for a department. */
-export const inviteUserSchema = z.object({
-  role: z.enum(ROLES),
-  fullName,
-  // Trimmed and in lower case, so the same address can't be invited twice in different cases.
-  email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
-})
+/** The most courses one invitation may carry (the Edge Function enforces the same limit). */
+export const MAX_INVITED_COURSES = 20
+
+/**
+ * Inviting someone: their role, name and email, and for a teacher the courses they will teach
+ * (D116). No one is asked for a department.
+ */
+export const inviteUserSchema = z
+  .object({
+    role: z.enum(ROLES),
+    fullName,
+    // Trimmed and in lower case, so the same address can't be invited twice in different cases.
+    email: z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.')),
+    courseIds: z
+      .array(z.string().min(1))
+      .max(MAX_INVITED_COURSES, `Choose at most ${String(MAX_INVITED_COURSES)} courses.`)
+      .optional(),
+  })
+  // SECURITY: courses are for teachers only, so the form and both services refuse them for anyone
+  // else. The Edge Function checks again.
+  .refine((values) => values.role === 'teacher' || (values.courseIds ?? []).length === 0, {
+    message: 'Only teachers can be given courses.',
+    path: ['courseIds'],
+  })
 
 /** The invite form's values. */
 export type InviteUserValues = z.input<typeof inviteUserSchema>

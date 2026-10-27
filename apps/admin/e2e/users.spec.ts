@@ -62,6 +62,45 @@ test('an invitation is listed as invited and kept after a reload', async ({ page
   await expect(page.getByRole('table').getByText('Invited')).toBeVisible()
 })
 
+test('a teacher is invited with a course, which waits on their page', async ({ page }) => {
+  // Watch for Content-Security-Policy breaks throughout.
+  const cspViolations = watchCspViolations(page)
+  await page.goto('/admin/login?redirect=%2Fadmin%2Fusers')
+  await signInAs(page)
+
+  // Courses are offered only for a teacher.
+  await page.getByRole('button', { name: 'Invite user' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Invite a user' })
+  await expect(dialog.getByRole('group', { name: /Courses they will teach/ })).toHaveCount(0)
+  await dialog.getByLabel('Role').selectOption('teacher')
+  await dialog.getByLabel('Full name').fill('Tunde Bello')
+  await dialog.getByLabel('Email').fill('tunde.bello@conote.example')
+
+  // Narrow the list, tick the course, and send.
+  const courses = dialog.getByRole('group', { name: /Courses they will teach/ })
+  await courses.getByRole('searchbox', { name: 'Find a course' }).fill('MTH 202')
+  await courses.getByRole('checkbox', { name: /MTH 202/ }).check()
+  await expectNoAxeViolations(page)
+  await dialog.getByRole('button', { name: 'Send invitation' }).click()
+  await expect(
+    page.getByText(
+      'Invitation sent to tunde.bello@conote.example. MTH 202 will be theirs when they first sign in.',
+    ),
+  ).toBeVisible()
+
+  // On the invited teacher's page the course waits for their first sign-in, and is not theirs yet.
+  await page.goto('/admin/users?tab=teachers&q=tunde')
+  await page.getByRole('link', { name: 'Tunde Bello' }).click()
+  const waiting = page.getByRole('region', { name: 'Courses on first sign-in' })
+  await expect(waiting.getByText('MTH 202')).toBeVisible()
+  await expect(page.getByText('Not in any course yet.')).toBeVisible()
+
+  // It survives a reload, like every demo change.
+  await page.reload()
+  await expect(waiting.getByText('MTH 202')).toBeVisible()
+  expect(cspViolations).toEqual([])
+})
+
 test('a suspended account can no longer sign in', async ({ page }) => {
   // Sign in and open the demo teacher's page.
   await page.goto('/admin/login?redirect=%2Fadmin%2Fusers%3Ftab%3Dteachers%26q%3Dmbarga')

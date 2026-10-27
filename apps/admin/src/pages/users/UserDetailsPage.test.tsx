@@ -66,12 +66,12 @@ function platform(): PlatformData {
 }
 
 /** Renders the details page for `userId`, as the signed-in admin. */
-function renderDetails(userId = 's1') {
+function renderDetails(userId = 's1', data = platform()) {
   return renderWithRouter({
     routes,
     path: `/admin/users/${userId}`,
     session: makeSession('admin', { fullName: 'Amara Okafor' }),
-    platform: platform(),
+    platform: data,
   })
 }
 
@@ -213,5 +213,65 @@ describe('UserDetailsPage', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Deactivate' })).toBeNull()
     expect(screen.getByText('This is your account.')).toBeInTheDocument()
+  })
+})
+
+describe('courses waiting for an invited teacher (D116)', () => {
+  /** The platform with an invited teacher who was given two courses, one of them archived since. */
+  function withInvitedTeacher(): PlatformData {
+    const data = platform()
+    return {
+      ...data,
+      users: [
+        ...data.users,
+        userRecord({ id: 't9', role: 'teacher', status: 'pending', fullName: 'Ngozi Eze' }),
+      ],
+      courses: [
+        ...data.courses,
+        courseRecord({ id: 'c2', code: 'ENG 101', title: 'Writing', teacherId: null }),
+        courseRecord({
+          id: 'c3',
+          code: 'OLD 100',
+          title: 'Retired',
+          teacherId: null,
+          archivedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      ],
+      invitedCourses: [
+        { userId: 't9', courseId: 'c1' },
+        { userId: 't9', courseId: 'c2' },
+        { userId: 't9', courseId: 'c3' },
+      ],
+    }
+  }
+
+  // Proves an invited teacher's chosen courses are listed, apart from the courses they teach now,
+  // and an archived one is left out.
+  it('lists the courses an invited teacher gets on their first sign-in', async () => {
+    renderDetails('t9', withInvitedTeacher())
+
+    const section = await screen.findByRole('region', { name: 'Courses on first sign-in' })
+    expect(within(section).getByText('CSC 101')).toBeInTheDocument()
+    expect(within(section).getByText('ENG 101')).toBeInTheDocument()
+    expect(within(section).queryByText('OLD 100')).toBeNull()
+    expect(within(section).getByText(/when they accept the invitation/)).toBeInTheDocument()
+    // They teach nothing yet.
+    expect(screen.getByText('Not in any course yet.')).toBeInTheDocument()
+  })
+
+  // Proves nobody else gets the section.
+  it('shows no such section for anyone else', async () => {
+    renderDetails('s1')
+
+    await screen.findByRole('heading', { level: 1, name: 'Ada Obi' })
+    expect(screen.queryByRole('region', { name: 'Courses on first sign-in' })).toBeNull()
+  })
+
+  // Proves the section has no accessibility violations.
+  it('has no accessibility violations', async () => {
+    const { container } = renderDetails('t9', withInvitedTeacher())
+    await screen.findByRole('region', { name: 'Courses on first sign-in' })
+
+    await expectNoAxeViolations(container)
   })
 })

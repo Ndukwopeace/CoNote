@@ -24,6 +24,7 @@ import { createSupabaseUserService } from './supabaseUserService'
 const ADMIN = '10000000-0000-4000-8000-000000000001'
 const USER = '10000000-0000-4000-8000-000000000002'
 const COURSE = '20000000-0000-4000-8000-000000000001'
+const COURSE_2 = '20000000-0000-4000-8000-000000000002'
 
 /** An account as the list view returns it. */
 function userRow(overrides: Record<string, unknown> = {}) {
@@ -253,6 +254,43 @@ describe('getUser', () => {
     expect(made(audit, 'in', 'action', ['user.invited', 'user.status_changed'])).toBe(true)
   })
 
+  // Proves an invited teacher's chosen courses are read for an administrator to see (D116).
+  it('reads the courses chosen for an invited teacher', async () => {
+    const { service, queries } = setup((query) => {
+      if (query.table === 'admin_users') {
+        return {
+          data: userRow({ role: 'teacher', status: 'pending', course_ids: [], course_count: 0 }),
+          error: null,
+        }
+      }
+      if (query.table === 'admin_invited_courses') {
+        return {
+          data: [{ course_id: COURSE, code: 'MTH 202', title: 'Linear Algebra' }],
+          error: null,
+        }
+      }
+      return { data: [], error: null }
+    })
+    const details = await service.getUser(USER)
+    expect(details.invitedCourses).toEqual([
+      { id: COURSE, code: 'MTH 202', title: 'Linear Algebra' },
+    ])
+    const lookup = queries.find((query) => query.table === 'admin_invited_courses')!
+    expect(made(lookup, 'eq', 'user_id', USER)).toBe(true)
+  })
+
+  // Proves only an invited teacher is looked up: nobody else can have chosen courses.
+  it('does not look for chosen courses of anyone else', async () => {
+    const { service, queries } = setup((query) =>
+      query.table === 'admin_users'
+        ? { data: userRow({ role: 'student', status: 'pending' }), error: null }
+        : { data: [], error: null },
+    )
+    const details = await service.getUser(USER)
+    expect(details.invitedCourses).toEqual([])
+    expect(queries.some((query) => query.table === 'admin_invited_courses')).toBe(false)
+  })
+
   // Proves an account with no courses and no history makes no extra requests.
   it('skips the lookups it does not need', async () => {
     const { service, queries } = setup((query) =>
@@ -298,6 +336,56 @@ describe('inviteUser', () => {
       email: 'ngozi@conote.example',
     })
     expect(invited).toMatchObject({ id: USER, status: 'pending' })
+  })
+
+  // Proves the chosen courses go to the function with the invitation, each once (D116).
+  it('sends the chosen courses along', async () => {
+    const { service, invoke } = setup(
+      (query) =>
+        query.table === 'admin_users'
+          ? { data: userRow({ id: USER, role: 'teacher', status: 'pending' }), error: null }
+          : { data: [], error: null },
+      { status: 200, body: { userId: USER } },
+    )
+    await service.inviteUser({ ...INVITE, courseIds: [COURSE, COURSE, COURSE_2] })
+    expect(invoke).toHaveBeenCalledWith('invite-user', {
+      role: 'teacher',
+      fullName: 'Ngozi',
+      email: 'ngozi@conote.example',
+      courseIds: [COURSE, COURSE_2],
+    })
+  })
+
+  // Proves an invitation with no courses sends no list at all, as before.
+  it('sends no course list when none is chosen', async () => {
+    const { service, invoke } = setup(
+      (query) =>
+        query.table === 'admin_users'
+          ? { data: userRow({ id: USER, role: 'teacher', status: 'pending' }), error: null }
+          : { data: [], error: null },
+      { status: 200, body: { userId: USER } },
+    )
+    await service.inviteUser({ ...INVITE, courseIds: [] })
+    expect(invoke.mock.calls[0]?.[1]).not.toHaveProperty('courseIds')
+  })
+
+  // SECURITY: an ID that is not a UUID never reaches the function.
+  it('refuses a course ID that is not a UUID, calling nothing', async () => {
+    const { service, invoke } = setup(() => ({ data: null, error: null }))
+    await expect(service.inviteUser({ ...INVITE, courseIds: ['nope'] })).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'One of the chosen courses is not available.',
+    })
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  // Proves courses for a student are refused by the form rules before any call.
+  it('refuses courses for a student before calling the function', async () => {
+    const { service, invoke } = setup(() => ({ data: null, error: null }))
+    await expect(
+      service.inviteUser({ ...INVITE, role: 'student', courseIds: [COURSE] }),
+    ).rejects.toMatchObject({ kind: 'validation', message: 'Only teachers can be given courses.' })
+    expect(invoke).not.toHaveBeenCalled()
   })
 
   // Proves a refusal from the function reaches the screen as the same kind of error.

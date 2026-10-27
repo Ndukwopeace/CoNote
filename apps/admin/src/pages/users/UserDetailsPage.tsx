@@ -6,7 +6,7 @@
 // The back arrow.
 import { ArrowLeft } from 'lucide-react'
 // Children type.
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 // Client-side links, navigation after a delete, and the ID in the address.
 import { Link, useNavigate, useParams } from 'react-router'
 
@@ -55,11 +55,15 @@ function BackLink() {
   )
 }
 
-/** A card with a heading. */
+/** A card with a heading, which also names the region for screen readers. */
 function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
+  // Ties the region to its heading.
+  const headingId = useId()
   return (
-    <section className="rounded-xl border bg-card p-5">
-      <h2 className="mb-3 font-semibold">{title}</h2>
+    <section aria-labelledby={headingId} className="rounded-xl border bg-card p-5">
+      <h2 id={headingId} className="mb-3 font-semibold">
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -217,6 +221,23 @@ function Details({ user }: Readonly<{ user: UserDetails }>) {
               ))}
             </ul>
           )}
+        </Section>
+      )}
+      {/* An invited teacher's chosen courses, which become theirs when they accept (D116). */}
+      {user.invitedCourses.length > 0 && (
+        <Section title="Courses on first sign-in">
+          <p className="mb-2 text-sm text-muted-foreground">
+            These become {user.fullName}&apos;s courses when they accept the invitation.
+          </p>
+          <ul className="space-y-2 text-sm">
+            {user.invitedCourses.map((course) => (
+              <li key={course.id}>
+                <Link to={routeTo.course(course.id)} className="hover:underline">
+                  <span className="font-medium">{course.code}</span> {course.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
       {/* The confirmation and edit form the actions open. */}

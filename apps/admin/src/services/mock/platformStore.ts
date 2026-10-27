@@ -136,6 +136,8 @@ const storedSchema = z.object({
       }),
     )
     .optional(),
+  // The courses chosen for invited teachers; absent in a save made before they existed (D116).
+  invitedCourses: z.array(z.object({ userId: z.string(), courseId: z.string() })).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -172,6 +174,7 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       programmeCourses,
       programmeMembers,
       programmeRequests,
+      invitedCourses,
       ...saved
     } = parsed.data
     // Classes, summaries and jobs describe one another, so they are taken from the save together.
@@ -190,6 +193,7 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       programmeCourses: programmes && programmeCourses ? programmeCourses : seed.programmeCourses,
       programmeMembers: programmeMembers ?? seed.programmeMembers,
       programmeRequests: programmeRequests ?? seed.programmeRequests,
+      invitedCourses: invitedCourses ?? seed.invitedCourses,
     }
   } catch {
     // Not JSON.
@@ -213,6 +217,7 @@ export function savePlatform(store: Storage, data: PlatformData) {
     programmeCourses,
     programmeMembers,
     programmeRequests,
+    invitedCourses,
     auditLog,
   } = data
   store.setItem(
@@ -230,6 +235,7 @@ export function savePlatform(store: Storage, data: PlatformData) {
       programmeCourses,
       programmeMembers,
       programmeRequests,
+      invitedCourses,
       auditLog,
     }),
   )
