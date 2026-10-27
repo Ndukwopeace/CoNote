@@ -12,13 +12,14 @@ import {
   installOption,
   isIosDevice,
   shouldCheckForUpdate,
+  shouldApplyUpdateQuietly,
   shouldShowUpdatePrompt,
 } from './pwa'
 
 describe('UPDATE_CHECK_INTERVAL_MS', () => {
-  // Proves the agreed limit (FR-PWA-5, D37): at most one check every 15 minutes.
-  it('is 15 minutes', () => {
-    expect(UPDATE_CHECK_INTERVAL_MS).toBe(15 * 60 * 1000)
+  // Proves the agreed limit (FR-PWA-5, D117): at most one check every 5 minutes.
+  it('is 5 minutes', () => {
+    expect(UPDATE_CHECK_INTERVAL_MS).toBe(5 * 60 * 1000)
   })
 })
 
@@ -56,6 +57,29 @@ describe('shouldShowUpdatePrompt', () => {
   ])('update ready %s, unsaved %s → %s', (updateReady, hasUnsavedChanges, expected) => {
     expect(shouldShowUpdatePrompt({ updateReady, hasUnsavedChanges })).toBe(expected)
   })
+})
+
+describe('shouldApplyUpdateQuietly', () => {
+  // Proves the rule table from D117: [update ready, unsaved changes, page visibility, apply?].
+  it.each([
+    [false, false, 'hidden', false],
+    // Nothing waiting: nothing to apply.
+    [false, false, 'visible', false],
+    // The student is looking at the app: the toast asks, nothing reloads by itself.
+    [true, false, 'visible', false],
+    // The app is out of sight and nothing is unsaved: the one moment a reload costs nothing.
+    [true, false, 'hidden', true],
+    // The key rule: unsaved writing is never thrown away, in sight or not.
+    [true, true, 'hidden', false],
+    [true, true, 'visible', false],
+  ] as const)(
+    'update ready %s, unsaved %s, page %s → %s',
+    (updateReady, hasUnsavedChanges, visibility, expected) => {
+      expect(shouldApplyUpdateQuietly({ updateReady, hasUnsavedChanges, visibility })).toBe(
+        expected,
+      )
+    },
+  )
 })
 
 describe('installOption', () => {

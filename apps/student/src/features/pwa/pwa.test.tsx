@@ -243,6 +243,66 @@ describe('UpdatePrompt on iPhone', () => {
     expect(registration.update).toHaveBeenCalledTimes(1)
   })
 
+  // Proves a waiting update is applied by itself when the student leaves the app, so the next
+  // open is the new version without anyone tapping Reload (D117).
+  it('applies a waiting update when the app goes out of sight', () => {
+    // Arrange: an update is waiting and nothing is unsaved.
+    sw.needRefresh = true
+    render(<UpdatePrompt />)
+
+    // Act: the student leaves the app.
+    setVisibility('hidden')
+
+    // Assert: the new version was activated with a reload.
+    expect(sw.updateServiceWorker).toHaveBeenCalledWith(true)
+  })
+
+  // Proves the same moment is skipped while a note has unsaved changes.
+  it('does not apply an update over unsaved changes', () => {
+    // Arrange: an update is waiting, and a note is being edited.
+    sw.needRefresh = true
+    setHasUnsavedChanges(true)
+    render(<UpdatePrompt />)
+
+    // Act: the student leaves the app.
+    setVisibility('hidden')
+
+    // Assert: nothing reloaded.
+    expect(sw.updateServiceWorker).not.toHaveBeenCalled()
+  })
+
+  // Proves an update that finishes downloading while the app is already out of sight is applied
+  // as soon as the note is saved, not only on the next visibility change.
+  it('applies once the note is saved, if the app is already out of sight', () => {
+    // Arrange: out of sight, an update waiting, a note unsaved.
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    sw.needRefresh = true
+    setHasUnsavedChanges(true)
+    render(<UpdatePrompt />)
+    expect(sw.updateServiceWorker).not.toHaveBeenCalled()
+
+    // Act: the note is saved.
+    act(() => {
+      setHasUnsavedChanges(false)
+    })
+
+    // Assert: now it applies.
+    expect(sw.updateServiceWorker).toHaveBeenCalledWith(true)
+  })
+
+  // Proves nothing reloads by itself while the student is looking at the app.
+  it('does not apply an update while the app is in sight', () => {
+    // Arrange: an update is waiting.
+    sw.needRefresh = true
+    render(<UpdatePrompt />)
+
+    // Act: the page is shown.
+    setVisibility('visible')
+
+    // Assert: only the toast; no reload.
+    expect(sw.updateServiceWorker).not.toHaveBeenCalled()
+  })
+
   // Proves leaving the app doesn't trigger a check; only coming back does.
   it('does not check when the app is hidden', () => {
     // Arrange: registered a full interval ago.

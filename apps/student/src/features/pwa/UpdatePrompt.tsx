@@ -1,6 +1,8 @@
 /**
- * The "new version available" toast (FR-PWA-5). A new deploy never replaces the running app
- * silently; the student reloads when ready, and never while a note has unsaved changes.
+ * The "new version available" toast (FR-PWA-5). A new deploy never replaces the app while the
+ * student is looking at it: the toast asks, and nothing reloads while a note has unsaved changes.
+ * Once the app is out of sight with nothing unsaved, the waiting version is applied by itself
+ * (D117), so students who never tap Reload still get it on their next open.
  */
 
 // Refresh icon.
@@ -14,7 +16,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 // Standard button.
 import { Button } from '@conote/ui/button'
 // When to check, and when the toast may show.
-import { shouldCheckForUpdate, shouldShowUpdatePrompt } from '@/lib/pwa'
+import { shouldApplyUpdateQuietly, shouldCheckForUpdate, shouldShowUpdatePrompt } from '@/lib/pwa'
 
 // The unsaved-changes flag the toast waits for.
 import { useHasUnsavedChanges } from './unsavedChanges'
@@ -75,6 +77,47 @@ export function UpdatePrompt() {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
+
+  // The newest values for the listener below, which is set up once and must not use stale ones.
+  const latest = useRef({ updateReady, hasUnsavedChanges, updateServiceWorker })
+  // Keep them current after every render.
+  useEffect(() => {
+    latest.current = { updateReady, hasUnsavedChanges, updateServiceWorker }
+  })
+
+  // Apply a waiting update while the app is out of sight and nothing is unsaved (D117), so the next
+  // time the student opens CoNote it is the new version without anyone tapping Reload.
+  useEffect(() => {
+    /** Applies the update if this is a quiet moment. */
+    function applyIfQuiet() {
+      // The newest state.
+      const {
+        updateReady: ready,
+        hasUnsavedChanges: unsaved,
+        updateServiceWorker: apply,
+      } = latest.current
+      // Not a quiet moment: leave it to the toast.
+      if (
+        !shouldApplyUpdateQuietly({
+          updateReady: ready,
+          hasUnsavedChanges: unsaved,
+          visibility: document.visibilityState,
+        })
+      ) {
+        return
+      }
+      // Activate the new version and reload the page into it.
+      void apply(true)
+    }
+    // The student leaves the app (or comes back, which is then skipped).
+    document.addEventListener('visibilitychange', applyIfQuiet)
+    // An update that finished downloading, or a note that was saved, while out of sight.
+    applyIfQuiet()
+    // Stop on unmount.
+    return () => {
+      document.removeEventListener('visibilitychange', applyIfQuiet)
+    }
+  }, [updateReady, hasUnsavedChanges])
 
   // Stay hidden unless an update is waiting and nothing unsaved would be lost.
   if (!shouldShowUpdatePrompt({ updateReady, hasUnsavedChanges })) return null

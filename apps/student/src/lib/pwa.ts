@@ -5,10 +5,11 @@
  */
 
 /**
- * How often, at most, the app asks the server for a new version (FR-PWA-5): 15 minutes (D37).
- * Each check is a small request that downloads nothing unless a new version exists.
+ * How often, at most, the app asks the server for a new version (FR-PWA-5): 5 minutes (D37,
+ * shortened from 15 by D117 so a new version reaches students sooner). Each check is a small
+ * request that downloads nothing unless a new version exists.
  */
-export const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000
+export const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000
 
 /**
  * Every runtime cache that may hold student data is named with this prefix (FR-PWA-7).
@@ -39,6 +40,24 @@ export function shouldShowUpdatePrompt({
 }: Readonly<{ updateReady: boolean; hasUnsavedChanges: boolean }>): boolean {
   // Both conditions must hold.
   return updateReady && !hasUnsavedChanges
+}
+
+/**
+ * True when a waiting update may be applied without asking (D117): one is ready, no note has
+ * unsaved changes, and the app is out of sight, so the reload costs the student nothing. While the
+ * app is in sight the toast asks instead.
+ */
+export function shouldApplyUpdateQuietly({
+  updateReady,
+  hasUnsavedChanges,
+  visibility,
+}: Readonly<{
+  updateReady: boolean
+  hasUnsavedChanges: boolean
+  visibility: DocumentVisibilityState
+}>): boolean {
+  // All three must hold.
+  return updateReady && !hasUnsavedChanges && visibility === 'hidden'
 }
 
 /** Which install option the avatar menu offers (FR-PWA-6). */
