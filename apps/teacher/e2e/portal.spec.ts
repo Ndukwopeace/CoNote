@@ -26,9 +26,22 @@ test('a signed-out visitor signs in and returns to the page they asked for', asy
   expect(cspViolations).toEqual([])
 })
 
+/**
+ * A time today at `hour`:30 in the browser's own time zone. The demo's classes start at 9:00
+ * local time and last an hour, so 9:30 is inside one and 12:30 is inside none, whenever the test
+ * runs.
+ */
+function todayAt(hour: number): Date {
+  const time = new Date()
+  time.setHours(hour, 30, 0, 0)
+  return time
+}
+
 test('My courses shows only the demo teacher’s courses, with what waits for review', async ({
   page,
 }) => {
+  // A moment with no class going on, so no course says "Ongoing" (D120).
+  await page.clock.setFixedTime(todayAt(12))
   // Sign in from the bare address, which leads to My courses.
   await page.goto('/')
   await signInAs(page)
@@ -46,6 +59,19 @@ test('My courses shows only the demo teacher’s courses, with what waits for re
   await expect(page.getByText('SWE 311')).toHaveCount(0)
   await expect(page.getByText('MTH 101')).toHaveCount(0)
   await expectNoAxeViolations(page)
+})
+
+test('a course says Ongoing only while one of its classes is going on', async ({ page }) => {
+  // 9:30 is inside the demo's class of the day, which is in MTH 202 only (D120).
+  await page.clock.setFixedTime(todayAt(9))
+  await page.goto('/')
+  await signInAs(page)
+  const cards = page.getByRole('main').getByRole('listitem')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toContainText('MTH 202')
+  await expect(cards.nth(0)).toContainText('Ongoing')
+  await expect(cards.nth(1)).toContainText('MTH 301')
+  await expect(cards.nth(1)).not.toContainText(/Ongoing|Upcoming|Completed/)
 })
 
 test('the navigation reaches My courses and the review queue on every screen size', async ({
