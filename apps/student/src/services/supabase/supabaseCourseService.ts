@@ -21,18 +21,20 @@ import type { CourseService } from '../types'
 
 // Reads and checks rows.
 import { readRows } from '@conote/supabase/rows'
+// Whether a class is going on now.
+import { isInSession, type ClassWindow } from '@conote/core/inSession'
 
 // The columns of a course the pages show.
-const COURSE_COLUMNS = 'id, code, title, description, status, schedule_text'
+const COURSE_COLUMNS = 'id, code, title, description, schedule_text'
 
-// SECURITY: each shape below is checked on arrival, so a status or field the app does not know
-// is refused instead of reaching a screen.
+// SECURITY: each shape below is checked on arrival, so a field the app does not know is refused
+// instead of reaching a screen. The stored `status` is not read: "Ongoing" is worked out from the
+// class times (D120).
 const courseRow = z.object({
   id: z.string(),
   code: z.string(),
   title: z.string(),
   description: z.string(),
-  status: z.enum(['upcoming', 'ongoing', 'completed']),
   schedule_text: z.string().nullable(),
 })
 // A teacher, by the course they teach.
@@ -42,8 +44,8 @@ const teacherRow = z.object({
   avatar_url: z.string().nullable(),
   course_id: z.string(),
 })
-// One class, only to count them.
-const classRow = z.object({ course_id: z.string() })
+// One class: to count them, and to tell whether one is going on now.
+const classRow = z.object({ course_id: z.string(), starts_at: z.string(), ends_at: z.string() })
 // A course's number of students.
 const countRow = z.object({ course_id: z.string(), student_count: z.number() })
 
@@ -57,7 +59,14 @@ function notFound() {
 }
 
 /** Builds the Supabase course service. */
-export function createSupabaseCourseService({ client }: { client: SupabaseClient }): CourseService {
+export function createSupabaseCourseService({
+  client,
+  now = () => new Date(),
+}: {
+  client: SupabaseClient
+  // The clock, so tests can pick the moment. It is the real one otherwise.
+  now?: () => Date
+}): CourseService {
   /** Reads the readable courses (all, or just `id`) and joins teacher and counts onto each. */
   async function load(id?: string): Promise<Course[]> {
     // The courses themselves, in code order.
@@ -78,7 +87,10 @@ export function createSupabaseCourseService({ client }: { client: SupabaseClient
           .in('course_id', ids),
         teacherRow,
       ),
-      readRows(client.from('class_sessions').select('course_id').in('course_id', ids), classRow),
+      readRows(
+        client.from('class_sessions').select('course_id, starts_at, ends_at').in('course_id', ids),
+        classRow,
+      ),
       readRows(
         client
           .from('course_student_counts')
@@ -91,10 +103,18 @@ export function createSupabaseCourseService({ client }: { client: SupabaseClient
     const teacherByCourse = new Map(teachers.map((teacher) => [teacher.course_id, teacher]))
     const studentsByCourse = new Map(counts.map((count) => [count.course_id, count.student_count]))
     const classesByCourse = new Map<string, number>()
+    // Each course's class times, to tell whether one is going on.
+    const windowsByCourse = new Map<string, ClassWindow[]>()
     for (const row of classes) {
       // Count one more class for this course.
       classesByCourse.set(row.course_id, (classesByCourse.get(row.course_id) ?? 0) + 1)
+      // Keep its times.
+      const windows = windowsByCourse.get(row.course_id) ?? []
+      windows.push({ startsAt: row.starts_at, endsAt: row.ends_at })
+      windowsByCourse.set(row.course_id, windows)
     }
+    // One moment for every course in this answer.
+    const at = now()
     return courses.map((course): Course => {
       const teacher = teacherByCourse.get(course.id)
       const built: Course = {
@@ -112,7 +132,7 @@ export function createSupabaseCourseService({ client }: { client: SupabaseClient
           : NO_TEACHER,
         studentCount: studentsByCourse.get(course.id) ?? 0,
         classCount: classesByCourse.get(course.id) ?? 0,
-        status: course.status,
+        inSession: isInSession(windowsByCourse.get(course.id) ?? [], at),
       }
       // The schedule is included only when there is one.
       return course.schedule_text === null

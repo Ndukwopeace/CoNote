@@ -5,7 +5,7 @@
  */
 
 // The shared vocabulary.
-import type { AccountStatus, CourseStatus, Role, SummaryStatus } from '@conote/domain'
+import type { AccountStatus, Role, SummaryStatus } from '@conote/domain'
 
 // The draft's shape.
 import { emptyDraft } from '@/lib/draftSchema'
@@ -26,8 +26,6 @@ export interface CourseRecord {
   // Unique, e.g. "MTH 202".
   code: string
   title: string
-  // Where it is in its term.
-  status: CourseStatus
   // The one teacher, or null while none is assigned.
   teacherId: string | null
   // When it was archived, or null while it is in use.
@@ -42,6 +40,8 @@ export interface ClassRecord {
   number: number
   title: string
   startsAt: string
+  // When it ends; the course says "Ongoing" only between a class's start and end (D120).
+  endsAt: string
   // How many notes students have contributed. Only the count is known here, never the content.
   noteCount: number
   archivedAt: string | null
@@ -99,7 +99,6 @@ export function courseRecord(
   return {
     code: overrides.id.toUpperCase(),
     title: overrides.id,
-    status: 'ongoing',
     teacherId: null,
     archivedAt: null,
     ...overrides,
@@ -114,6 +113,7 @@ export function classRecord(
     number: 1,
     title: overrides.id,
     startsAt: '2026-09-10T09:00:00.000Z',
+    endsAt: '2026-09-10T10:00:00.000Z',
     noteCount: 0,
     archivedAt: null,
     ...overrides,

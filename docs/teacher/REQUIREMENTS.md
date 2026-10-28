@@ -70,7 +70,7 @@ Where this document and the student portal's documents disagree about names, typ
 
 ## 6. My courses (T1)
 
-- **Content:** one card per course the teacher teaches: code, title, status badge (Ongoing, Upcoming, Completed), number of classes, and "n waiting for review" when any class's summary is `in_review`.
+- **Content:** one card per course the teacher teaches: code, title, an "Ongoing" badge only while one of its classes is going on (D120), number of classes, and "n waiting for review" when any class's summary is `in_review`.
 - **Order:** ongoing first, then upcoming, then completed; by code within each.
 - **Counts:** classes exclude archived ones. "Waiting for review" counts summaries in `in_review` only.
 - **States:** loading skeleton; empty ("You aren't teaching any courses yet. An administrator assigns courses."); error with Retry; not-found for a course that isn't theirs (T2).

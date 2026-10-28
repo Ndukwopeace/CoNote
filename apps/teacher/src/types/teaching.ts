@@ -3,14 +3,15 @@
  */
 
 // The shared vocabulary.
-import type { CourseStatus, SummaryStatus } from '@conote/domain'
+import type { SummaryStatus } from '@conote/domain'
 
 /** One of the signed-in teacher's courses. */
 export interface TeacherCourse {
   id: string
   code: string
   title: string
-  status: CourseStatus
+  // True while one of the course's classes is going on, the only time "Ongoing" is shown (D120).
+  inSession: boolean
   // Classes in use (archived ones are not counted).
   classCount: number
   // Classes whose summary is in review: the teacher's turn.
@@ -38,7 +39,8 @@ export interface CourseDetails {
   id: string
   code: string
   title: string
-  status: CourseStatus
+  // True while one of the course's classes is going on, the only time "Ongoing" is shown (D120).
+  inSession: boolean
   // Classes in use, newest first.
   classes: CourseClass[]
 }

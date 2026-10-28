@@ -13,6 +13,9 @@ import { appQuery } from '@conote/core/appQuery'
 // Cache keys.
 import { queryKeys } from './queryKeys'
 
+/** How often the courses are read again, so "Ongoing" follows the clock while a page stays open. */
+const FOLLOW_CLOCK_MS = 60_000
+
 /** Every enrolled course. */
 export function useMyCourses() {
   // The course service.
@@ -21,6 +24,7 @@ export function useMyCourses() {
   return useQuery({
     queryKey: queryKeys.courses.list(),
     queryFn: () => appQuery(() => courses.listMyCourses()),
+    refetchInterval: FOLLOW_CLOCK_MS,
   })
 }
 
@@ -32,5 +36,6 @@ export function useCourse(courseId: string) {
   return useQuery({
     queryKey: queryKeys.courses.detail(courseId),
     queryFn: () => appQuery(() => courses.getCourse(courseId)),
+    refetchInterval: FOLLOW_CLOCK_MS,
   })
 }

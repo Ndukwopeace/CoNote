@@ -217,14 +217,18 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
     // Proves the seed's numbers come through: teacher, students (the count Row Level Security
     // hides from the table) and classes.
     it('reads a course with its teacher and counts', async () => {
-      const course = await createSupabaseCourseService({ client: student }).getCourse(MTH)
+      // A clock long before any class, so no class is going on.
+      const course = await createSupabaseCourseService({
+        client: student,
+        now: () => new Date('2000-01-01T00:00:00Z'),
+      }).getCourse(MTH)
 
       expect(course).toMatchObject({
         code: 'MTH 202',
         teacher: { fullName: 'Sarah Mbarga' },
         studentCount: 2,
         classCount: 2,
-        status: 'ongoing',
+        inSession: false,
       })
     })
 

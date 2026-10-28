@@ -4,7 +4,15 @@
  */
 
 // The shapes the demo serves.
-import type { AppNotification, ClassSession, Course, Note, Summary, Teacher } from '@/types/domain'
+import type {
+  AppNotification,
+  ClassSession,
+  Course,
+  CourseStatus,
+  Note,
+  Summary,
+  Teacher,
+} from '@/types/domain'
 
 // The demo student every note belongs to (the same ID the demo sign-in uses).
 import { DEMO_STUDENT_ID } from './constants'
@@ -17,7 +25,7 @@ export { PRESET_TAGS } from '@/lib/notes'
 /** Everything the demo services serve. */
 export interface Seed {
   // Enrolled courses, in display order.
-  courses: Course[]
+  courses: SeedCourse[]
   // Every class of those courses.
   classes: ClassSession[]
   // The demo student's notes.
@@ -227,8 +235,25 @@ function buildClasses(now: Date): ClassPlan[] {
   ]
 }
 
+/**
+ * A demo course as the seed holds it: everything a course has except `inSession`, which the
+ * catalog works out from the class times each time it is asked (D120).
+ */
+export type SeedCourse = Omit<Course, 'inSession'>
+
+/**
+ * The stored status of each demo course, which only the join dialog's list shows (it hides
+ * completed courses). No screen of an enrolled course shows it (D120).
+ */
+const STORED_STATUS: Readonly<Record<string, CourseStatus>> = {
+  'swe-311': 'ongoing',
+  'eng-201': 'ongoing',
+  'cse-205': 'ongoing',
+  'bus-207': 'upcoming',
+}
+
 /** The four courses from the wireframes; class counts are filled in from the classes. */
-function buildCourses(classes: readonly ClassPlan[]): Course[] {
+function buildCourses(classes: readonly ClassPlan[]): SeedCourse[] {
   /** How many classes a course has. */
   const count = (courseId: string) => classes.filter((c) => c.courseId === courseId).length
   return [
@@ -241,7 +266,6 @@ function buildCourses(classes: readonly ClassPlan[]): Course[] {
       teacher: TEACHERS.smith,
       studentCount: 48,
       classCount: count('swe-311'),
-      status: 'ongoing',
       scheduleText: 'Mondays and Wednesdays, 9–11 AM',
     },
     {
@@ -252,7 +276,6 @@ function buildCourses(classes: readonly ClassPlan[]): Course[] {
       teacher: TEACHERS.adeyemi,
       studentCount: 60,
       classCount: count('eng-201'),
-      status: 'ongoing',
       scheduleText: 'Tuesdays, 2–4 PM',
     },
     {
@@ -263,7 +286,6 @@ function buildCourses(classes: readonly ClassPlan[]): Course[] {
       teacher: TEACHERS.bello,
       studentCount: 52,
       classCount: count('cse-205'),
-      status: 'ongoing',
       scheduleText: 'Thursdays, 10 AM–12 PM',
     },
     {
@@ -274,7 +296,6 @@ function buildCourses(classes: readonly ClassPlan[]): Course[] {
       teacher: TEACHERS.okoro,
       studentCount: 35,
       classCount: count('bus-207'),
-      status: 'upcoming',
       scheduleText: 'Fridays, 1–3 PM',
     },
   ]
@@ -640,14 +661,14 @@ const OTHER_COURSES: readonly CatalogCourse[] = [
 ]
 
 /** Every course on the platform: the demo student's four, then the others. */
-function buildCatalog(enrolled: readonly Course[]): CatalogCourse[] {
+function buildCatalog(enrolled: readonly SeedCourse[]): CatalogCourse[] {
   return [
     ...enrolled.map((course): CatalogCourse => ({
       id: course.id,
       code: course.code,
       title: course.title,
       teacherName: course.teacher.fullName,
-      status: course.status,
+      status: STORED_STATUS[course.id] ?? 'ongoing',
       archived: false,
     })),
     ...OTHER_COURSES,

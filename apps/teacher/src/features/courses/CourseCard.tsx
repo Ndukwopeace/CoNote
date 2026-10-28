@@ -22,7 +22,7 @@ export function CourseCard({ course }: Readonly<{ course: TeacherCourse }>) {
       {/* Code and status on one line; the title is the card's heading. */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-primary-dark">{course.code}</p>
-        <CourseStatusBadge status={course.status} />
+        <CourseStatusBadge inSession={course.inSession} />
       </div>
       <h2 className="mt-1 text-lg font-bold">
         {/* The title opens the course. */}

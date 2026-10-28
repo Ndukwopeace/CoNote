@@ -11,7 +11,8 @@ import { z } from 'zod'
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
 // The shared vocabulary.
-import type { CourseStatus } from '@conote/domain'
+// Whether a class is going on now.
+import { isInSession, type ClassWindow } from '@conote/core/inSession'
 // Refuses IDs that are not UUIDs before they reach a query.
 import { isUuid } from '@conote/supabase/ids'
 // Reads and checks rows.
@@ -26,20 +27,18 @@ import type { TeachingService } from '../types'
 /** What every "no such course" answers, whatever the reason, so the answer reveals nothing. */
 const COURSE_NOT_FOUND = "We couldn't find that course."
 
-/** Where each status sorts: ongoing courses are the ones being taught now. */
-const STATUS_ORDER: Record<CourseStatus, number> = { ongoing: 0, upcoming: 1, completed: 2 }
-
-// SECURITY: each shape is checked on arrival, so a status the app does not know is refused instead
-// of reaching a screen.
-const courseStatus = z.enum(['upcoming', 'ongoing', 'completed'])
+// SECURITY: each shape is checked on arrival, so a field the app does not know is refused instead
+// of reaching a screen. The stored course status is not read: "Ongoing" is worked out from the
+// class times (D120).
 const courseRow = z.object({
   id: z.string(),
   code: z.string(),
   title: z.string(),
-  status: courseStatus,
   class_count: z.number(),
   waiting_for_review_count: z.number(),
 })
+// One class's times, to tell whether one is going on.
+const windowRow = z.object({ course_id: z.string(), starts_at: z.string(), ends_at: z.string() })
 const classRow = z.object({
   id: z.string(),
   number: z.number(),
@@ -52,7 +51,7 @@ const classRow = z.object({
 })
 
 // The columns of the two views the service reads.
-const COURSE_COLUMNS = 'id, code, title, status, class_count, waiting_for_review_count'
+const COURSE_COLUMNS = 'id, code, title, class_count, waiting_for_review_count'
 const CLASS_COLUMNS =
   'id, number, title, starts_at, note_count, summary_id, summary_status, published_at'
 
@@ -60,6 +59,8 @@ const CLASS_COLUMNS =
 interface SupabaseTeachingOptions {
   // The one client the portal uses.
   client: SupabaseClient
+  // The clock, so tests can pick the moment; the real one when absent (D120).
+  now?: () => Date
 }
 
 /** `value` as ISO text with a "Z", whatever form the database wrote it in. */
@@ -70,6 +71,7 @@ function iso(value: string): string {
 /** Builds the Supabase TeachingService. */
 export function createSupabaseTeachingService({
   client,
+  now = () => new Date(),
 }: SupabaseTeachingOptions): TeachingService {
   /** SECURITY: nothing is asked of the database without a signed-in session. */
   async function requireSession(message: string): Promise<void> {
@@ -77,23 +79,54 @@ export function createSupabaseTeachingService({
     if (!data.session) throw new AppError('unauthorized', message)
   }
 
+  /**
+   * The times of the classes in use of the courses `ids`, by course. Row Level Security lets a
+   * teacher read the classes of their own courses, so nothing else can come back.
+   */
+  async function classTimes(ids: readonly string[]): Promise<Map<string, ClassWindow[]>> {
+    const byCourse = new Map<string, ClassWindow[]>()
+    // Nothing to ask for.
+    if (ids.length === 0) return byCourse
+    const rows = await readRows(
+      client
+        .from('class_sessions')
+        .select('course_id, starts_at, ends_at')
+        .in('course_id', ids)
+        .is('archived_at', null),
+      windowRow,
+    )
+    for (const row of rows) {
+      const windows = byCourse.get(row.course_id) ?? []
+      windows.push({ startsAt: row.starts_at, endsAt: row.ends_at })
+      byCourse.set(row.course_id, windows)
+    }
+    return byCourse
+  }
+
   return {
     async listMyCourses() {
       await requireSession('Sign in to see your courses.')
       // The view shows only this teacher's live courses.
       const rows = await readRows(client.from('teacher_courses').select(COURSE_COLUMNS), courseRow)
-      return rows
-        .map((row): TeacherCourse => ({
-          id: row.id,
-          code: row.code,
-          title: row.title,
-          status: row.status,
-          classCount: row.class_count,
-          waitingForReviewCount: row.waiting_for_review_count,
-        }))
-        .toSorted(
-          (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.code.localeCompare(b.code),
-        )
+      // When each course has a class going on.
+      const times = await classTimes(rows.map((row) => row.id))
+      // One moment for every course in this answer.
+      const at = now()
+      return (
+        rows
+          .map((row): TeacherCourse => ({
+            id: row.id,
+            code: row.code,
+            title: row.title,
+            inSession: isInSession(times.get(row.id) ?? [], at),
+            classCount: row.class_count,
+            waitingForReviewCount: row.waiting_for_review_count,
+          }))
+          // A course with a class going on comes first, then by code.
+          .toSorted(
+            (a, b) => Number(b.inSession) - Number(a.inSession) || a.code.localeCompare(b.code),
+          )
+      )
     },
 
     async getMyCourse(courseId) {
@@ -121,7 +154,7 @@ export function createSupabaseTeachingService({
         id: course.id,
         code: course.code,
         title: course.title,
-        status: course.status,
+        inSession: isInSession((await classTimes([course.id])).get(course.id) ?? [], now()),
         classes: classes.map((row): CourseClass => ({
           id: row.id,
           number: row.number,

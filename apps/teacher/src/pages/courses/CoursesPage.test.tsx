@@ -39,7 +39,8 @@ function renderCourses(platform = emptyPlatformData()) {
 }
 
 describe('CoursesPage', () => {
-  // Proves a card shows the course, its status, its class count and the reviews waiting.
+  // Proves a card shows the course, its class count and the reviews waiting, and says "Ongoing"
+  // only while a class is going on (D120).
   it('shows each course with its counts', async () => {
     renderCourses(
       emptyPlatformData({
@@ -47,7 +48,14 @@ describe('CoursesPage', () => {
           courseRecord({ id: 'mth-202', code: 'MTH 202', title: 'Linear Algebra', teacherId: ME }),
         ],
         classes: [
-          classRecord({ id: 'k1', courseId: 'mth-202', number: 1 }),
+          // Going on now: started half an hour ago, ends in half an hour.
+          classRecord({
+            id: 'k1',
+            courseId: 'mth-202',
+            number: 1,
+            startsAt: new Date(Date.now() - 30 * 60_000).toISOString(),
+            endsAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+          }),
           classRecord({ id: 'k2', courseId: 'mth-202', number: 2 }),
         ],
         summaries: [
@@ -64,6 +72,20 @@ describe('CoursesPage', () => {
     expect(within(card).getByText('Ongoing')).toBeInTheDocument()
     expect(within(card).getByText('2 classes')).toBeInTheDocument()
     expect(within(card).getByText('1 waiting for review')).toBeInTheDocument()
+  })
+
+  // Proves a course with no class going on shows no status at all: no "Upcoming" or "Completed"
+  // (D120).
+  it('shows no status when no class is going on', async () => {
+    renderCourses(
+      emptyPlatformData({
+        courses: [courseRecord({ id: 'quiet', code: 'Q 100', title: 'Quiet', teacherId: ME })],
+        classes: [classRecord({ id: 'k1', courseId: 'quiet' })],
+      }),
+    )
+
+    const card = (await screen.findByRole('heading', { name: 'Quiet' })).closest('li')!
+    expect(within(card).queryByText(/Ongoing|Upcoming|Completed/)).not.toBeInTheDocument()
   })
 
   // Proves a card's title opens the course page.
@@ -142,7 +164,7 @@ describe('CoursesPage', () => {
                     id: 'c1',
                     code: 'C 1',
                     title: 'Back again',
-                    status: 'ongoing',
+                    inSession: true,
                     classCount: 0,
                     waitingForReviewCount: 0,
                   },

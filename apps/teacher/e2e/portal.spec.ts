@@ -26,26 +26,52 @@ test('a signed-out visitor signs in and returns to the page they asked for', asy
   expect(cspViolations).toEqual([])
 })
 
+/**
+ * A time today at `hour`:30 in the browser's own time zone. The demo's classes start at 9:00
+ * local time and last an hour, so 9:30 is inside one and 12:30 is inside none, whenever the test
+ * runs.
+ */
+function todayAt(hour: number): Date {
+  const time = new Date()
+  time.setHours(hour, 30, 0, 0)
+  return time
+}
+
 test('My courses shows only the demo teacher’s courses, with what waits for review', async ({
   page,
 }) => {
+  // A moment with no class going on, so no course says "Ongoing" (D120).
+  await page.clock.setFixedTime(todayAt(12))
   // Sign in from the bare address, which leads to My courses.
   await page.goto('/')
   await signInAs(page)
   await expect(page.getByRole('heading', { level: 1, name: 'My courses' })).toBeVisible()
-  // Her two live courses, ongoing first.
+  // Her two live courses, by code. The demo has no class going on, so neither says a status.
   const cards = page.getByRole('main').getByRole('listitem')
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toContainText('MTH 202')
-  await expect(cards.nth(0)).toContainText('Ongoing')
+  await expect(cards.nth(0)).not.toContainText(/Ongoing|Upcoming|Completed/)
   await expect(cards.nth(0)).toContainText('7 classes')
   await expect(cards.nth(0)).toContainText('2 waiting for review')
   await expect(cards.nth(1)).toContainText('MTH 301')
-  await expect(cards.nth(1)).toContainText('Upcoming')
+  await expect(cards.nth(1)).not.toContainText(/Ongoing|Upcoming|Completed/)
   // Another teacher's course and her archived course are not there.
   await expect(page.getByText('SWE 311')).toHaveCount(0)
   await expect(page.getByText('MTH 101')).toHaveCount(0)
   await expectNoAxeViolations(page)
+})
+
+test('a course says Ongoing only while one of its classes is going on', async ({ page }) => {
+  // 9:30 is inside the demo's class of the day, which is in MTH 202 only (D120).
+  await page.clock.setFixedTime(todayAt(9))
+  await page.goto('/')
+  await signInAs(page)
+  const cards = page.getByRole('main').getByRole('listitem')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toContainText('MTH 202')
+  await expect(cards.nth(0)).toContainText('Ongoing')
+  await expect(cards.nth(1)).toContainText('MTH 301')
+  await expect(cards.nth(1)).not.toContainText(/Ongoing|Upcoming|Completed/)
 })
 
 test('the navigation reaches My courses and the review queue on every screen size', async ({

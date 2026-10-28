@@ -43,8 +43,6 @@ import { cn } from '@conote/ui/utils'
 const FILTER_LABELS: Record<CourseStatusFilter, string> = {
   all: 'All',
   ongoing: 'Ongoing',
-  upcoming: 'Upcoming',
-  completed: 'Completed',
 }
 
 /** My Courses. */

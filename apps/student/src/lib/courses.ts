@@ -1,20 +1,18 @@
 /**
- * The My Courses search and status filter (REQUIREMENTS.md FR-CRS-2).
+ * The My Courses search and "Ongoing" filter (REQUIREMENTS.md FR-CRS-2, D120).
  */
 
 // Course shapes.
-import type { Course, CourseStatus } from '@/types/domain'
+import type { Course } from '@/types/domain'
 
-/** The status filter's options: every status, or all of them. */
-export type CourseStatusFilter = CourseStatus | 'all'
+/**
+ * The filter's options: every course, or only those with a class going on now. There is no
+ * "Upcoming" or "Completed" (D120): a status that is not about this moment goes out of date.
+ */
+export type CourseStatusFilter = 'all' | 'ongoing'
 
 /** Every value the filter accepts, in display order. */
-export const COURSE_STATUS_FILTERS: readonly CourseStatusFilter[] = [
-  'all',
-  'ongoing',
-  'upcoming',
-  'completed',
-]
+export const COURSE_STATUS_FILTERS: readonly CourseStatusFilter[] = ['all', 'ongoing']
 
 /**
  * Reads the filter from the address (?status=).
@@ -35,8 +33,8 @@ export function filterCourses(
   const needle = query.trim().toLowerCase()
   return courses.filter(
     (course) =>
-      // Status first: "all" keeps everything.
-      (status === 'all' || course.status === status) &&
+      // Status first: "all" keeps everything, "ongoing" keeps the courses in session.
+      (status === 'all' || course.inSession) &&
       // Then the text, in any of the three fields; an empty search matches all.
       (needle === '' ||
         [course.code, course.title, course.teacher.fullName].some((field) =>

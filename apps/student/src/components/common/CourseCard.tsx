@@ -42,8 +42,8 @@ export function CourseCard({ course, to }: Readonly<{ course: Course; to: string
           </span>
         </span>
       </span>
-      {/* Term status. */}
-      <StatusBadge status={course.status} />
+      {/* Says "Ongoing" only while a class is going on, and nothing otherwise (D120). */}
+      {course.inSession && <StatusBadge status="ongoing" />}
       {/* Decorative chevron. */}
       <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
     </Link>
