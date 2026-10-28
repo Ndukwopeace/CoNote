@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test'
 // Admin helpers.
 import { DEMO_PASSWORD, expectNoAxeViolations, watchCspViolations } from './helpers.ts'
 
-// A new password that meets the admin rules (12+ characters, a letter and a number).
+// A new password that meets the admin rules (8+ characters, a letter and a number).
 const NEW_PASSWORD = 'new-password-2026'
 
 test('an administrator resets a forgotten password', async ({ page }) => {

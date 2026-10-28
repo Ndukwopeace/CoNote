@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test'
 // Teacher helpers.
 import { DEMO_PASSWORD, expectNoAxeViolations, watchCspViolations } from './helpers.ts'
 
-// A new password that meets the teacher rules (12+ characters, a letter and a number).
+// A new password that meets the teacher rules (8+ characters, a letter and a number).
 const NEW_PASSWORD = 'new-password-2026'
 
 test('a teacher resets a forgotten password', async ({ page }) => {
