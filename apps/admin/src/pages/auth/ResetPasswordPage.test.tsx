@@ -43,7 +43,7 @@ describe('ResetPasswordPage', () => {
     await user.type(await screen.findByLabelText('New password', { exact: true }), 'short1')
     await user.type(screen.getByLabelText('Confirm new password', { exact: true }), 'short2')
     await user.click(screen.getByRole('button', { name: 'Update password' }))
-    expect(await screen.findByText('Use at least 12 characters.')).toBeInTheDocument()
+    expect(await screen.findByText('Use at least 8 characters.')).toBeInTheDocument()
     expect(screen.getByText('Passwords do not match.')).toBeInTheDocument()
   })
 

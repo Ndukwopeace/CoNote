@@ -24,7 +24,7 @@ export interface AuthContractSetup {
   beforeEachTest?: () => Promise<void>
 }
 
-/** A new password that meets the staff rules (12+ characters, a letter and a number). */
+/** A new password that meets the staff rules (8+ characters, a letter and a number). */
 const NEW_PASSWORD = 'new-password-2026'
 
 /** Registers the AuthService contract suite under `name`. */

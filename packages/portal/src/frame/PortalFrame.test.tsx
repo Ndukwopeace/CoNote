@@ -168,7 +168,7 @@ describe('first-time password dialog (D118)', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Save password' }))
 
     // The rules line and the field's own message both say it.
-    expect(await within(dialog).findAllByText(/at least 12 characters/i)).toHaveLength(2)
+    expect(await within(dialog).findAllByText(/at least 8 characters/i)).toHaveLength(2)
     expect(storedSession()?.user.mustSetPassword).toBe(true)
   })
 

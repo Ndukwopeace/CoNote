@@ -63,7 +63,7 @@ Where this document and the student portal's documents disagree about names, typ
 - **Email code (D114):** under the password form, "Email me a sign-in code" asks for the address, emails six digits and signs the teacher in when the last one is typed. No password and no link. It never creates an account, and an unknown address is answered like a known one. An invited teacher's first code activates the account.
 - **Fields:** Email, Password (show/hide). **Links:** "Forgot password?".
 - **Recovery:** the same flow and wording as the admin portal (D68). Each reset link works once, and a new request replaces the older one.
-- **Password rules:** at least 12 characters with a letter and a number. One rule for all staff accounts. The service checks it again.
+- **Password rules:** at least 8 characters with a letter and a number (D119; it was 12 under D74). One rule for all staff accounts. The service checks it again.
 - **Wrong role:** a student or admin password authenticates but never opens the portal (the guard shows the notice).
 - **Inactive accounts:** `inactive`, `suspended` and `pending` accounts are refused after the right password: "This account is not active. Contact your administrator."
 - **Demo accounts** (password `password1`): `teacher@conote.example` gets in. `admin@conote.example` and `student@conote.example` are turned away by the guard.

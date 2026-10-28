@@ -53,7 +53,7 @@ describe('forgotPasswordSchema', () => {
 
 describe('resetPasswordSchema', () => {
   // Proves a strong, confirmed password passes.
-  it('accepts a 12-character password typed twice', () => {
+  it('accepts a strong password typed twice', () => {
     expect(
       resetPasswordSchema.safeParse({
         password: 'new-password-2026',
@@ -62,11 +62,12 @@ describe('resetPasswordSchema', () => {
     ).toBe(true)
   })
 
-  // SECURITY: proves staff need at least 12 characters (D68), not the students' 8.
-  it('asks staff for 12 characters', () => {
+  // SECURITY: proves staff need at least 8 characters, the same as students (D119, which lowered
+  // the 12 of D68 and D74).
+  it('asks staff for 8 characters', () => {
     expect(
-      messages(resetPasswordSchema, { password: 'abcdefgh123', confirmPassword: 'abcdefgh123' }),
-    ).toEqual(['Use at least 12 characters.'])
+      messages(resetPasswordSchema, { password: 'abcde12', confirmPassword: 'abcde12' }),
+    ).toEqual(['Use at least 8 characters.'])
   })
 
   // Proves a mismatch is reported on the confirmation field.

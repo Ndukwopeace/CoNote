@@ -9,10 +9,11 @@ import { createNewPasswordSchema } from '@conote/core/passwordRules'
 import { z } from 'zod'
 
 /**
- * Shortest password a staff member (admin or teacher) may choose (D68, D74). Longer than the
- * students' 8, because a staff account can change or publish what every student sees.
+ * Shortest password a staff member (admin or teacher) may choose. It was 12 (D68, D74) and is 8
+ * since D119, the same as the students', because teachers found 12 too long to type and a staff
+ * password is also the fallback for the emailed sign-in code.
  */
-export const STAFF_MIN_PASSWORD_LENGTH = 12
+export const STAFF_MIN_PASSWORD_LENGTH = 8
 
 /** An email: trimmed and lower-cased first, so " Admin@Example.com " is accepted as typed. */
 const emailField = z
@@ -37,7 +38,7 @@ export const forgotPasswordSchema = z.object({ email: emailField })
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
 /**
- * A new staff password: 12+ characters with a letter and a number.
+ * A new staff password: 8+ characters with a letter and a number.
  * SECURITY: checked again by the service, so skipping the form does not skip the rule.
  */
 export const newStaffPasswordSchema = createNewPasswordSchema(STAFF_MIN_PASSWORD_LENGTH)

@@ -58,7 +58,7 @@ In Vercel, add a second project from the same GitHub repository with **Root Dire
   - links that work once
   - newer links replace older ones
   - weak passwords refused without spending the link
-- Admin passwords need 12+ characters with a letter and a number (D68).
+- Admin passwords need 8+ characters with a letter and a number (12 under D68, lowered by D119).
 - Shared with the student app (packages/core): the new-password rules (`createNewPasswordSchema`) and the sign-in notices (`createNavigationNotices`).
 - Demo: changed passwords and the current reset link are kept in local storage under `conote-admin-demo:`, standing in for the server, so sign-out keeps them.
 
