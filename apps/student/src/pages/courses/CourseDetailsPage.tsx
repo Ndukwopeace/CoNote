@@ -127,7 +127,8 @@ function CourseDetails({ course }: Readonly<{ course: Course }>) {
           {/* Code and status. */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-muted-foreground">{course.code}</span>
-            <StatusBadge status={course.status} />
+            {/* Says "Ongoing" only while a class is going on, and nothing otherwise (D120). */}
+            {course.inSession && <StatusBadge status="ongoing" />}
           </div>
           {/* The page heading. */}
           <h1 id="course-title" className="text-2xl font-bold tracking-tight md:text-3xl">

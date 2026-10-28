@@ -62,9 +62,7 @@ function withStubs(data: PlatformData): PlatformData {
     ],
     courses: [
       ...data.courses,
-      ...missingCourses.map((id) =>
-        courseRecord({ id, archivedAt: '2000-01-02T00:00:00.000Z', status: 'completed' }),
-      ),
+      ...missingCourses.map((id) => courseRecord({ id, archivedAt: '2000-01-02T00:00:00.000Z' })),
     ],
   }
 }
@@ -117,7 +115,6 @@ export class Harness extends StackHarness<PlatformData> {
             id: id(course.id),
             code: course.code,
             title: course.title,
-            status: course.status,
             teacher_id: course.teacherId === null ? null : id(course.teacherId),
             archived_at: course.archivedAt,
           })),
@@ -142,9 +139,7 @@ export class Harness extends StackHarness<PlatformData> {
             number: item.number,
             title: item.title,
             starts_at: item.startsAt,
-            // The records carry no end time; the database refuses a class that ends before it
-            // starts, so each class gets an hour.
-            ends_at: new Date(Date.parse(item.startsAt) + 3_600_000).toISOString(),
+            ends_at: item.endsAt,
             archived_at: item.archivedAt,
           })),
         ),

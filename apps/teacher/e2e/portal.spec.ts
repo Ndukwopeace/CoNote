@@ -33,15 +33,15 @@ test('My courses shows only the demo teacher’s courses, with what waits for re
   await page.goto('/')
   await signInAs(page)
   await expect(page.getByRole('heading', { level: 1, name: 'My courses' })).toBeVisible()
-  // Her two live courses, ongoing first.
+  // Her two live courses, by code. The demo has no class going on, so neither says a status.
   const cards = page.getByRole('main').getByRole('listitem')
   await expect(cards).toHaveCount(2)
   await expect(cards.nth(0)).toContainText('MTH 202')
-  await expect(cards.nth(0)).toContainText('Ongoing')
+  await expect(cards.nth(0)).not.toContainText(/Ongoing|Upcoming|Completed/)
   await expect(cards.nth(0)).toContainText('7 classes')
   await expect(cards.nth(0)).toContainText('2 waiting for review')
   await expect(cards.nth(1)).toContainText('MTH 301')
-  await expect(cards.nth(1)).toContainText('Upcoming')
+  await expect(cards.nth(1)).not.toContainText(/Ongoing|Upcoming|Completed/)
   // Another teacher's course and her archived course are not there.
   await expect(page.getByText('SWE 311')).toHaveCount(0)
   await expect(page.getByText('MTH 101')).toHaveCount(0)

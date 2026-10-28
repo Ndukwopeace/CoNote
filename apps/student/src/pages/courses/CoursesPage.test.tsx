@@ -43,8 +43,22 @@ describe('CoursesPage', () => {
     expect(swe).toHaveTextContent('Software Engineering')
     expect(swe).toHaveTextContent('Dr. Smith')
     expect(swe).toHaveTextContent('48 students')
+    // The demo has a class going on now in SWE 311, so only that course says "Ongoing".
     expect(swe).toHaveTextContent('Ongoing')
     expect(courseLinks()).toHaveLength(4)
+  })
+
+  // Proves a course with no class going on shows no status at all: no "Upcoming" or "Completed"
+  // can go out of date (D120).
+  it('shows no status for a course with no class going on', async () => {
+    // Act.
+    renderCourses()
+
+    // Assert.
+    const bus = await screen.findByRole('link', { name: /^BUS 207/ })
+    expect(bus).not.toHaveTextContent(/Ongoing|Upcoming|Completed/)
+    expect(screen.queryByText('Upcoming')).not.toBeInTheDocument()
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument()
   })
 
   // Proves the search matches the teacher and is kept in the address.
@@ -62,19 +76,32 @@ describe('CoursesPage', () => {
     expect(router.state.location.search).toBe('?q=okoro')
   })
 
-  // Proves the status filter reads from the address, so a shared link keeps it.
-  it('filters by status from the address', async () => {
+  // Proves the "Ongoing" filter reads from the address, so a shared link keeps it, and lists only
+  // the courses with a class going on.
+  it('filters by "Ongoing" from the address', async () => {
+    // Act.
+    renderCourses('/courses?status=ongoing')
+
+    // Assert.
+    expect(await screen.findByRole('link', { name: /^SWE 311/ })).toBeInTheDocument()
+    expect(courseLinks()).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Ongoing' })).toHaveAttribute('aria-pressed', 'true')
+    // The buttons are announced as one named group, and "Upcoming" and "Completed" are gone.
+    expect(screen.getByRole('group', { name: 'Filter by status' })).toContainElement(
+      screen.getByRole('button', { name: 'Ongoing' }),
+    )
+    expect(screen.queryByRole('button', { name: 'Upcoming' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Completed' })).not.toBeInTheDocument()
+  })
+
+  // Proves an old link to a filter that no longer exists shows every course.
+  it('treats an old "upcoming" link as "all"', async () => {
     // Act.
     renderCourses('/courses?status=upcoming')
 
     // Assert.
-    expect(await screen.findByRole('link', { name: /^BUS 207/ })).toBeInTheDocument()
-    expect(courseLinks()).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Upcoming' })).toHaveAttribute('aria-pressed', 'true')
-    // The buttons are announced as one named group.
-    expect(screen.getByRole('group', { name: 'Filter by status' })).toContainElement(
-      screen.getByRole('button', { name: 'Upcoming' }),
-    )
+    await screen.findByRole('link', { name: /^SWE 311/ })
+    expect(courseLinks()).toHaveLength(4)
   })
 
   // Proves choosing a filter updates the list and the address.
@@ -84,11 +111,12 @@ describe('CoursesPage', () => {
     await screen.findByRole('link', { name: /^SWE 311/ })
 
     // Act.
-    await user.click(screen.getByRole('button', { name: 'Completed' }))
+    await user.click(screen.getByRole('button', { name: 'Ongoing' }))
 
-    // Assert: no completed courses in the demo, so the no-match state shows.
-    expect(router.state.location.search).toBe('?status=completed')
-    expect(screen.getByText('No courses match')).toBeInTheDocument()
+    // Assert: only the course with a class going on is left.
+    expect(router.state.location.search).toBe('?status=ongoing')
+    expect(courseLinks()).toHaveLength(1)
+    expect(courseLinks()[0]).toHaveTextContent('SWE 311')
   })
 
   // Proves the no-match state can reset the search and filter.

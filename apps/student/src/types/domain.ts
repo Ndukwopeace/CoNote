@@ -64,8 +64,9 @@ export interface Course {
   studentCount: number
   // Number of class sessions.
   classCount: number
-  // Term status badge.
-  status: CourseStatus
+  // True while one of the course's classes is going on, which is the only time the course says
+  // "Ongoing" (D120). It is worked out from the class times, never stored, so it cannot go stale.
+  inSession: boolean
   // Free-text schedule, e.g. "Mon & Wed, 9–11am".
   scheduleText?: string
 }

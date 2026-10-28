@@ -129,4 +129,40 @@ describe('mock catalog services', () => {
       'eng-201',
     ])
   })
+
+  // Proves a course says "Ongoing" only while one of its classes is going on, by the clock the
+  // service is given, and carries no other status (D120).
+  it('marks only the course with a class going on now', async () => {
+    const at = new Date()
+    const catalog = createMockCatalog({
+      seed: createSeed(at),
+      latencyMs: 0,
+      now: () => at,
+    })
+
+    const courses = await catalog.courses.listMyCourses()
+
+    // The demo has one class going on, and it is in SWE 311.
+    expect(courses.filter((course) => course.inSession).map((course) => course.id)).toEqual([
+      'swe-311',
+    ])
+    expect(courses.every((course) => !('status' in course))).toBe(true)
+    expect((await catalog.courses.getCourse('swe-311')).inSession).toBe(true)
+    expect((await catalog.courses.getCourse('eng-201')).inSession).toBe(false)
+  })
+
+  // Proves the answer follows the clock the service is given: a year earlier nothing is going on.
+  it('marks no course when no class is going on', async () => {
+    const at = new Date()
+    const longBefore = new Date(at.getTime() - 365 * 24 * 60 * 60 * 1000)
+    const catalog = createMockCatalog({
+      seed: createSeed(at),
+      latencyMs: 0,
+      now: () => longBefore,
+    })
+
+    const courses = await catalog.courses.listMyCourses()
+
+    expect(courses.some((course) => course.inSession)).toBe(false)
+  })
 })

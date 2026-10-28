@@ -30,7 +30,7 @@ export function makeSession(overrides: Partial<SessionUser> = {}): Session {
 /** A course. Override only what a test cares about. */
 export function makeCourse(overrides: Partial<Course> = {}): Course {
   return {
-    // Default: an ongoing SWE 311 with a named teacher.
+    // Default: SWE 311 with a named teacher and no class going on right now.
     id: 'course-1',
     code: 'SWE 311',
     title: 'Software Engineering',
@@ -38,7 +38,7 @@ export function makeCourse(overrides: Partial<Course> = {}): Course {
     teacher: { id: 'teacher-1', fullName: 'Dr. Smith' },
     studentCount: 48,
     classCount: 4,
-    status: 'ongoing',
+    inSession: false,
     // Anything the test passes replaces the defaults above.
     ...overrides,
   }

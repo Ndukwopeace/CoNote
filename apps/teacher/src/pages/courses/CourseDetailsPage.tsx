@@ -72,7 +72,7 @@ export function CourseDetailsPage() {
         <h1 className="text-2xl font-bold">
           {data.code} {data.title}
         </h1>
-        <CourseStatusBadge status={data.status} />
+        <CourseStatusBadge inSession={data.inSession} />
       </div>
       {/* The classes. */}
       <section aria-labelledby="classes-heading" className="space-y-3">

@@ -5,8 +5,12 @@
 
 // The error a missing record becomes.
 import { AppError } from '@conote/core/errors'
+// Whether a class is going on now.
+import { isInSession } from '@conote/core/inSession'
 // The mock-data key prefix.
 import { MOCK_DATA_PREFIX } from '@/lib/storage'
+// The course shape.
+import type { Course } from '@/types/domain'
 
 // The interfaces these services implement.
 import type {
@@ -26,7 +30,7 @@ import { createPersistedIdSet } from './persistedIds'
 // The demo student every note belongs to.
 import { DEMO_STUDENT_ID } from './seed/constants'
 // The demo data's shape.
-import type { Seed } from './seed'
+import type { Seed, SeedCourse } from './seed'
 
 /** What the factory needs. */
 interface MockCatalogOptions {
@@ -41,6 +45,9 @@ interface MockCatalogOptions {
   // narrowed to them (D76). Read on every call, because a request can be approved or a new
   // student can sign up meanwhile. Absent: every course in the seed.
   enrolledCourseIds?: () => ReadonlySet<string>
+  // The clock, so tests can pick the moment; the real one when absent. "Ongoing" is read from it
+  // on every call (D120).
+  now?: () => Date
 }
 
 /** The read-only services built over one seed. */
@@ -69,6 +76,7 @@ export function createMockCatalog({
   latencyMs,
   store,
   enrolledCourseIds = () => new Set(seed.courses.map((course) => course.id)),
+  now = () => new Date(),
 }: MockCatalogOptions): MockCatalog {
   /**
    * The seed narrowed to the courses the student is in.
@@ -100,6 +108,13 @@ export function createMockCatalog({
     return structuredClone(value)
   }
 
+  /** `course` with whether one of its classes is going on at the moment the clock says (D120). */
+  function withSession(course: SeedCourse): Course {
+    // That course's classes, from the whole seed: being in a course never changes its timetable.
+    const windows = seed.classes.filter((cls) => cls.courseId === course.id)
+    return { ...course, inSession: isInSession(windows, now()) }
+  }
+
   /** The course with this ID, or a not_found error. */
   function findCourse(courseId: string) {
     // Look it up among the enrolled courses.
@@ -107,7 +122,7 @@ export function createMockCatalog({
     // Missing: the page shows its "not found" panel.
     if (!course) throw new AppError('not_found', 'Course not found')
     // Found.
-    return course
+    return withSession(course)
   }
 
   // Summaries the student has opened, and notifications they have read, kept between reloads.
@@ -181,7 +196,7 @@ export function createMockCatalog({
   return {
     courses: {
       // Seed order is the display order.
-      listMyCourses: () => respond(view().courses),
+      listMyCourses: () => respond(view().courses.map(withSession)),
       // One course; the lookup runs after the delay so errors arrive like a server's would.
       getCourse: async (courseId) => {
         // Behave like a network call.

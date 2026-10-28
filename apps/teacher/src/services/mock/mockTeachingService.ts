@@ -6,7 +6,8 @@
 // The shared error type.
 import { AppError } from '@conote/core/errors'
 // The shared vocabulary.
-import type { CourseStatus } from '@conote/domain'
+// Whether a class is going on now.
+import { isInSession } from '@conote/core/inSession'
 
 // The shape returned.
 import type { CourseClass, CourseDetails, TeacherCourse } from '@/types/teaching'
@@ -25,10 +26,9 @@ interface MockTeachingOptions {
   // The signed-in teacher's ID, or null when signed out.
   actorId: () => string | null
   latencyMs: number
+  // The clock, so tests can pick the moment; the real one when absent (D120).
+  now?: () => Date
 }
-
-/** Where each status sorts: ongoing courses are the ones being taught now. */
-const STATUS_ORDER: Record<CourseStatus, number> = { ongoing: 0, upcoming: 1, completed: 2 }
 
 /** What every "no such course" answers, whatever the reason, so the answer reveals nothing. */
 const COURSE_NOT_FOUND = "We couldn't find that course."
@@ -38,6 +38,7 @@ export function createMockTeachingService({
   data,
   actorId,
   latencyMs,
+  now = () => new Date(),
 }: MockTeachingOptions): TeachingService {
   return {
     async listMyCourses() {
@@ -51,28 +52,29 @@ export function createMockTeachingService({
       const mine = data.courses.filter(
         (course) => course.teacherId === teacherId && course.archivedAt === null,
       )
-      return mine
-        .map((course): TeacherCourse => {
-          // The course's classes in use.
-          const classes = data.classes.filter(
-            (cls) => cls.courseId === course.id && cls.archivedAt === null,
-          )
-          // Their IDs, to find the summaries waiting in review.
-          const classIds = new Set(classes.map((cls) => cls.id))
-          return {
-            id: course.id,
-            code: course.code,
-            title: course.title,
-            status: course.status,
-            classCount: classes.length,
-            waitingForReviewCount: data.summaries.filter(
-              (summary) => classIds.has(summary.classId) && summary.status === 'in_review',
-            ).length,
-          }
-        })
-        .sort(
-          (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.code.localeCompare(b.code),
-        )
+      return (
+        mine
+          .map((course): TeacherCourse => {
+            // The course's classes in use.
+            const classes = data.classes.filter(
+              (cls) => cls.courseId === course.id && cls.archivedAt === null,
+            )
+            // Their IDs, to find the summaries waiting in review.
+            const classIds = new Set(classes.map((cls) => cls.id))
+            return {
+              id: course.id,
+              code: course.code,
+              title: course.title,
+              inSession: isInSession(classes, now()),
+              classCount: classes.length,
+              waitingForReviewCount: data.summaries.filter(
+                (summary) => classIds.has(summary.classId) && summary.status === 'in_review',
+              ).length,
+            }
+          })
+          // A course with a class going on comes first, then by code.
+          .sort((a, b) => Number(b.inSession) - Number(a.inSession) || a.code.localeCompare(b.code))
+      )
     },
 
     async getMyCourse(courseId) {
@@ -110,7 +112,10 @@ export function createMockTeachingService({
         id: course.id,
         code: course.code,
         title: course.title,
-        status: course.status,
+        inSession: isInSession(
+          data.classes.filter((cls) => cls.courseId === course.id && cls.archivedAt === null),
+          now(),
+        ),
         classes,
       } satisfies CourseDetails
     },

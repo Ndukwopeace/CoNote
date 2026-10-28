@@ -22,6 +22,14 @@ const COURSE = '20000000-0000-0000-0000-000000000001'
 const OTHER = '20000000-0000-0000-0000-000000000002'
 const TEACHER = '10000000-0000-0000-0000-000000000002'
 
+// The moment the tests pretend it is: inside the first class below, which runs 09:00 to 11:00.
+const NOW = new Date('2026-10-28T10:00:00Z')
+
+/** A class row as the database returns it. */
+function classRow(id: string, startsAt: string, endsAt: string, courseId = COURSE) {
+  return { id, course_id: courseId, starts_at: startsAt, ends_at: endsAt }
+}
+
 /** A course row as the database returns it. */
 function courseRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -53,8 +61,8 @@ function setup(overrides: Partial<Tables> = {}) {
     },
     class_sessions: {
       data: [
-        { id: 'c1', course_id: COURSE },
-        { id: 'c2', course_id: COURSE },
+        classRow('c1', '2026-10-28T09:00:00Z', '2026-10-28T11:00:00Z'),
+        classRow('c2', '2026-11-04T09:00:00Z', '2026-11-04T11:00:00Z'),
       ],
       error: null,
     },
@@ -66,7 +74,7 @@ function setup(overrides: Partial<Tables> = {}) {
     if (!(query.table in tables)) throw new Error(`Unexpected table ${query.table}`)
     return tables[query.table as keyof Tables]
   })
-  return { service: createSupabaseCourseService({ client }), queries }
+  return { service: createSupabaseCourseService({ client, now: () => NOW }), queries }
 }
 
 describe('Supabase course service', () => {
@@ -85,7 +93,7 @@ describe('Supabase course service', () => {
         teacher: { id: TEACHER, fullName: 'Sarah Mbarga' },
         studentCount: 5,
         classCount: 2,
-        status: 'ongoing',
+        inSession: true,
         scheduleText: 'Mon & Wed, 9–11am',
       },
     ])
@@ -93,6 +101,56 @@ describe('Supabase course service', () => {
     expect(made(queries[0]!, 'order', 'code')).toBe(true)
     for (const query of queries.slice(1))
       expect(made(query, 'in', 'course_id', [COURSE])).toBe(true)
+  })
+
+  // Proves "Ongoing" follows the clock: a class going on now says so, and a course between
+  // classes, before its first or after its last says nothing (D120).
+  it.each([
+    ['during a class', '2026-10-28T10:00:00Z', true],
+    ['at the start of a class', '2026-10-28T09:00:00Z', true],
+    ['at the end of a class', '2026-10-28T11:00:00Z', false],
+    ['between classes', '2026-10-30T10:00:00Z', false],
+    ['before the first class', '2026-10-01T10:00:00Z', false],
+    ['after the last class', '2026-12-31T10:00:00Z', false],
+  ])('says %s: inSession %s', async (_name, at, expected) => {
+    const { client } = createFakeTables((query: RecordedQuery) => {
+      const answers: Record<string, TableAnswer> = {
+        courses: { data: [courseRow()], error: null },
+        course_teachers: { data: [], error: null },
+        class_sessions: {
+          data: [
+            classRow('c1', '2026-10-28T09:00:00Z', '2026-10-28T11:00:00Z'),
+            classRow('c2', '2026-11-04T09:00:00Z', '2026-11-04T11:00:00Z'),
+          ],
+          error: null,
+        },
+        course_student_counts: { data: [], error: null },
+      }
+      return answers[query.table] ?? { data: [], error: null }
+    })
+    const service = createSupabaseCourseService({ client, now: () => new Date(at) })
+
+    const [course] = await service.listMyCourses()
+
+    expect(course?.inSession).toBe(expected)
+  })
+
+  // Proves one course's class does not make another course "Ongoing".
+  it('looks only at the classes of each course', async () => {
+    const { service } = setup({
+      courses: { data: [courseRow(), courseRow({ id: OTHER, code: 'MTH 203' })], error: null },
+      class_sessions: {
+        data: [classRow('c1', '2026-10-28T09:00:00Z', '2026-10-28T11:00:00Z')],
+        error: null,
+      },
+    })
+
+    const courses = await service.listMyCourses()
+
+    expect(courses.map((course) => [course.code, course.inSession])).toEqual([
+      ['MTH 202', true],
+      ['MTH 203', false],
+    ])
   })
 
   // Proves a course with no schedule leaves the field out, and a teacher's picture is kept.
@@ -148,9 +206,9 @@ describe('Supabase course service', () => {
       },
       class_sessions: {
         data: [
-          { id: 'c1', course_id: OTHER },
-          { id: 'c2', course_id: OTHER },
-          { id: 'c3', course_id: OTHER },
+          classRow('c1', '2026-11-04T09:00:00Z', '2026-11-04T11:00:00Z', OTHER),
+          classRow('c2', '2026-11-11T09:00:00Z', '2026-11-11T11:00:00Z', OTHER),
+          classRow('c3', '2026-11-18T09:00:00Z', '2026-11-18T11:00:00Z', OTHER),
         ],
         error: null,
       },
@@ -208,10 +266,13 @@ describe('Supabase course service', () => {
     })
   })
 
-  // SECURITY: proves a course with a status the app does not know is refused, not shown.
-  it('refuses a row with an unknown status', async () => {
+  // SECURITY: proves a class row with a time that is not text is refused, not guessed at.
+  it('refuses a class row with a malformed time', async () => {
     const { service } = setup({
-      courses: { data: [courseRow({ status: 'sabotaged' })], error: null },
+      class_sessions: {
+        data: [{ id: 'c1', course_id: COURSE, starts_at: 5, ends_at: null }],
+        error: null,
+      },
     })
 
     await expect(service.listMyCourses()).rejects.toMatchObject({ kind: 'unknown' })

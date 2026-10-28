@@ -17,6 +17,15 @@ import {
 // The interface under test.
 import type { TeachingService } from '../types'
 
+/** The start and end of a class that begins `fromMinutes` from now and ends `toMinutes` from now. */
+function around(fromMinutes: number, toMinutes: number) {
+  const now = Date.now()
+  return {
+    startsAt: new Date(now + fromMinutes * 60_000).toISOString(),
+    endsAt: new Date(now + toMinutes * 60_000).toISOString(),
+  }
+}
+
 /** Builds a service over `data`, acting as the teacher with ID `actorId` (null: signed out). */
 export type TeachingServiceFactory = (data: PlatformData, actorId: string | null) => TeachingService
 
@@ -48,18 +57,31 @@ export function describeTeachingServiceContract(name: string, create: TeachingSe
       expect(courses.map((course) => course.id)).toEqual(['live'])
     })
 
-    // Proves ongoing courses come first, then upcoming, then completed, by code within each.
-    it('orders by status, then code', async () => {
+    // Proves a course says it is in session only while one of its classes is going on, and a
+    // course with a class going on comes first, by code within each group (D120).
+    it('puts courses with a class going on first, then by code', async () => {
       const data = emptyPlatformData({
         courses: [
-          courseRecord({ id: 'c', code: 'C 100', status: 'completed', teacherId: 't1' }),
-          courseRecord({ id: 'u', code: 'U 100', status: 'upcoming', teacherId: 't1' }),
-          courseRecord({ id: 'o2', code: 'O 200', status: 'ongoing', teacherId: 't1' }),
-          courseRecord({ id: 'o1', code: 'O 100', status: 'ongoing', teacherId: 't1' }),
+          courseRecord({ id: 'a', code: 'A 100', teacherId: 't1' }),
+          courseRecord({ id: 'b', code: 'B 100', teacherId: 't1' }),
+          courseRecord({ id: 'c', code: 'C 100', teacherId: 't1' }),
+        ],
+        classes: [
+          // Going on now (started half an hour ago, ends in half an hour).
+          classRecord({ id: 'live', courseId: 'c', ...around(-30, 30) }),
+          // Finished this morning, and still to come tomorrow.
+          classRecord({ id: 'done', courseId: 'a', number: 1, ...around(-300, -240) }),
+          classRecord({ id: 'later', courseId: 'a', number: 2, ...around(1_440, 1_500) }),
         ],
       })
       const courses = await create(data, 't1').listMyCourses()
-      expect(courses.map((course) => course.id)).toEqual(['o1', 'o2', 'u', 'c'])
+      expect(courses.map((course) => [course.id, course.inSession])).toEqual([
+        ['c', true],
+        ['a', false],
+        ['b', false],
+      ])
+      // No other status is given: nothing about "upcoming" or "completed" can go out of date.
+      expect(courses.every((course) => !('status' in course))).toBe(true)
     })
 
     // Proves the counts: classes in use, and summaries waiting in review. Archived classes and
@@ -134,7 +156,7 @@ export function describeTeachingServiceContract(name: string, create: TeachingSe
           id: 'c1',
           code: 'C 1',
           title: 'Course one',
-          status: 'ongoing',
+          inSession: false,
         })
         // Archived class left out; newest (highest number) first.
         expect(course.classes.map((cls) => cls.id)).toEqual(['k2', 'k1'])
