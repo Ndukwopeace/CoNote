@@ -10,4 +10,11 @@ import { parseEnv } from '@conote/core/env'
 export type { AppEnv } from '@conote/core/env'
 
 // Parsed once when the app loads; every other module imports this checked result.
-export const env = parseEnv(import.meta.env)
+// SECURITY: each variable is read by name. Vite replaces `import.meta.env.VITE_X` with that one
+// value, but a bare `import.meta.env` becomes an object holding EVERY VITE_ variable present at
+// build time, which would print a key set for tests (or by mistake) into the public JavaScript.
+export const env = parseEnv({
+  VITE_DATA_SOURCE: import.meta.env.VITE_DATA_SOURCE,
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
+})

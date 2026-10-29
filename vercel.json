@@ -18,6 +18,10 @@
           "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
         },
         {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
         },

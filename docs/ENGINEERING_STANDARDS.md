@@ -284,6 +284,7 @@ Set in `vercel.json` and verified after the first deploy. This is the policy sin
 | Header | Value |
 |---|---|
 | `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'` |
+| `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
@@ -291,6 +292,7 @@ Set in `vercel.json` and verified after the first deploy. This is the policy sin
 
 **Notes:**
 
+- `X-Frame-Options: DENY` repeats `frame-ancestors 'none'` for older browsers and for scanners such as Wapiti that look for this header by name. `packages/core/src/securityHeaders.test.ts` fails if any of the three apps' `vercel.json` loses a header or weakens the policy.
 - `style-src 'unsafe-inline'` is needed for the inline styles that Radix sets for positioning. Scripts get no such exception.
 - The service worker (`sw.js`) and the manifest are served with `Cache-Control: no-cache`, so an update is never hidden behind a cached worker. The app registers the worker from its own bundle, so there is no separate `registerSW.js`.
 - Font files are never inlined as `data:` URLs (`build.assetsInlineLimit` in `vite.config.ts`), because `font-src 'self'` blocks them.
