@@ -36,11 +36,20 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+/**
+ * Headers every answer carries. SECURITY: `no-store` keeps one person's answer out of any shared
+ * cache, and `nosniff` stops a browser from guessing that the JSON is a page or a script.
+ */
+const SAFE_HEADERS = {
+  'Cache-Control': 'no-store',
+  'X-Content-Type-Options': 'nosniff',
+}
+
 /** A JSON answer with `status`. */
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, ...SAFE_HEADERS, 'Content-Type': 'application/json' },
   })
 }
 
@@ -51,5 +60,5 @@ export function refuse(kind: ErrorKind, message: string): Response {
 
 /** The answer to a browser's preflight question. */
 export function preflight(): Response {
-  return new Response(null, { status: 204, headers: CORS_HEADERS })
+  return new Response(null, { status: 204, headers: { ...CORS_HEADERS, ...SAFE_HEADERS } })
 }
