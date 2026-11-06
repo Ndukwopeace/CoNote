@@ -159,7 +159,7 @@ function MyNotes() {
           </Link>
         }
       >
-        Your notes are private. Only you can see them.
+        Other students can’t see your notes. Your teachers can, with your name.
       </EmptyState>
     )
   }

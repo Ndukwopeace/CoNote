@@ -22,17 +22,26 @@ export interface NotesFixture {
   foreignClass: string
   // A class of a course the student is in that has not started yet, when the fixture has one.
   upcomingClass?: string
+  // A class of a course the student is in that ended more than an hour ago (D123), when the
+  // fixture has one.
+  closedClass?: string
 }
 
-/** The demo's classes. */
+/**
+ * The demo's classes. Notes are written only while a class is on and for an hour after (D123), so
+ * the two classes that are written to are added to the demo seed by the test that runs the contract
+ * (`mockCatalog.test.ts`), open at the moment it runs.
+ */
 export const MOCK_NOTES_FIXTURE: NotesFixture = {
-  classA: 'swe-311-c2',
+  classA: 'notes-contract-a',
   courseA: 'swe-311',
-  classB: 'cse-205-c1',
+  classB: 'notes-contract-b',
   courseB: 'cse-205',
   foreignClass: 'someone-elses-class',
   // The demo's second CSE 205 class begins hours from now.
   upcomingClass: 'cse-205-c2',
+  // The demo's second SWE 311 class was two weeks ago.
+  closedClass: 'swe-311-c2',
 }
 
 // A well-formed ID that no record has, so databases that use UUIDs are tested with one too.
@@ -258,6 +267,25 @@ export function runNotesServiceContract(
       await expect(notes.updateNote(note.id, input(fixture.upcomingClass))).rejects.toMatchObject({
         kind: 'validation',
         message: 'That class has not started yet.',
+      })
+    })
+
+    // Proves notes stop an hour after the class: one under a class that ended earlier than that is
+    // refused on create and on edit, the same way for every implementation (D123).
+    it('refuses a note under a class that ended more than an hour ago', async () => {
+      // A fixture without a closed class cannot prove it.
+      if (!fixture.closedClass) return
+      const { notes } = create()
+      const note = await notes.createNote(input(fixture.classA))
+      const closed = 'Notes for that class closed one hour after it ended.'
+
+      await expect(notes.createNote(input(fixture.closedClass))).rejects.toMatchObject({
+        kind: 'validation',
+        message: closed,
+      })
+      await expect(notes.updateNote(note.id, input(fixture.closedClass))).rejects.toMatchObject({
+        kind: 'validation',
+        message: closed,
       })
     })
   })

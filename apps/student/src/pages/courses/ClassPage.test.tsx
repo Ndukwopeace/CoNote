@@ -75,7 +75,9 @@ describe('ClassPage', () => {
 
     // Assert.
     const panel = await screen.findByRole('tabpanel')
-    expect(panel).toHaveTextContent('Your notes are private. You can only see your own notes.')
+    expect(panel).toHaveTextContent(
+      'Other students can’t see your notes. Your teachers and the school’s administrators can, with your name.',
+    )
     expect(
       await within(panel).findByRole('link', { name: /Waterfall in one line/ }),
     ).toHaveAttribute('href', '/notes/note-7')
@@ -86,8 +88,8 @@ describe('ClassPage', () => {
     )
   })
 
-  // Proves a class from earlier than the last three days cannot have notes added from here: the
-  // button is off, and says when notes are open (D108).
+  // Proves a class that ended more than an hour ago cannot have notes added from here: the button
+  // is off, and says that its notes closed (D123).
   it('turns Add Note off for an old class, and says why', async () => {
     renderClass('/courses/swe-311/classes/swe-311-c2?tab=notes')
 
@@ -95,7 +97,7 @@ describe('ClassPage', () => {
 
     expect(within(panel).queryByRole('link', { name: 'Add Note' })).toBeNull()
     expect(within(panel).getByRole('button', { name: 'Add Note' })).toBeDisabled()
-    expect(within(panel).getByText(/open during the class and for two days after/)).toBeVisible()
+    expect(within(panel).getByText(/Notes closed one hour after the class ended/)).toBeVisible()
   })
 
   // Proves a class that has not started shows the button off too, with when notes open.
@@ -117,9 +119,9 @@ describe('ClassPage', () => {
     const panel = await screen.findByRole('tabpanel')
     expect(await within(panel).findByText('No notes yet')).toBeInTheDocument()
     expect(panel).toHaveTextContent(
-      'Start taking notes for this class. Your notes will be private and used to help generate summaries.',
+      'Start taking notes for this class. Classmates never see them, and they help generate the summary.',
     )
-    expect(panel).toHaveTextContent('Your notes are private.')
+    expect(panel).toHaveTextContent('Other students can’t see your notes.')
   })
 
   // Proves a published summary links to the summary view (FR-CLS-2).

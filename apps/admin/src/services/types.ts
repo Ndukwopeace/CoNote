@@ -3,6 +3,8 @@
  * only through useServices(), so the demo data and Supabase are interchangeable (D66).
  */
 
+// Reading students' notes (D123).
+import type { NoteReadingService } from '@conote/core/noteReading'
 // The shared vocabulary.
 import type { AccountStatus } from '@conote/domain'
 
@@ -230,4 +232,6 @@ export interface Services {
   courses: CourseService
   classes: ClassService
   programmes: ProgrammeService
+  // The notes of any course, with their authors (D123).
+  notes: NoteReadingService
 }

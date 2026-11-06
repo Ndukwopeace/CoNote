@@ -118,14 +118,16 @@ describe('NotFoundPanel', () => {
 })
 
 describe('PrivacyBanner', () => {
-  // Proves the exact FR-CLS-3 wording.
-  it('says notes are private', () => {
+  // Proves the FR-CLS-3 wording as changed by D123: other students never see notes, teachers can.
+  it('says who can and cannot read notes', () => {
     // Act.
     render(<PrivacyBanner />)
 
     // Assert.
     expect(
-      screen.getByText('Your notes are private. You can only see your own notes.'),
+      screen.getByText(
+        'Other students can’t see your notes. Your teachers and the school’s administrators can, with your name.',
+      ),
     ).toBeInTheDocument()
   })
 })

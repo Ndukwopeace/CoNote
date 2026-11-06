@@ -26,7 +26,7 @@ export const SUPPORT_EMAIL = 'support@conote.example'
 const FAQ = [
   {
     q: 'Who can see my notes?',
-    a: 'Only you. Teachers and other students can’t open your notes. CoNote AI reads them, together with your classmates’ notes, to draft the class summary.',
+    a: 'You, your teachers and the school’s administrators. Other students can’t open your notes. Your teacher sees your name next to each note. CoNote AI also reads them, together with your classmates’ notes, to draft the class summary.',
   },
   {
     q: 'When will a class summary appear?',

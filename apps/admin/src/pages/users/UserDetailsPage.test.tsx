@@ -92,7 +92,8 @@ describe('UserDetailsPage', () => {
     const history = screen.getByRole('list', { name: 'Status history' })
     expect(within(history).getByText('Invited')).toBeInTheDocument()
     expect(within(history).getByText(/by Amara Okafor/)).toBeInTheDocument()
-    expect(screen.queryByText(/notes/i)).toBeNull()
+    // The page shows no notes. (The sidebar's Notes link is outside the page.)
+    expect(within(screen.getByRole('main')).queryByText(/notes/i)).toBeNull()
     await expectNoAxeViolations(container)
   })
 

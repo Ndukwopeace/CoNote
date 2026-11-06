@@ -25,6 +25,12 @@ describe('createServices', () => {
     // Nobody is signed in on a fresh browser; this is answered from storage, with no network.
     await expect(services.auth.getSession()).resolves.toBeNull()
     // Every service exists.
-    expect(Object.keys(services).sort()).toEqual(['auth', 'notifications', 'review', 'teaching'])
+    expect(Object.keys(services).sort()).toEqual([
+      'auth',
+      'notes',
+      'notifications',
+      'review',
+      'teaching',
+    ])
   })
 })

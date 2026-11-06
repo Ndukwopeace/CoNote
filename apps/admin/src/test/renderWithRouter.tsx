@@ -27,6 +27,7 @@ import {
 import { createMockClassService } from '@/services/mock/mockClassService'
 import { createMockCourseService } from '@/services/mock/mockCourseService'
 import { createMockHealthService } from '@/services/mock/mockHealthService'
+import { createMockNoteReadingService } from '@/services/mock/mockNoteReadingService'
 import { createMockProgrammeService } from '@/services/mock/mockProgrammeService'
 import { createMockUserService } from '@/services/mock/mockUserService'
 // The records the demo services read.
@@ -77,6 +78,11 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
     programmes: createMockProgrammeService({
       data: platform,
       now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: 0,
+    }),
+    notes: createMockNoteReadingService({
+      data: platform,
       actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
       latencyMs: 0,
     }),

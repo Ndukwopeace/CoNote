@@ -28,8 +28,8 @@ export function AboutSection() {
         </p>
         {/* Privacy. */}
         <p>
-          Your notes stay private. Classmates never see them, and they are used only to build the
-          summary for that class.
+          Classmates never see your notes. Your teachers can read them, with your name, and they are
+          used to build the summary for that class.
         </p>
         {/* Teacher approval. */}
         <p>

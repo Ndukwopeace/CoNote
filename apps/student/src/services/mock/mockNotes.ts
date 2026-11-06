@@ -9,6 +9,8 @@ import { z } from 'zod'
 
 // The error type every failure becomes.
 import { AppError } from '@conote/core/errors'
+// The window in which notes may be written, and the words for a refusal (D123).
+import { noteWindowRefusal, noteWindowState } from '@conote/core/noteWindow'
 // The note rules shared with the form.
 import { noteInputSchema, resolveNoteTitle, type NoteInput } from '@/lib/notes'
 // Strips unsafe markup before a note is stored.
@@ -141,10 +143,10 @@ export function createMockNoteService({
     // under someone else's class.
     const session = classes.find((c) => c.id === parsed.data.classId)
     if (!session) throw new AppError('validation', 'Choose a class from your courses.')
-    // A class still to come has nothing to write about yet (D107); the database refuses it too.
-    if (Date.parse(session.startsAt) > now().getTime()) {
-      throw new AppError('validation', 'That class has not started yet.')
-    }
+    // Notes are written from the class's start until one hour after its end (D107, D123); the
+    // database refuses a note outside that window too.
+    const refusal = noteWindowRefusal(noteWindowState(session, now()))
+    if (refusal) throw new AppError('validation', refusal)
     // SECURITY: markup is cleaned before storage too (defence in depth; SafeHtml still cleans
     // on display), so a stored note never holds scripts or event handlers.
     const contentHtml = sanitizeHtml(parsed.data.contentHtml)

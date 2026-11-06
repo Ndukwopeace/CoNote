@@ -1,13 +1,13 @@
 /**
  * Home's navigation (D103, D104): the shared navigation with Home's own section above the links,
  * the classes of today and the two days before under "Today", "Yesterday" and the date (choosing one
- * files the next notes under it; one that has not started cannot be chosen yet, D108).
+ * files the next notes under it; one that has not started, or whose notes window has closed, cannot be chosen, D108, D123).
  */
 
 // The navigation every page shares, and the look of its rows.
 import { AppNav, NAV_ROW } from '@/layouts/AppNav'
 // Class rules.
-import { classesByDay, hasClassStarted } from '@/lib/classes'
+import { classesByDay, isOpenForNotes } from '@/lib/classes'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
 // Shapes.
@@ -47,7 +47,7 @@ export function HomeNav({
         <button
           type="button"
           aria-pressed={session.id === chosenId}
-          disabled={!hasClassStarted(session, now)}
+          disabled={!isOpenForNotes(session, now)}
           onClick={() => {
             onChoose(session.id)
             onDone?.()

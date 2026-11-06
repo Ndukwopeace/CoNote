@@ -7,6 +7,7 @@
 
 // The client, and the storage that honours "Remember me".
 import { createSupabaseClient } from '@conote/supabase/client'
+import { createSupabaseNoteReader } from '@conote/supabase/noteReading'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
 // The dashboard services.
 import { createSupabaseAlertService } from './supabaseAlertService'
@@ -84,5 +85,7 @@ export function createSupabaseServices({
     classes: createSupabaseClassService({ client }),
     // Programmes, and the timetable import (one database function).
     programmes: createSupabaseProgrammeService({ client }),
+    // Students' notes with their authors, read through audited database functions (D123).
+    notes: createSupabaseNoteReader({ client }),
   }
 }

@@ -163,7 +163,7 @@ The teacher portal may add `summary_versions` and `summary_reviews` for draft hi
 
 ### 6.3 Who may read what (Row Level Security)
 
-- **`notes`:** only their author. Admins never read note content. Admin views show counts only, such as "23 notes from 18 students".
+- **`notes`:** the table is open only to its author. An administrator (any course) and a teacher (their own courses) read notes with the author's name through the `search_notes` and `class_note_roster` functions (D123), which check who is asking and write every use to the audit log without the note text. Admin views also show counts, such as "23 notes from 18 students".
 - **`summaries`:**
   - students see `published` rows for courses they're enrolled in
   - teachers see rows for their own courses

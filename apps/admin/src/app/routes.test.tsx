@@ -91,6 +91,7 @@ describe('admin layout', () => {
       'Courses',
       'Programmes',
       'Classes',
+      'Notes',
       'Resources',
       'AI & Summaries',
       'Analytics',

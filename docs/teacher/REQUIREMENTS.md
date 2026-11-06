@@ -26,11 +26,13 @@ Where this document and the student portal's documents disagree about names, typ
 | A published summary is not edited in the MVP. The review screen shows it read-only.                                                          | Students may already have read it. Corrections are Post-MVP. |
 | Only a summary in `in_review` can be edited, saved or published. Any other status refuses the change.                                        | The pipeline order is fixed.                                |
 
-**What a teacher sees of the students' notes while reviewing (decision D74, [Default]).** The draft only, plus how many notes it is based on and from how many students. Never the notes themselves.
+**What a teacher sees of the students' notes (decision D123, which replaces D74).** A teacher reads the notes of the courses they teach, with the name of the student who wrote each one. Other students never see them.
 
-- Notes are private to their author. The admin portal already reads counts only (admin REQUIREMENTS 6.3), and a teacher who could read raw notes would break the privacy promise on the student landing page.
-- The cost: a teacher can't check a claim in the draft against its sources. The review screen says so plainly ("Based on 18 notes from 14 students"), and the teacher fixes what they know to be wrong from their own lesson.
-- If the owner decides teachers should read contributing notes, that is a change to RLS and to the review screen, so it needs a new decision first.
+- **Where:** each class on a course's page has a Notes link, to `/teacher/courses/:courseId/classes/:classId/notes`. The page shows "21 notes from 12 of 14 students", a "Not written yet" list of the students who wrote nothing, and the notes themselves, newest first, 20 to a page, with a search by student name or number.
+- **How it is read:** the notes table stays closed. A teacher reads through two database functions, `search_notes` and `class_note_roster`, which refuse anyone who is not an active teacher of that course (or an active administrator). Every use is written to the audit log, without the note text.
+- **Shown as text:** note text is turned into plain text, so nothing a student typed can run in the teacher's browser.
+- **Students are told:** the student app says that teachers and administrators can read their notes, with their name (D123).
+- The review screen still shows "Based on 18 notes from 14 students", and now the teacher can open those notes from the class.
 
 ## 3. Routes
 

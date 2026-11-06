@@ -3,6 +3,8 @@
  * them only through useServices(), so the demo data and Supabase are interchangeable.
  */
 
+// Reading students' notes (D123).
+import type { NoteReadingService } from '@conote/core/noteReading'
 // The categories a notice can have.
 import type { NotificationType } from '@conote/domain'
 // Session shapes.
@@ -119,4 +121,6 @@ export interface Services {
   teaching: TeachingService
   review: ReviewService
   notifications: NotificationService
+  // The notes of the courses the teacher teaches, with their authors (D123).
+  notes: NoteReadingService
 }

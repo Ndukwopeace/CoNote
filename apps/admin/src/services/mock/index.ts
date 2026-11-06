@@ -14,6 +14,7 @@ import { createMockAuthService, readStoredSession } from './mockAuthService'
 import { createMockClassService } from './mockClassService'
 import { createMockCourseService } from './mockCourseService'
 import { createMockHealthService } from './mockHealthService'
+import { createMockNoteReadingService } from './mockNoteReadingService'
 import { createMockProgrammeService } from './mockProgrammeService'
 import { createMockUserService } from './mockUserService'
 // Saving and restoring the platform's changes.
@@ -80,6 +81,12 @@ export function createMockServices(): Services {
       onChange: () => {
         savePlatform(window.localStorage, data)
       },
+    }),
+    // The notes of any course, with their authors (D123).
+    notes: createMockNoteReadingService({
+      data,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: DEMO_LATENCY_MS,
     }),
     // Accounts, changed as the signed-in administrator and saved after every change.
     users: createMockUserService({

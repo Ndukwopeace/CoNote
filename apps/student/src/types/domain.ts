@@ -145,7 +145,7 @@ export interface ClassSession {
   summaryStatus: SummaryStatus
 }
 
-/** A student's private note. Only its author can read it. */
+/** A student's note. Its author reads it; so do their teachers and the school's administrators (D123). */
 export interface Note {
   // Note ID.
   id: string

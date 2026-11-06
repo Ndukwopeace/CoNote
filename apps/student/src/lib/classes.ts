@@ -3,6 +3,9 @@
  * live/upcoming/completed status is always worked out from the clock, never stored.
  */
 
+// The shared note window: from a class's start until one hour after its end (D123).
+import { noteWindowState } from '@conote/core/noteWindow'
+
 // How a day's date is written.
 import { formatClassDate } from '@/lib/dates'
 // The session shape.
@@ -93,11 +96,12 @@ export function adjacentClasses(
 }
 
 /**
- * Whether a class has started, which is when a student may write about it: a class still to come
- * is not offered, and the services refuse it too (D107).
+ * Whether a class has started: the start itself counts, so a class is on the minute it begins. It
+ * orders the class sheet, with started classes first. Whether notes may be written is decided by
+ * `isOpenForNotes`.
  */
-export function hasClassStarted(session: ClassSession, now: Date): boolean {
-  // The start itself counts: a class is open for notes the minute it begins.
+function hasClassStarted(session: ClassSession, now: Date): boolean {
+  // The start itself counts.
   return Date.parse(session.startsAt) <= now.getTime()
 }
 
@@ -123,18 +127,17 @@ function isInWindow(session: ClassSession, now: Date): boolean {
 }
 
 /**
- * Whether a student may choose the class on Home and in the note form (D108): it has started, and
- * it started today or in the two days before, by the student's own calendar. Older classes and
- * classes still to come are not offered.
+ * Whether a student may write a note about the class (D123): from its start until one hour after
+ * it ends. The database refuses a note outside that window too, so this only decides what to offer.
  */
 export function isOpenForNotes(session: ClassSession, now: Date): boolean {
-  // Started, and recent enough.
-  return hasClassStarted(session, now) && isInWindow(session, now)
+  // The shared rule, so the apps and the database agree on the edges.
+  return noteWindowState(session, now) === 'open'
 }
 
 /**
  * The class a new note is most likely for: the latest class that is open for notes, so the one on
- * now, or the one that just ended. None open, and nothing is guessed.
+ * now, or one that ended within the last hour. None open, and nothing is guessed.
  */
 export function defaultNoteClass(
   sessions: readonly ClassSession[],
