@@ -20,10 +20,42 @@ function createCatalog() {
   return createMockCatalog({ seed: createSeed(new Date()), latencyMs: 0 })
 }
 
+/**
+ * Demo services whose seed also has two classes that are open for notes right now, one in each of
+ * two courses (D123). The note contract writes under them; the rest of the seed is untouched.
+ */
+function createNotesCatalog() {
+  const now = new Date()
+  const seed = createSeed(now)
+  // Started ten minutes ago and ends in fifty: open now, and for an hour after.
+  const startsAt = new Date(now.getTime() - 10 * 60_000).toISOString()
+  const endsAt = new Date(now.getTime() + 50 * 60_000).toISOString()
+  const open = (id: string, courseId: string, number: number) => ({
+    id,
+    courseId,
+    number,
+    title: `Open for notes ${id}`,
+    startsAt,
+    endsAt,
+    summaryStatus: 'collecting' as const,
+  })
+  return createMockCatalog({
+    seed: {
+      ...seed,
+      classes: [
+        ...seed.classes,
+        open('notes-contract-a', 'swe-311', 90),
+        open('notes-contract-b', 'cse-205', 90),
+      ],
+    },
+    latencyMs: 0,
+  })
+}
+
 // Run the shared contract against the mock.
 runNotificationServiceContract('mock', { create: createCatalog })
 runCoursesAndClassesContract('mock', { create: createCatalog })
-runNotesServiceContract('mock', { create: createCatalog })
+runNotesServiceContract('mock', { create: createNotesCatalog })
 runSummaryServiceContract('mock', { create: createCatalog })
 
 describe('mock catalog services', () => {

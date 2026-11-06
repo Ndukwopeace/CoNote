@@ -58,6 +58,10 @@ describe('CourseDetailsPage', () => {
     expect(rows[0]).toHaveTextContent('Class 4: Basis and dimension')
     expect(rows[0]).toHaveTextContent('Ready for your review')
     expect(rows[0]).toHaveTextContent('18 notes')
+    // Each class links to its notes (D123).
+    expect(
+      within(rows[0] ?? document.body).getByRole('link', { name: 'Read the notes of class 4' }),
+    ).toHaveAttribute('href', '/teacher/courses/mth-202/classes/k4/notes')
     expect(rows[1]).toHaveTextContent('Class 3: Linear independence')
     expect(rows[1]).toHaveTextContent('Published')
     // Assert: Review for the one in review, View for the published one.
@@ -78,7 +82,8 @@ describe('CourseDetailsPage', () => {
       renderCourse('mth-202', reviewPlatform(stage))
 
       await screen.findByRole('heading', { level: 1, name: 'MTH 202 Linear Algebra' })
-      expect(screen.queryByRole('link', { name: /class 4/ })).not.toBeInTheDocument()
+      // The notes link is always there (D123); there is no review or view link.
+      expect(screen.queryByRole('link', { name: /^(Review|View) class 4/ })).not.toBeInTheDocument()
     },
   )
 

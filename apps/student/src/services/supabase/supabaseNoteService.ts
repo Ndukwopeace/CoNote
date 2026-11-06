@@ -11,6 +11,8 @@ import { z } from 'zod'
 
 // The error type every service throws.
 import { AppError } from '@conote/core/errors'
+// The window in which notes may be written, and the words for a refusal (D123).
+import { noteWindowRefusal, noteWindowState } from '@conote/core/noteWindow'
 // Refuses IDs that are not UUIDs before they reach a query.
 import { isUuid } from '@conote/supabase/ids'
 
@@ -44,16 +46,18 @@ const noteRow = z.object({
   updated_at: z.string(),
 })
 // A class, only to learn which course it belongs to and whether it has started.
-const classRow = z.object({ id: z.string(), course_id: z.string(), starts_at: z.string() })
+const classRow = z.object({
+  id: z.string(),
+  course_id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+})
 // What a delete reads back.
 const idRow = z.object({ id: z.string() })
 
 // Shown for a class that is not one of the student's, whatever the reason (unknown, hidden, or
 // another course's), so the answer reveals nothing about which classes exist.
 const CHOOSE_CLASS = 'Choose a class from your courses.'
-
-// Shown for a class that begins later.
-const NOT_STARTED = 'That class has not started yet.'
 
 /** One row as the app's Note. */
 function toNote(row: z.infer<typeof noteRow>): Note {
@@ -108,16 +112,18 @@ export function createSupabaseNoteService({ client }: { client: SupabaseClient }
     const session = await readOne(
       client
         .from('class_sessions')
-        .select('id, course_id, starts_at')
+        .select('id, course_id, starts_at, ends_at')
         .eq('id', classId)
         .maybeSingle(),
       classRow,
     )
     if (!session) throw new AppError('validation', CHOOSE_CLASS)
-    // A class still to come has nothing to write about yet (D107); the database refuses it too.
-    if (Date.parse(session.starts_at) > Date.now()) {
-      throw new AppError('validation', NOT_STARTED)
-    }
+    // Notes are written from the class's start until one hour after its end (D107, D123); the
+    // database refuses a note outside that window too.
+    const refusal = noteWindowRefusal(
+      noteWindowState({ startsAt: session.starts_at, endsAt: session.ends_at }, new Date()),
+    )
+    if (refusal) throw new AppError('validation', refusal)
     return session.course_id
   }
 

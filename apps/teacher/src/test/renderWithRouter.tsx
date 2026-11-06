@@ -22,6 +22,7 @@ import {
   readStoredSession,
   SESSION_KEY,
 } from '@/services/mock/mockAuthService'
+import { createMockNoteReadingService } from '@/services/mock/mockNoteReadingService'
 import { createMockNotificationService } from '@/services/mock/mockNotificationService'
 import { createMockReviewService } from '@/services/mock/mockReviewService'
 import { createMockTeachingService } from '@/services/mock/mockTeachingService'
@@ -64,6 +65,8 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
     }),
     teaching: createMockTeachingService({ data: platform, actorId, latencyMs: 0 }),
     review,
+    // The notes of the teacher's courses, with their authors (D123).
+    notes: createMockNoteReadingService({ data: platform, actorId, latencyMs: 0 }),
     // A notice for each draft waiting, as in the app.
     notifications: createMockNotificationService({
       review,

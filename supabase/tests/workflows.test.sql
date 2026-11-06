@@ -13,6 +13,8 @@ select tests.seed();
 \set k1 '''00000000-0000-0000-0000-00000000d001'''
 \set k2 '''00000000-0000-0000-0000-00000000d002'''
 \set k3 '''00000000-0000-0000-0000-00000000d003'''
+\set k4 '''00000000-0000-0000-0000-00000000d004'''
+\set k9 '''00000000-0000-0000-0000-00000000d009'''
 \set sm_draft '''00000000-0000-0000-0000-00000000f002'''
 \set sm_pub '''00000000-0000-0000-0000-00000000f001'''
 
@@ -106,23 +108,28 @@ select tests.affects('insert into public.summary_views (summary_id, student_id) 
 select tests.reset();
 
 -- ===== Notes writes =====
+-- A class of the student's course that is on now (D123: notes are written from its start to one hour
+-- after its end).
+insert into public.class_sessions (id, course_id, number, title, starts_at, ends_at) values
+  (:k4, :c1, 8, 'On now', now() - interval '30 minutes', now() + interval '30 minutes'),
+  (:k9, :c2, 8, 'Other course, on now', now() - interval '30 minutes', now() + interval '30 minutes');
 -- A class of the student's course that begins tomorrow (D107).
 insert into public.class_sessions (id, course_id, number, title, starts_at, ends_at) values
   ('00000000-0000-0000-0000-00000000d0f1', :c1, 9, 'Tomorrow', now() + interval '1 day', now() + interval '1 day' + interval '1 hour');
 select tests.login(:s1);
-select tests.affects('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 1, 'a student writes a note in their course');
+select tests.affects('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ')', 1, 'a student writes a note in their course');
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c2) || ', ' || quote_literal(:k2) || ')', 'cannot write a note in a course not joined');
 select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ''00000000-0000-0000-0000-00000000d0f1'')', 'cannot write a note about a class that has not started');
 select tests.denied('update public.notes set class_id = ''00000000-0000-0000-0000-00000000d0f1'' where student_id = ' || quote_literal(:s1), 'cannot move a note to a class that has not started');
-select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s2) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 'cannot write a note as another student');
-select tests.fails_with('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k2) || ')', '23503', 'a note''s class must belong to its course');
+select tests.denied('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s2) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ')', 'cannot write a note as another student');
+select tests.fails_with('insert into public.notes (student_id, course_id, class_id) values (' || quote_literal(:s1) || ', ' || quote_literal(:c1) || ', ' || quote_literal(:k9) || ')', '23503', 'a note''s class must belong to its course');
 -- The browser names no author: the signed-in student is the default.
-select tests.affects('insert into public.notes (course_id, class_id) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ')', 1, 'a note needs no student ID from the browser');
+select tests.affects('insert into public.notes (course_id, class_id) values (' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ')', 1, 'a note needs no student ID from the browser');
 select tests.rows('select * from public.notes where student_id = ' || quote_literal(:s1) || ' and title is null', 2, 'the default author is the signed-in student');
 -- Size limits hold even for a request that skips the app.
-select tests.fails_with('insert into public.notes (course_id, class_id, content_html) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', repeat(''x'', 200001))', '23514', 'a huge note is refused');
-select tests.fails_with('insert into public.notes (course_id, class_id, tags) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', array_fill(''t''::text, array[11]))', '23514', 'too many tags are refused');
-select tests.fails_with('insert into public.notes (course_id, class_id, title) values (' || quote_literal(:c1) || ', ' || quote_literal(:k1) || ', repeat(''t'', 121))', '23514', 'a long title is refused');
+select tests.fails_with('insert into public.notes (course_id, class_id, content_html) values (' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ', repeat(''x'', 200001))', '23514', 'a huge note is refused');
+select tests.fails_with('insert into public.notes (course_id, class_id, tags) values (' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ', array_fill(''t''::text, array[11]))', '23514', 'too many tags are refused');
+select tests.fails_with('insert into public.notes (course_id, class_id, title) values (' || quote_literal(:c1) || ', ' || quote_literal(:k4) || ', repeat(''t'', 121))', '23514', 'a long title is refused');
 -- A view is recorded for the signed-in student, without sending an ID.
 select tests.affects('insert into public.summary_views (summary_id) values (' || quote_literal(:sm_pub) || ')', 1, 'a view needs no student ID from the browser');
 select tests.reset();

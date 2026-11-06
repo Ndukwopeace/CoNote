@@ -19,6 +19,7 @@ import type {
   CourseRecord,
   EnrollmentRecord,
   EnrollmentRequestRecord,
+  NoteRecord,
   PlatformData,
   ResourceRecord,
   SummaryRecord,
@@ -242,6 +243,38 @@ function buildEnrollments(users: UserRecord[], courses: CourseRecord[]): Enrollm
     for (const courseId of courseIds) enrollments.push({ courseId, studentId: user.id })
   })
   return enrollments
+}
+
+/** Sentences the demo notes are made from, so the notes read like a student's own. */
+const NOTE_LINES = [
+  'The main definition, and one worked example from the board.',
+  'I did not follow the second step. Ask about it next time.',
+  'Short version: check the conditions first, then apply it.',
+  'Homework: try the three problems at the end of the sheet.',
+  'The lecturer stressed that this comes up in the test.',
+  'Compare this with last week. The idea is the same, the setting is new.',
+] as const
+
+/**
+ * The students' notes: each class has as many as its `noteCount` says, written by the course's
+ * students in turn. The last student enrolled in a course with several writes nothing, so the
+ * demo has someone for "Not written yet". A class of a course with no students has no notes.
+ */
+function buildNotes(classes: ClassRecord[], enrollments: EnrollmentRecord[]): NoteRecord[] {
+  return classes.flatMap((cls) => {
+    const students = enrollments.filter((item) => item.courseId === cls.courseId)
+    // Leave the last one out when there are several, so someone has written nothing.
+    const writers = students.length > 2 ? students.slice(0, -1) : students
+    return Array.from({ length: writers.length === 0 ? 0 : cls.noteCount }, (_unused, index) => ({
+      id: `note-${cls.id}-${String(index + 1)}`,
+      classId: cls.id,
+      studentId: writers[index % writers.length]?.studentId ?? '',
+      title: index % 3 === 0 ? `Class ${String(cls.number)} notes` : null,
+      contentHtml: `<p>${cls.title}: ${NOTE_LINES[index % NOTE_LINES.length] ?? ''}</p>`,
+      // Written from ten minutes into the class.
+      createdAt: new Date(Date.parse(cls.startsAt) + (10 + index * 3) * 60_000).toISOString(),
+    }))
+  })
 }
 
 /**
@@ -611,6 +644,7 @@ export function createPlatformSeed(now: Date): PlatformData {
   return {
     users,
     enrollments,
+    notes: buildNotes(classes, enrollments),
     enrollmentRequests: buildEnrollmentRequests(users, enrollments, clock),
     // Two programmes over the demo courses (D105). Nobody has joined one in this demo: students
     // join in the student app, which is a separate demo.

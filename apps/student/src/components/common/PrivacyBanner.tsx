@@ -11,8 +11,9 @@ export function PrivacyBanner() {
     <p className="flex items-center gap-2 rounded-lg bg-primary-light px-4 py-3 text-sm text-accent-foreground">
       {/* Decorative icon. */}
       <Lock aria-hidden="true" className="size-4 shrink-0" />
-      {/* The exact FR-CLS-3 wording. */}
-      Your notes are private. You can only see your own notes.
+      {/* The FR-CLS-3 wording, as changed by D123: teachers and administrators can read notes. */}
+      Other students can’t see your notes. Your teachers and the school’s administrators can, with
+      your name.
     </p>
   )
 }

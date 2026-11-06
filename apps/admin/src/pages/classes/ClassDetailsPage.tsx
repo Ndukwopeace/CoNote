@@ -31,7 +31,7 @@ import { formatTime, formatTimeRange } from '@/lib/classTimes'
 // Dates.
 import { formatDate } from '@/lib/format'
 // Addresses.
-import { ADMIN_ROUTES, routeTo } from '@/lib/routes'
+import { ADMIN_ROUTES, routeTo, withQuery } from '@/lib/routes'
 import { summaryStatusLabel } from '@/lib/summaryStatus'
 // The details shape.
 import type { ClassDetails } from '@/types/classes'
@@ -99,16 +99,25 @@ function Details({ item }: Readonly<{ item: ClassDetails }>) {
           <SummaryStatusBadge status={item.summaryStatus} />
           {actions.isArchived && <Badge variant="outline">Archived</Badge>}
         </div>
-        {!actions.isArchived && (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={actions.edit}>
-              Edit
-            </Button>
-            <Button type="button" variant="outline" onClick={actions.askArchive}>
-              Archive
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* The class's notes with their authors (D123); an archived class's too. */}
+          <Link
+            to={withQuery(ADMIN_ROUTES.notes, { courseId: item.courseId, classId: item.id })}
+            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
+          >
+            Read the notes
+          </Link>
+          {!actions.isArchived && (
+            <>
+              <Button type="button" variant="outline" onClick={actions.edit}>
+                Edit
+              </Button>
+              <Button type="button" variant="outline" onClick={actions.askArchive}>
+                Archive
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       {/* Why nothing can be changed. */}
       {actions.isArchived && (

@@ -23,7 +23,7 @@ import { SettingsSection } from './SettingsSection'
 
 /** The privacy rules, in plain words (section 1). */
 const RULES = [
-  'Only you can read your notes. Teachers and other students can’t open them.',
+  'Other students can’t read your notes. Your teachers and the school’s administrators can, and they see your name next to each note.',
   'CoNote AI reads the notes for a class together to draft its summary. The summary doesn’t name who wrote what.',
   'Your teacher checks and approves every summary before any student sees it.',
   'Ask CoNote AI answers from approved summaries and your own notes, never from other students’ notes.',

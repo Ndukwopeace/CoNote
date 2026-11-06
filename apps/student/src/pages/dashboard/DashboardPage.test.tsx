@@ -177,7 +177,27 @@ describe('DashboardPage: Note mode', () => {
   // Proves a class with a published summary shows it in the stream, with the way to read it and
   // to ask about it (which switches to Ask on that class).
   it('shows the approved summary in the stream and opens Ask from it', async () => {
-    const { user, router } = renderDashboard({}, '/dashboard?classId=swe-311-c1')
+    // Only a class that is open for notes can be chosen (D123), so this class is moved to the hour
+    // before the faked time (9:00), where its summary is still published.
+    const base = createTestServices()
+    const { user, router } = renderDashboard(
+      {
+        classes: {
+          ...base.classes,
+          listMyClasses: async () =>
+            (await base.classes.listMyClasses()).map((session) =>
+              session.id === 'swe-311-c1'
+                ? {
+                    ...session,
+                    startsAt: new Date(2026, 8, 28, 8, 0).toISOString(),
+                    endsAt: new Date(2026, 8, 28, 9, 0).toISOString(),
+                  }
+                : session,
+            ),
+        },
+      },
+      '/dashboard?classId=swe-311-c1',
+    )
 
     const card = await screen.findByRole('region', { name: 'Summary ready' })
     expect(within(card).getByText(/Reviewed by/)).toBeVisible()
@@ -240,17 +260,18 @@ describe('DashboardPage: choosing the class', () => {
     expect(within(sheet).queryByRole('button', { name: /Old class/ })).toBeNull()
   })
 
-  // Proves a class from yesterday can still be chosen from the sheet, and choosing it moves the chip.
-  it('lets the student choose a class from yesterday', async () => {
+  // Proves a class that is on now or ended within the hour can be chosen from the sheet, and
+  // choosing it moves the chip (D123).
+  it('lets the student choose another open class', async () => {
     const { user } = renderDashboard(recentServices())
     await user.click(
       await screen.findByRole('button', { name: /Class: Software Engineering · First class/ }),
     )
     const sheet = await screen.findByRole('dialog', { name: 'Which class?' })
 
-    await user.click(within(sheet).getByRole('button', { name: /Yesterday class/ }))
+    await user.click(within(sheet).getByRole('button', { name: /Long class/ }))
 
-    expect(await screen.findByRole('button', { name: /Class: .*Yesterday class/ })).toBeVisible()
+    expect(await screen.findByRole('button', { name: /Class: .*Long class/ })).toBeVisible()
   })
 
   // Proves the sheet groups the classes by day: Today, Yesterday, then the date (D108).
@@ -268,6 +289,10 @@ describe('DashboardPage: choosing the class', () => {
     expect(within(sheet).getByRole('region', { name: 'Yesterday' })).toHaveTextContent(
       'Yesterday class',
     )
+    // Yesterday's class is listed, but its notes window has closed (D123).
+    const closed = within(sheet).getByRole('button', { name: /Yesterday class/ })
+    expect(closed).toBeDisabled()
+    expect(within(closed).getByText(/Closed/)).toBeVisible()
     expect(within(sheet).queryByRole('button', { name: /Old class/ })).toBeNull()
   })
 
@@ -295,16 +320,19 @@ describe('DashboardPage: choosing the class', () => {
   })
 })
 
-/** A student with classes yesterday and the day before, one at 7 today, one at 10 today (not started at 9) and an old one. */
+/**
+ * A student with classes yesterday and the day before (both closed, D123), one from 6 to 9 and one
+ * at 7 today (both open at 9), one at 10 today (not started) and an old one.
+ */
 function recentServices() {
-  /** A class on the faked day plus `dayOffset` days, from `hour` for an hour. */
-  const on = (dayOffset: number, id: string, title: string, hour: number) =>
+  /** A class on the faked day plus `dayOffset` days, from `hour` for `hours` hours (default one). */
+  const on = (dayOffset: number, id: string, title: string, hour: number, hours = 1) =>
     makeClass({
       id,
       courseId: 'swe-311',
       title,
       startsAt: new Date(2026, 8, 28 + dayOffset, hour, 0).toISOString(),
-      endsAt: new Date(2026, 8, 28 + dayOffset, hour + 1, 0).toISOString(),
+      endsAt: new Date(2026, 8, 28 + dayOffset, hour + hours, 0).toISOString(),
     })
   return {
     classes: {
@@ -313,6 +341,8 @@ function recentServices() {
         Promise.resolve([
           on(-1, 'yesterday', 'Yesterday class', 14),
           on(-2, 'before', 'Earlier class', 9),
+          // Started before 'first' and ends at 9: on now, so it can be chosen (the faked time is 9:00).
+          on(0, 'long', 'Long class', 6, 3),
           on(0, 'first', 'First class', 7),
           on(0, 'evening', 'Evening class', 10),
           on(-3, 'old', 'Old class', 9),
@@ -350,9 +380,11 @@ describe('DashboardPage: navigation', () => {
     // The CoNote word beside the mark.
     expect(within(nav).getByText('CoNote')).toBeVisible()
 
-    await user.click(within(nav).getByRole('button', { name: /Yesterday class/ }))
+    expect(within(nav).getByRole('button', { name: /Yesterday class/ })).toBeDisabled()
+
+    await user.click(within(nav).getByRole('button', { name: /Long class/ }))
     expect(
-      await screen.findByRole('button', { name: /Class: Software Engineering · Yesterday class/ }),
+      await screen.findByRole('button', { name: /Class: Software Engineering · Long class/ }),
     ).toBeVisible()
   })
 
@@ -363,11 +395,11 @@ describe('DashboardPage: navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Open menu' }))
 
     const drawer = await screen.findByRole('dialog', { name: 'Menu' })
-    await user.click(within(drawer).getByRole('button', { name: /Yesterday class/ }))
+    await user.click(within(drawer).getByRole('button', { name: /Long class/ }))
 
     expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
     expect(
-      await screen.findByRole('button', { name: /Class: Software Engineering · Yesterday class/ }),
+      await screen.findByRole('button', { name: /Class: Software Engineering · Long class/ }),
     ).toBeVisible()
   })
 

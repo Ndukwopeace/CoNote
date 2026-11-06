@@ -38,6 +38,9 @@ const SWE = '20000000-0000-0000-0000-000000000002'
 const MTH_CLASS_1 = '30000000-0000-0000-0000-000000000001'
 const MTH_CLASS_2 = '30000000-0000-0000-0000-000000000002'
 const SWE_CLASS_1 = '30000000-0000-0000-0000-000000000003'
+// Classes that are on now, one in each course, where notes may be written (D123).
+const MTH_LIVE = '30000000-0000-0000-0000-000000000005'
+const SWE_LIVE = '30000000-0000-0000-0000-000000000006'
 // A class of PHY 101, which the demo student is not in.
 const PHY_CLASS = '30000000-0000-0000-0000-000000000004'
 
@@ -69,11 +72,13 @@ describe.skipIf(!CONFIGURED)('Supabase note and summary services', () => {
 
   runNotesServiceContract('Supabase', {
     fixture: {
-      classA: MTH_CLASS_1,
+      classA: MTH_LIVE,
       courseA: MTH,
-      classB: SWE_CLASS_1,
+      classB: SWE_LIVE,
       courseB: SWE,
       foreignClass: PHY_CLASS,
+      // Nine days ago: its notes window closed long ago.
+      closedClass: MTH_CLASS_1,
     },
     create: () => ({ notes: createSupabaseNoteService({ client: student }) }),
   })
@@ -92,7 +97,7 @@ describe.skipIf(!CONFIGURED)('Supabase note and summary services', () => {
     // and a direct table read all see nothing of it, and cannot change or delete it.
     it('keeps a note from other students and from administrators', async () => {
       const note = await createSupabaseNoteService({ client: student }).createNote({
-        classId: MTH_CLASS_1,
+        classId: MTH_LIVE,
         title: 'Private',
         contentHtml: '<p>Only mine</p>',
         tags: [],
@@ -118,7 +123,7 @@ describe.skipIf(!CONFIGURED)('Supabase note and summary services', () => {
       const forged = await student.from('notes').insert({
         student_id: otherId,
         course_id: MTH,
-        class_id: MTH_CLASS_1,
+        class_id: MTH_LIVE,
         content_html: '<p>x</p>',
       })
       expect(forged.error).not.toBeNull()
@@ -133,7 +138,7 @@ describe.skipIf(!CONFIGURED)('Supabase note and summary services', () => {
 
     // SECURITY: proves the database enforces the size limits for a request that skips the app.
     it('refuses an oversized note, too many tags and a long title', async () => {
-      const base = { course_id: MTH, class_id: MTH_CLASS_1 }
+      const base = { course_id: MTH, class_id: MTH_LIVE }
 
       const huge = await student
         .from('notes')

@@ -528,8 +528,8 @@ In this order, agreed with the lecturer:
 
 1. **Class-start reminders**, built from the timetable.
 2. **A feedback button**, so students can tell the team what is wrong.
-3. **A participation view** for teachers and administrators: counts of who took notes, never the
-   notes themselves.
+3. **A participation view** for teachers and administrators: who took notes and who did not. Built
+   in D123, which also lets them read the notes with the author's name.
 4. **Revision "quiz me"**, questions made from the approved summaries.
 
 Parked for later: an interactive first-time tour for new students.

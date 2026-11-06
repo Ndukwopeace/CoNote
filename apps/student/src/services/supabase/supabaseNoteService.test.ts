@@ -22,7 +22,12 @@ const NOTE = '50000000-0000-0000-0000-000000000001'
 const CLASS = '30000000-0000-0000-0000-000000000001'
 const COURSE = '20000000-0000-0000-0000-000000000001'
 // When the class began: long ago, so notes may be written about it.
-const STARTED = '2026-01-05T09:00:00Z'
+// A class that began ten minutes ago and ends in fifty, so it is open for notes while the tests run
+// (D123: notes are written from a class's start until an hour after its end).
+const OPEN_CLASS = {
+  starts_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+  ends_at: new Date(Date.now() + 50 * 60_000).toISOString(),
+}
 const STUDENT = '10000000-0000-0000-0000-000000000004'
 
 /** A note row as the database returns it. */
@@ -67,7 +72,7 @@ interface Answers {
 function setup(overrides: Partial<Answers> = {}) {
   const answers: Answers = {
     read: { data: [noteRow()], error: null },
-    klass: { data: { id: CLASS, course_id: COURSE, starts_at: STARTED }, error: null },
+    klass: { data: { id: CLASS, course_id: COURSE, ...OPEN_CLASS }, error: null },
     insert: { data: noteRow(), error: null },
     update: { data: [noteRow({ title: 'Edited' })], error: null },
     remove: { data: [{ id: NOTE }], error: null },
@@ -219,7 +224,7 @@ describe('Supabase note service: writing', () => {
     [
       'not a UUID',
       'no-such-class',
-      { data: { id: CLASS, course_id: COURSE, starts_at: STARTED }, error: null },
+      { data: { id: CLASS, course_id: COURSE, ...OPEN_CLASS }, error: null },
     ],
     ['hidden by Row Level Security', CLASS, { data: null, error: null }],
   ])('refuses a class that is %s', async (_label, classId, klass) => {
@@ -240,10 +245,46 @@ describe('Supabase note service: writing', () => {
   it('refuses a class that has not started', async () => {
     const later = new Date(Date.now() + 60 * 60 * 1000).toISOString()
     const { service, queries } = setup({
-      klass: { data: { id: CLASS, course_id: COURSE, starts_at: later }, error: null },
+      klass: {
+        data: {
+          id: CLASS,
+          course_id: COURSE,
+          starts_at: later,
+          ends_at: new Date(Date.parse(later) + 60 * 60 * 1000).toISOString(),
+        },
+        error: null,
+      },
     })
 
     const message = 'That class has not started yet.'
+    await expect(service.createNote(submission())).rejects.toMatchObject({
+      kind: 'validation',
+      message,
+    })
+    await expect(service.updateNote(NOTE, submission())).rejects.toMatchObject({
+      kind: 'validation',
+      message,
+    })
+    // Only the class was read; nothing was written.
+    expect(queries.map((q) => q.table)).toEqual(['class_sessions', 'class_sessions'])
+  })
+
+  // Proves a class that ended more than an hour ago is refused on create and on edit, before any
+  // write is tried (D123).
+  it('refuses a class whose notes window has closed', async () => {
+    const { service, queries } = setup({
+      klass: {
+        data: {
+          id: CLASS,
+          course_id: COURSE,
+          starts_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          ends_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+        error: null,
+      },
+    })
+
+    const message = 'Notes for that class closed one hour after it ended.'
     await expect(service.createNote(submission())).rejects.toMatchObject({
       kind: 'validation',
       message,

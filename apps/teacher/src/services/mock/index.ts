@@ -9,6 +9,7 @@ import type { Services } from '../types'
 import { createPlatformSeed } from './seed/platformSeed'
 // The demo services.
 import { createMockAuthService, readStoredSession } from './mockAuthService'
+import { createMockNoteReadingService } from './mockNoteReadingService'
 import { createMockNotificationService } from './mockNotificationService'
 import { createMockReviewService } from './mockReviewService'
 import { createMockTeachingService } from './mockTeachingService'
@@ -53,6 +54,8 @@ export function createMockServices(): Services {
     teaching: createMockTeachingService({ data, actorId, latencyMs: DEMO_LATENCY_MS }),
     // Reviewing and publishing.
     review,
+    // The notes of her courses, with their authors (D123).
+    notes: createMockNoteReadingService({ data, actorId, latencyMs: DEMO_LATENCY_MS }),
     // A notice for each draft waiting, with what was read kept like server data.
     notifications: createMockNotificationService({
       review,

@@ -40,7 +40,10 @@ function ClassAction({ cls }: Readonly<{ cls: CourseClass }>) {
 }
 
 /** The list, or an empty state for a course with no classes yet. */
-export function CourseClassList({ classes }: Readonly<{ classes: CourseClass[] }>) {
+export function CourseClassList({
+  courseId,
+  classes,
+}: Readonly<{ courseId: string; classes: CourseClass[] }>) {
   // No classes: say so.
   if (classes.length === 0) {
     return <EmptyState icon={CalendarDays} title="This course has no classes yet." />
@@ -63,9 +66,17 @@ export function CourseClassList({ classes }: Readonly<{ classes: CourseClass[] }
               {cls.publishedAt !== null && ` · Published ${formatDate(cls.publishedAt)}`}
             </p>
           </div>
-          {/* Stage and action. */}
+          {/* Stage and actions. */}
           <div className="flex items-center gap-3">
             <StageBadge stage={cls.stage} />
+            {/* Who wrote what (D123). The class number keeps each link's name distinct. */}
+            <Link
+              to={routeTo.classNotes(courseId, cls.id)}
+              aria-label={`Read the notes of class ${String(cls.number)}`}
+              className="inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium hover:bg-accent"
+            >
+              Notes
+            </Link>
             <ClassAction cls={cls} />
           </div>
         </li>

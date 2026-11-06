@@ -41,7 +41,7 @@ const STEPS: Step[] = [
   {
     icon: NotebookPen,
     title: 'Write Your Personal Notes',
-    text: 'Write during or after class. Only you can see your notes.',
+    text: 'Write during class, or in the hour after. Classmates never see your notes; your teachers can.',
   },
   {
     icon: Sparkles,

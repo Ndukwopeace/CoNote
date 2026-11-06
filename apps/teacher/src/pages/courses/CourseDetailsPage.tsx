@@ -79,7 +79,7 @@ export function CourseDetailsPage() {
         <h2 id="classes-heading" className="text-lg font-semibold">
           Classes
         </h2>
-        <CourseClassList classes={data.classes} />
+        <CourseClassList courseId={data.id} classes={data.classes} />
       </section>
     </div>
   )

@@ -4,6 +4,7 @@
  */
 
 // Icons.
+import { noteWindowState } from '@conote/core/noteWindow'
 import { ArrowLeft, ChevronLeft, ChevronRight, NotebookPen, Plus } from 'lucide-react'
 // Route parameters, links and the query string.
 import { Link, useParams, useSearchParams } from 'react-router'
@@ -36,7 +37,7 @@ import { useCourse } from '@/hooks/useCourses'
 import { useMyNotes } from '@/hooks/useNotes'
 import { useNow } from '@/hooks/useNow'
 // Class rules.
-import { adjacentClasses, getClassStatus, hasClassStarted, isOpenForNotes } from '@/lib/classes'
+import { adjacentClasses, getClassStatus, isOpenForNotes } from '@/lib/classes'
 // Date wording.
 import { formatClassDate, formatClassTime } from '@/lib/dates'
 // Route constants and builders.
@@ -248,7 +249,7 @@ function SummaryCard({ course, session }: Readonly<{ course: Course; session: Cl
 
 /** Notes: privacy banner, Add Note, then the list or the empty state. */
 function NotesTab({ session }: Readonly<{ session: ClassSession }>) {
-  // The clock: a class is open for notes from its start, for today and two days after (D108).
+  // The clock: a class is open for notes from its start until one hour after its end (D123).
   const now = useNow()
   const open = isOpenForNotes(session, now)
   return (
@@ -269,9 +270,9 @@ function NotesTab({ session }: Readonly<{ session: ClassSession }>) {
               Add Note
             </Button>
             <p className="text-sm text-muted-foreground">
-              {hasClassStarted(session, now)
-                ? 'Notes are open during the class and for two days after.'
-                : 'Notes open when the class starts.'}
+              {noteWindowState(session, now) === 'not_started'
+                ? 'Notes open when the class starts.'
+                : 'Notes closed one hour after the class ended.'}
             </p>
           </>
         )}
@@ -297,8 +298,8 @@ function ClassNotes({ classId }: Readonly<{ classId: string }>) {
   if (notes.data.length === 0) {
     return (
       <EmptyState icon={NotebookPen} title="No notes yet">
-        Start taking notes for this class. Your notes will be private and used to help generate
-        summaries.
+        Start taking notes for this class. Classmates never see them, and they help generate the
+        summary.
       </EmptyState>
     )
   }

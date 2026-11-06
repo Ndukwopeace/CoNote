@@ -227,7 +227,7 @@ describe.skipIf(!CONFIGURED)('Supabase course services', () => {
         code: 'MTH 202',
         teacher: { fullName: 'Sarah Mbarga' },
         studentCount: 2,
-        classCount: 2,
+        classCount: 3,
         inSession: false,
       })
     })

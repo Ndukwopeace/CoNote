@@ -65,7 +65,12 @@ insert into public.class_sessions (id, course_id, number, title, starts_at, ends
   ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 2, 'Matrices', now() - interval '2 days', now() - interval '2 days' + interval '1 hour'),
   ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000002', 1, 'Software Requirements', now() - interval '5 days', now() - interval '5 days' + interval '1 hour'),
   -- A class of a course the demo student is not in, for the tests that prove it stays hidden.
-  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003', 1, 'Motion', now() + interval '3 days', now() + interval '3 days' + interval '1 hour');
+  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003', 1, 'Motion', now() + interval '3 days', now() + interval '3 days' + interval '1 hour'),
+  -- Two classes that are on now, one in each course the demo student is in. Notes are written only
+  -- from a class's start until an hour after its end (D123), so the tests that write notes use
+  -- these. They run for four hours, which outlasts any test run that starts from this seed.
+  ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', 3, 'Eigenvalues', now() - interval '30 minutes', now() + interval '4 hours'),
+  ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000002', 2, 'Use Cases', now() - interval '30 minutes', now() + interval '4 hours');
 
 -- Notes by the demo student.
 insert into public.notes (student_id, course_id, class_id, title, content_html, tags) values

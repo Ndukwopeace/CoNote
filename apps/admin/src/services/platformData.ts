@@ -221,10 +221,26 @@ export interface InvitedCourseRecord {
   courseId: string
 }
 
+/**
+ * A note a student wrote about a class (`notes`). An administrator reads these only through the
+ * note reading service, with the author's name, and every use is recorded (D123).
+ */
+export interface NoteRecord {
+  id: string
+  classId: string
+  studentId: string
+  title: string | null
+  contentHtml: string
+  // ISO 8601 time.
+  createdAt: string
+}
+
 /** Everything the dashboard services read. */
 export interface PlatformData {
   users: UserRecord[]
   enrollments: EnrollmentRecord[]
+  // Students' notes about classes (D123).
+  notes: NoteRecord[]
   // Students' requests to join courses.
   enrollmentRequests: EnrollmentRequestRecord[]
   // Programmes, the courses they hold and the students in them (D105).
@@ -253,6 +269,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
   return {
     users: [],
     enrollments: [],
+    notes: [],
     enrollmentRequests: [],
     programmes: [],
     programmeCourses: [],

@@ -25,6 +25,9 @@ export const NAV_ROUTES = [TEACHER_ROUTES.courses, TEACHER_ROUTES.reviews] as co
 export const routeTo = {
   // One course, with its classes.
   course: (courseId: string) => `${TEACHER_ROUTES.courses}/${encodeURIComponent(courseId)}`,
+  // The notes students wrote for one class, with their authors (D123).
+  classNotes: (courseId: string, classId: string) =>
+    `${TEACHER_ROUTES.courses}/${encodeURIComponent(courseId)}/classes/${encodeURIComponent(classId)}/notes`,
   // One summary, opened for review.
   review: (summaryId: string) => `${TEACHER_ROUTES.reviews}/${encodeURIComponent(summaryId)}`,
   // Sign-in, remembering where to go afterwards (checked by isSafeRedirect before use).

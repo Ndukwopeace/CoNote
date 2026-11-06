@@ -19,8 +19,9 @@ const SECTIONS: LegalSection[] = [
     title: 'How your notes are used',
     body: (
       <p>
-        Your notes are private to you. CoNote AI reads them, together with your classmates&apos;
-        notes, only to draft that class&apos;s summary. A teacher reviews every draft before it is
+        Other students never see your notes. Your teachers, and the administrators of your school,
+        can read them with your name. CoNote AI reads them, together with your classmates&apos;
+        notes, to draft that class&apos;s summary. A teacher reviews every draft before it is
         published.
       </p>
     ),

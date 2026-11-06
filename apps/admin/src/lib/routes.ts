@@ -20,6 +20,8 @@ export const ADMIN_ROUTES = {
   importTimetable: '/admin/programmes/import',
   // Class sessions.
   classes: '/admin/classes',
+  // Students' notes, searched by course, class and student (D123).
+  notes: '/admin/notes',
   // Files and links attached to courses and classes.
   resources: '/admin/resources',
   // Monitoring of AI jobs and the summary pipeline (never approval).
@@ -39,6 +41,7 @@ export const NAV_ROUTES = [
   ADMIN_ROUTES.courses,
   ADMIN_ROUTES.programmes,
   ADMIN_ROUTES.classes,
+  ADMIN_ROUTES.notes,
   ADMIN_ROUTES.resources,
   ADMIN_ROUTES.aiSummaries,
   ADMIN_ROUTES.analytics,

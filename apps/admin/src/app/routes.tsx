@@ -76,6 +76,10 @@ const consolePages: RouteObject[] = [
     }),
   },
   {
+    path: ADMIN_ROUTES.notes,
+    lazy: async () => ({ Component: (await import('@/pages/notes/NotesPage')).NotesPage }),
+  },
+  {
     path: ADMIN_ROUTES.resources,
     lazy: async () => ({
       Component: (await import('@/pages/resources/ResourcesPage')).ResourcesPage,

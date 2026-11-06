@@ -38,6 +38,12 @@ const portalPages: RouteObject[] = [
     }),
   },
   {
+    path: `${TEACHER_ROUTES.courses}/:courseId/classes/:classId/notes`,
+    lazy: async () => ({
+      Component: (await import('@/pages/courses/ClassNotesPage')).ClassNotesPage,
+    }),
+  },
+  {
     path: TEACHER_ROUTES.reviews,
     lazy: async () => ({
       Component: (await import('@/pages/reviews/ReviewQueuePage')).ReviewQueuePage,

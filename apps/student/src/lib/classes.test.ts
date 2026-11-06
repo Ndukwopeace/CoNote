@@ -15,7 +15,6 @@ import {
   defaultNoteClass,
   getClassStatus,
   groupClassesByDay,
-  hasClassStarted,
   isOpenForNotes,
   classesByDay,
   classesToChoose,
@@ -139,16 +138,18 @@ describe('defaultNoteClass', () => {
     expect(defaultNoteClass(sessions, now)?.id).toBe('now')
   })
 
-  // Proves a student writing up after class gets the one that just ended, not a future one.
-  it('picks the latest class that has started today, once it is over', () => {
+  // Proves a student writing up just after class gets the one that ended within the hour, not a
+  // future one (D123).
+  it('picks the class that ended within the last hour, not an older one', () => {
     const sessions = [at(0, 6, 7, 'older'), at(0, 8, 9, 'just-ended'), at(1, 9, 11, 'tomorrow')]
     expect(defaultNoteClass(sessions, now)?.id).toBe('just-ended')
+    expect(defaultNoteClass([at(0, 6, 7, 'older')], now)).toBeUndefined()
   })
 
-  // Proves a class from the last two days can still be guessed, and an older one is not (D108).
-  it('picks nothing when the latest class is older than two days', () => {
-    expect(defaultNoteClass([at(-2, 9, 11, 'two-days-ago')], now)?.id).toBe('two-days-ago')
-    expect(defaultNoteClass([at(-3, 15, 17, 'three-days-ago')], now)).toBeUndefined()
+  // Proves a class from days ago is never guessed: its notes window has closed (D123).
+  it('picks nothing when the latest class ended more than an hour ago', () => {
+    expect(defaultNoteClass([at(-2, 9, 11, 'two-days-ago')], now)).toBeUndefined()
+    expect(defaultNoteClass([at(0, 7, 8, 'three-hours-ago')], now)).toBeUndefined()
   })
 
   // Proves nothing is picked when no class has started, or there are none.
@@ -158,38 +159,21 @@ describe('defaultNoteClass', () => {
   })
 })
 
-describe('hasClassStarted', () => {
-  // Proves a class can be written about from the minute it starts, and not a second before.
-  it('is true from the start time on and false before it', () => {
-    const session = at(0, 10, 11)
-    expect(hasClassStarted(session, new Date(2026, 8, 28, 9, 59, 59))).toBe(false)
-    expect(hasClassStarted(session, now)).toBe(true)
-    expect(hasClassStarted(session, new Date(2026, 8, 28, 12, 0))).toBe(true)
-  })
-})
-
 describe('isOpenForNotes', () => {
-  // Proves a class is open from its start time on, for today and the two days before (D108).
-  it('is true for a class that has started today or in the last two days', () => {
+  // Proves a class is open from its start, through the class, and for one hour after it (D123).
+  it('is true from the start until one hour after the end', () => {
     expect(isOpenForNotes(at(0, 10, 11), now)).toBe(true)
+    expect(isOpenForNotes(at(0, 9, 11), now)).toBe(true)
     expect(isOpenForNotes(at(0, 8, 9), now)).toBe(true)
-    expect(isOpenForNotes(at(-1, 9, 11), now)).toBe(true)
-    expect(isOpenForNotes(at(-2, 0, 1), now)).toBe(true)
+    expect(isOpenForNotes(at(0, 8, 9), new Date(2026, 8, 28, 10, 0, 1))).toBe(false)
   })
 
-  // Proves a class that has not started, or is older than two days, is not open.
-  it('is false before the start and after the window', () => {
+  // Proves a class that has not started, or ended more than an hour ago, is not open.
+  it('is false before the start and once the hour has passed', () => {
     expect(isOpenForNotes(at(0, 10, 11), new Date(2026, 8, 28, 9, 59))).toBe(false)
     expect(isOpenForNotes(at(1, 9, 11), now)).toBe(false)
-    expect(isOpenForNotes(at(-3, 23, 24), now)).toBe(false)
-  })
-
-  // Proves the days are local ones: a class at 23:30 two days ago is still open at 23:45, and
-  // not five minutes into the next day.
-  it('uses local calendar days', () => {
-    const lateClass = at(-2, 23, 24, 'late')
-    expect(isOpenForNotes(lateClass, new Date(2026, 8, 28, 23, 45))).toBe(true)
-    expect(isOpenForNotes(lateClass, new Date(2026, 8, 29, 0, 5))).toBe(false)
+    expect(isOpenForNotes(at(-1, 9, 11), now)).toBe(false)
+    expect(isOpenForNotes(at(0, 6, 8), now)).toBe(false)
   })
 })
 

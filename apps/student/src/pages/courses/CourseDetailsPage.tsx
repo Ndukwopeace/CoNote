@@ -293,7 +293,7 @@ function NotesTab({ courseId }: Readonly<{ courseId: string }>) {
   if (notes.data.length === 0) {
     return (
       <EmptyState icon={NotebookPen} title="No notes yet">
-        Open a class to start taking notes. Your notes are private.
+        Open a class to start taking notes. Classmates never see them.
       </EmptyState>
     )
   }

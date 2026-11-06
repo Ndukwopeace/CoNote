@@ -67,17 +67,47 @@ export interface SummaryRecord {
   studentCount: number
 }
 
+/** A student's place in a course (`enrollments`). */
+export interface EnrollmentRecord {
+  courseId: string
+  studentId: string
+}
+
+/**
+ * A note a student wrote about a class (`notes`). The teacher reads these only through the note
+ * reading service, for the courses they teach, with the author's name (D123).
+ */
+export interface NoteRecord {
+  id: string
+  classId: string
+  studentId: string
+  title: string | null
+  contentHtml: string
+  // ISO 8601 time.
+  createdAt: string
+}
+
 /** Everything the teacher services read. */
 export interface PlatformData {
   users: UserRecord[]
   courses: CourseRecord[]
   classes: ClassRecord[]
   summaries: SummaryRecord[]
+  enrollments: EnrollmentRecord[]
+  notes: NoteRecord[]
 }
 
 /** An empty platform, for tests to fill with only what they need. */
 export function emptyPlatformData(overrides: Partial<PlatformData> = {}): PlatformData {
-  return { users: [], courses: [], classes: [], summaries: [], ...overrides }
+  return {
+    users: [],
+    courses: [],
+    classes: [],
+    summaries: [],
+    enrollments: [],
+    notes: [],
+    ...overrides,
+  }
 }
 
 /** A user with sensible defaults, for tests to override only what they check. */

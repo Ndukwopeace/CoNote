@@ -212,7 +212,7 @@ describe('Settings: Privacy', () => {
     const { user } = renderTab('privacy')
 
     // Assert: the explanation.
-    expect(await screen.findByText(/Only you can read your notes/)).toBeInTheDocument()
+    expect(await screen.findByText(/Other students can’t read your notes/)).toBeInTheDocument()
 
     // Act.
     await user.click(screen.getByRole('button', { name: 'Download my notes' }))

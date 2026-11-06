@@ -33,6 +33,8 @@ export const queryKeys = {
     detail: (classId: string) => [...queryKeys.classes.all, 'detail', classId] as const,
     // The filter and form choices.
     filterOptions: () => [...queryKeys.classes.all, 'filter-options'] as const,
+    // Every class of one course, for choosing one (D123).
+    ofCourse: (courseId: string) => [...queryKeys.classes.all, 'of-course', courseId] as const,
   },
   programmes: {
     // Every programme query; cleared after any change to a programme or an import.

@@ -9,6 +9,7 @@
     "./pages/login": "./src/pages/LoginPage.tsx",
     "./pages/forgot-password": "./src/pages/ForgotPasswordPage.tsx",
     "./pages/reset-password": "./src/pages/ResetPasswordPage.tsx",
+    "./notes": "./src/notes/NotesExplorer.tsx",
     "./testing": "./src/testing.ts",
     "./supabase-auth": "./src/supabase/staffAuthService.ts"
   },

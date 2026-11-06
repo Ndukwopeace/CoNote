@@ -5,10 +5,11 @@
  */
 
 // The bottom sheet.
+import { noteWindowState } from '@conote/core/noteWindow'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@conote/ui/sheet'
 
 // Status and dates.
-import { classesByDay, getClassStatus, hasClassStarted } from '@/lib/classes'
+import { classesByDay, getClassStatus, isOpenForNotes } from '@/lib/classes'
 import { formatClassTime } from '@/lib/dates'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
@@ -29,13 +30,18 @@ interface ClassSheetProps {
   now: Date
 }
 
-/** What a row says under the class: when it opens, "On now", or its time (the heading has the day). */
-function waitingOrWhen(session: ClassSession, now: Date, waiting: boolean) {
+/** What a row says under the class: when it opens, "On now", "Closed", or its time (the heading has the day). */
+function waitingOrWhen(session: ClassSession, now: Date) {
+  // Where the class is in its note window (D123).
+  const state = noteWindowState(session, now)
   // Still to come today: when it begins, and that it opens then.
-  if (waiting) return `Opens at ${formatClassTime(session.startsAt, session.endsAt)}`
+  if (state === 'not_started')
+    return `Opens at ${formatClassTime(session.startsAt, session.endsAt)}`
+  // Over for more than an hour: its notes are closed.
+  if (state === 'closed') return `Closed · ${formatClassTime(session.startsAt, session.endsAt)}`
   // On now.
   if (getClassStatus(session, now) === 'live') return 'On now'
-  // Over: its time.
+  // Ended within the hour: still open, so its time.
   return formatClassTime(session.startsAt, session.endsAt)
 }
 
@@ -58,7 +64,7 @@ export function ClassSheet({
         <SheetDescription>
           {chosenId
             ? 'Change it only if you are writing about another class.'
-            : 'Choose the class your notes are for. A class opens when it starts.'}
+            : 'Choose the class your notes are for. You can write from the start of a class until one hour after it ends.'}
         </SheetDescription>
         {/* No class in the last three days: say so, rather than show an empty list. */}
         {days.length === 0 && (
@@ -78,8 +84,9 @@ export function ClassSheet({
                   // The class's course, for its code.
                   const course = courses.find((c) => c.id === session.courseId)
                   const chosen = session.id === chosenId
-                  // A class that has not started cannot be chosen yet (D108).
-                  const waiting = !hasClassStarted(session, now)
+                  // A class that has not started, or whose notes window has closed, cannot be chosen
+                  // (D108, D123).
+                  const waiting = !isOpenForNotes(session, now)
                   return (
                     <li key={session.id}>
                       <button
@@ -103,7 +110,7 @@ export function ClassSheet({
                           </span>
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {waitingOrWhen(session, now, waiting)}
+                          {waitingOrWhen(session, now)}
                         </span>
                       </button>
                     </li>

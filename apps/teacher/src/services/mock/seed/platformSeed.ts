@@ -13,6 +13,8 @@ import type { SummaryDraft } from '@/types/review'
 import type {
   ClassRecord,
   CourseRecord,
+  EnrollmentRecord,
+  NoteRecord,
   PlatformData,
   SummaryRecord,
   UserRecord,
@@ -50,6 +52,45 @@ function buildUsers(): UserRecord[] {
     },
   ]
 }
+
+/** The demo's students, who are enrolled in every course. Some write more notes than others. */
+const STUDENTS = [
+  ['demo-student-1', 'Ada Okafor', 'U2026/0101'],
+  ['demo-student-2', 'Bola Adeyemi', 'U2026/0102'],
+  ['demo-student-3', 'Chidi Eze', 'U2026/0103'],
+  ['demo-student-4', 'Dayo Bello', 'U2026/0104'],
+  ['demo-student-5', 'Efua Mensah', 'U2026/0105'],
+  ['demo-student-6', 'Femi Lawal', 'U2026/0106'],
+  ['demo-student-7', 'Gift Nwosu', 'U2026/0107'],
+  ['demo-student-8', 'Hauwa Musa', 'U2026/0108'],
+  ['demo-student-9', 'Ife Balogun', 'U2026/0109'],
+  ['demo-student-10', 'Jide Coker', 'U2026/0110'],
+  ['demo-student-11', 'Kemi Adeleke', 'U2026/0111'],
+  ['demo-student-12', 'Lola Fashola', 'U2026/0112'],
+  ['demo-student-13', 'Musa Danjuma', 'U2026/0113'],
+  ['demo-student-14', 'Ngozi Obi', 'U2026/0114'],
+] as const
+
+/** The students as platform users. */
+function buildStudents(): UserRecord[] {
+  return STUDENTS.map(([id, fullName]) => ({
+    id,
+    role: 'student',
+    status: 'active',
+    fullName,
+    email: `${id}@conote.example`,
+  }))
+}
+
+/** Sentences the demo notes are made from, so the notes read like a student's own. */
+const NOTE_LINES = [
+  'The main definition, and one worked example from the board.',
+  'I did not follow the second step. Ask about it next time.',
+  'Short version: check the conditions first, then apply it.',
+  'Homework: try the three problems at the end of the sheet.',
+  'The lecturer stressed that this comes up in the test.',
+  'Compare this with last week. The idea is the same, the setting is new.',
+] as const
 
 /** The courses: the demo teacher's three (one archived), and one belonging to another teacher. */
 function buildCourses(now: Date): CourseRecord[] {
@@ -157,10 +198,11 @@ function draftFor(classId: string, topic: string): SummaryDraft {
   }
 }
 
-/** The classes and summaries in `CLASS_PLAN`, dated from `now`. */
+/** The classes, summaries and notes in `CLASS_PLAN`, dated from `now`. */
 function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
   const classes: ClassRecord[] = []
   const summaries: SummaryRecord[] = []
+  const notes: NoteRecord[] = []
   for (const [courseId, number, offsetDays, stage] of CLASS_PLAN) {
     // The course, for its title and archive state.
     const course = courses.find((candidate) => candidate.id === courseId)
@@ -170,6 +212,21 @@ function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
     const id = `${courseId}-${String(number)}`
     // Classes still to come have no notes; others a steady, varied count.
     const noteCount = offsetDays > 0 ? 0 : 12 + ((number * 5) % 11)
+    // How many students wrote them: always leaving two who wrote nothing, so "Not written yet"
+    // has someone in it.
+    const writers = Math.min(STUDENTS.length - 2, Math.max(1, noteCount - 3))
+    // The class's notes, spread over its writers, written from ten minutes in.
+    for (let index = 0; index < noteCount; index += 1) {
+      const author = STUDENTS[index % writers]
+      notes.push({
+        id: `note-${id}-${String(index + 1)}`,
+        classId: id,
+        studentId: author?.[0] ?? '',
+        title: index % 3 === 0 ? `Week ${String(number)} notes` : null,
+        contentHtml: `<p>${TOPICS[courseId]?.[number - 1] ?? 'The class'}: ${NOTE_LINES[index % NOTE_LINES.length] ?? ''}</p>`,
+        createdAt: new Date(start.getTime() + (10 + index * 3) * 60_000).toISOString(),
+      })
+    }
     // Only summaries the AI has drafted have text.
     const drafted = stage === 'in_review' || stage === 'published'
     const published = stage === 'published'
@@ -198,15 +255,24 @@ function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
       draft: drafted ? draftFor(id, TOPICS[courseId]?.[number - 1] ?? 'The class') : emptyDraft(),
       version: 1,
       notesAnalyzedCount: drafted ? noteCount : 0,
-      studentCount: drafted ? Math.max(1, noteCount - 3) : 0,
+      studentCount: drafted ? writers : 0,
     })
   }
-  return { classes, summaries }
+  return { classes, summaries, notes }
 }
 
 /** The demo platform as it looks at `now`. */
 export function createPlatformSeed(now: Date): PlatformData {
   // Courses first: classes read their titles and archive state.
   const courses = buildCourses(now)
-  return { users: buildUsers(), courses, ...buildClassesAndSummaries(now, courses) }
+  // Every student is in every course.
+  const enrollments: EnrollmentRecord[] = courses.flatMap((course) =>
+    STUDENTS.map(([studentId]) => ({ courseId: course.id, studentId })),
+  )
+  return {
+    users: [...buildUsers(), ...buildStudents()],
+    courses,
+    enrollments,
+    ...buildClassesAndSummaries(now, courses),
+  }
 }

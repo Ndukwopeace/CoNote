@@ -107,7 +107,7 @@ describe('LandingPage', () => {
 
     // Assert.
     const about = screen.getByRole('region', { name: 'About CoNote' })
-    expect(about).toHaveTextContent(/private/i)
+    expect(about).toHaveTextContent(/never see your notes/i)
     expect(about).toHaveTextContent(/teacher/i)
   })
 
