@@ -106,6 +106,124 @@ describe('analytics', () => {
   })
 })
 
+describe('analytics report', () => {
+  /** One row as `admin_analytics` returns it. */
+  const REPORT_ROW = {
+    students: 30,
+    teachers: 4,
+    new_users: 5,
+    active_7: 20,
+    active_30: 26,
+    inactive: 8,
+    courses: 6,
+    classes: 12,
+    notes_created: 200,
+    summaries_generated: 9,
+    summaries_published: 7,
+    drafts_waiting: 2,
+    ai_jobs_total: 11,
+    ai_jobs_succeeded: 9,
+    ai_jobs_failed: 1,
+    ai_avg_seconds: 62.5,
+    students_who_wrote: 18,
+    students_expected: 24,
+  }
+  const PERIOD = { from: '2026-10-01T00:00:00.000Z', to: '2026-10-09T00:00:00.000Z' }
+
+  // Proves the period and the clock are sent, and the row is renamed for the screen.
+  it('reads the report for a period', async () => {
+    const { client, queries } = tables(() => ({ data: [REPORT_ROW], error: null }))
+    const service = createSupabaseAnalyticsService({ client, now: () => NOW })
+
+    const report = await service.getReport(PERIOD)
+
+    expect(report.users).toEqual({
+      students: 30,
+      teachers: 4,
+      newUsers: 5,
+      active7: 20,
+      active30: 26,
+      inactive: 8,
+    })
+    expect(report.academic.notesCreated).toBe(200)
+    expect(report.ai).toEqual({ total: 11, succeeded: 9, failed: 1, averageSeconds: 62.5 })
+    expect(report.participation).toEqual({ studentsWhoWrote: 18, studentsExpected: 24 })
+    expect(
+      made(queries[0]!, 'rpc', {
+        p_from: PERIOD.from,
+        p_to: PERIOD.to,
+        p_now: NOW.toISOString(),
+      }),
+    ).toBe(true)
+  })
+
+  // Proves "no job succeeded" stays empty instead of becoming zero seconds.
+  it('keeps a missing average empty', async () => {
+    const { client } = tables(() => ({
+      data: [{ ...REPORT_ROW, ai_avg_seconds: null }],
+      error: null,
+    }))
+
+    const report = await createSupabaseAnalyticsService({ client }).getReport(PERIOD)
+
+    expect(report.ai.averageSeconds).toBeNull()
+  })
+
+  // Proves a missing or malformed row is refused, and a refusal reaches the screen as forbidden.
+  it('refuses a bad report and reports a refused read', async () => {
+    const none = createSupabaseAnalyticsService({
+      client: tables(() => ({ data: [], error: null })).client,
+    })
+    await expect(none.getReport(PERIOD)).rejects.toMatchObject({ kind: 'unknown' })
+    const bad = createSupabaseAnalyticsService({
+      client: tables(() => ({ data: [{ students: 'many' }], error: null })).client,
+    })
+    await expect(bad.getReport(PERIOD)).rejects.toMatchObject({ kind: 'unknown' })
+    const refused = createSupabaseAnalyticsService({
+      client: tables(() => ({ data: null, error: { code: '42501', message: 'raw' } })).client,
+    })
+    await expect(refused.getReport(PERIOD)).rejects.toMatchObject({ kind: 'forbidden' })
+    await expect(refused.getParticipation(PERIOD)).rejects.toMatchObject({ kind: 'forbidden' })
+  })
+
+  // Proves the class rows are renamed and no name or note text is part of them.
+  it('reads the class table', async () => {
+    const { client, queries } = tables(() => ({
+      data: [
+        {
+          class_id: 'k1',
+          class_number: 3,
+          class_title: 'Eigenvalues',
+          starts_at: '2026-10-05T09:00:00Z',
+          course_id: 'c1',
+          course_code: 'MTH 202',
+          notes: 14,
+          writers: 9,
+          enrolled: 20,
+        },
+      ],
+      error: null,
+    }))
+
+    const rows = await createSupabaseAnalyticsService({ client }).getParticipation(PERIOD)
+
+    expect(rows).toEqual([
+      {
+        classId: 'k1',
+        classNumber: 3,
+        classTitle: 'Eigenvalues',
+        startsAt: '2026-10-05T09:00:00Z',
+        courseId: 'c1',
+        courseCode: 'MTH 202',
+        notes: 14,
+        writers: 9,
+        enrolled: 20,
+      },
+    ])
+    expect(made(queries[0]!, 'rpc', { p_from: PERIOD.from, p_to: PERIOD.to })).toBe(true)
+  })
+})
+
 describe('alerts', () => {
   /** A service over the rows the database function returns. */
   function over(rows: unknown) {
