@@ -39,6 +39,8 @@ import type {
   ProgrammeMember,
   ProgrammeRequestItem,
 } from '@/types/programmes'
+// Analytics shapes.
+import type { AnalyticsPeriod, AnalyticsReport, ClassParticipation } from '@/types/analytics'
 // Dashboard shapes.
 import type {
   ActivityPoint,
@@ -58,12 +60,19 @@ import type {
   UserPage,
 } from '@/types/users'
 
-/** Platform figures. A9 adds the Analytics page's statistics. */
+/** Platform figures: the dashboard's counts and chart, and the Analytics page (D124). */
 export interface AnalyticsService {
   /** The six counts on the dashboard's stat cards. */
   getOverview(): Promise<PlatformOverview>
   /** One count per day for the last `range` days, oldest first, ending today. */
   getActivitySeries(range: ActivityRange, series: ActivitySeriesKey): Promise<ActivityPoint[]>
+  /** The Analytics page's figures for a period. Counts only. */
+  getReport(period: AnalyticsPeriod): Promise<AnalyticsReport>
+  /**
+   * One row per class that starts inside the period, newest first (at most 500): how many notes it
+   * has, how many different students wrote them and how many are enrolled. Counts only.
+   */
+  getParticipation(period: AnalyticsPeriod): Promise<ClassParticipation[]>
 }
 
 /** Problems worth an administrator's attention, computed from the platform's records. */

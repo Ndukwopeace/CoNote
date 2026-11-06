@@ -4,6 +4,7 @@
  */
 
 // Types used in keys.
+import type { AnalyticsPeriod } from '@/types/analytics'
 import type { ClassFilter } from '@/types/classes'
 import type { CourseFilter } from '@/types/courses'
 import type { ActivityRange, ActivitySeriesKey } from '@/types/dashboard'
@@ -23,6 +24,15 @@ export const queryKeys = {
     alerts: () => [...queryKeys.dashboard.all, 'alerts'] as const,
     // The health report.
     health: () => [...queryKeys.dashboard.all, 'health'] as const,
+  },
+  analytics: {
+    // Every Analytics page query.
+    all: ['analytics'] as const,
+    // The figures for one period; each period caches apart.
+    report: (period: AnalyticsPeriod) => [...queryKeys.analytics.all, 'report', period] as const,
+    // The class table for one period.
+    participation: (period: AnalyticsPeriod) =>
+      [...queryKeys.analytics.all, 'participation', period] as const,
   },
   classes: {
     // Every class query; cleared after any change to a class.

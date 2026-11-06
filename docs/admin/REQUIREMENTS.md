@@ -563,6 +563,8 @@ There is no approve, publish or edit-draft action anywhere in the admin portal.
 
 ## 16. Analytics
 
+**Built (D124):** the page shows a chosen period (7, 30 or 90 days), who wrote notes class by class, and the figures below. A "this term" period and the summaries-viewed figure are not built.
+
 Every figure comes from a real table or `activity_events`. There is no invented score such as an "AI quality score" or "teacher quality score".
 
 - **Users:** students, teachers, active users (signed in within 7 or 30 days), new users, inactive accounts.

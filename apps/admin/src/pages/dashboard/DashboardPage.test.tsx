@@ -212,7 +212,12 @@ describe('DashboardPage', () => {
   it('shows errors for the counts and the chart', async () => {
     // Act.
     renderDashboard(smallPlatform(), {
-      analytics: { getOverview: fail, getActivitySeries: fail },
+      analytics: {
+        getOverview: fail,
+        getActivitySeries: fail,
+        getReport: fail,
+        getParticipation: fail,
+      },
     })
 
     // Assert.
