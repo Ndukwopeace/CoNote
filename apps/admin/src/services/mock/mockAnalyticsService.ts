@@ -38,6 +38,11 @@ const DAY_MS = 86_400_000
 /** The most classes the participation table holds, as in the database. */
 const MAX_CLASSES = 500
 
+/** Whether the ISO time `at` is inside `period` (start included, end not). */
+function within(at: string | null, period: AnalyticsPeriod): boolean {
+  return at !== null && at >= period.from && at < period.to
+}
+
 /** Builds the demo AnalyticsService over `data`. */
 export function createMockAnalyticsService({
   data,
@@ -59,11 +64,6 @@ export function createMockAnalyticsService({
     // Everything else: the matching activity events.
     const kind = EVENT_SERIES[series]
     return data.activity.flatMap((event) => (event.kind === kind ? [event.at] : []))
-  }
-
-  /** Whether the ISO time `at` is inside `period` (start included, end not). */
-  function within(at: string | null, period: AnalyticsPeriod): boolean {
-    return at !== null && at >= period.from && at < period.to
   }
 
   /** The classes that start inside `period` and are not archived, newest first. */
