@@ -43,6 +43,37 @@ function tagName(inside: string): string {
   return inside.slice(start, end).toLowerCase()
 }
 
+/** What `readPiece` found: the words up to a tag, the tag's inside text (null when none), and where to go on. */
+interface Piece {
+  words: string
+  tag: string | null
+  next: number
+}
+
+/** The next run of words from `position`, and the tag that follows it, if there is a whole one. */
+function readPiece(html: string, position: number): Piece {
+  const open = html.indexOf('<', position)
+  const close = open === -1 ? -1 : html.indexOf('>', open)
+  // No tag, or a "<" that never closes, is ordinary text to the end.
+  if (close === -1) return { words: html.slice(position), tag: null, next: html.length }
+  return { words: html.slice(position, open), tag: html.slice(open + 1, close), next: close + 1 }
+}
+
+/**
+ * What one tag does: whether a script or style block is now being skipped (its name, or '' when
+ * not), and the text to add (a line break, or nothing).
+ */
+function applyTag(inside: string, skipping: string): { skipping: string; text: string } {
+  const name = tagName(inside)
+  const closing = inside.startsWith('/')
+  // Inside a script or style: only its own end tag ends the skip, and nothing is added.
+  if (skipping !== '') return { skipping: closing && name === skipping ? '' : skipping, text: '' }
+  // A script or style opens: skip it with everything inside.
+  if (REMOVED_WITH_CONTENT.has(name) && !closing) return { skipping: name, text: '' }
+  // A break, or the end of a paragraph-like tag, starts a new line.
+  return { skipping: '', text: name === 'br' || (closing && LINE_BREAKING.has(name)) ? '\n' : '' }
+}
+
 /** `html` with its tags removed and its line breaks kept, before spaces are tidied. */
 function stripTags(html: string): string {
   let text = ''
@@ -50,29 +81,14 @@ function stripTags(html: string): string {
   let skipping = ''
   let position = 0
   while (position < html.length) {
-    const open = html.indexOf('<', position)
-    // The words before the next tag, or to the end.
-    const words = html.slice(position, open === -1 ? html.length : open)
-    if (skipping === '') text += words
-    if (open === -1) break
-    const close = html.indexOf('>', open)
-    // A "<" that never closes is ordinary text, not a tag.
-    if (close === -1) {
-      if (skipping === '') text += html.slice(open)
-      break
+    const piece = readPiece(html, position)
+    if (skipping === '') text += piece.words
+    if (piece.tag !== null) {
+      const step = applyTag(piece.tag, skipping)
+      skipping = step.skipping
+      text += step.text
     }
-    const inside = html.slice(open + 1, close)
-    const name = tagName(inside)
-    const closing = inside.startsWith('/')
-    if (skipping !== '') {
-      // Inside a script or style: only its own end tag ends the skip.
-      if (closing && name === skipping) skipping = ''
-    } else if (REMOVED_WITH_CONTENT.has(name) && !closing) {
-      skipping = name
-    } else if (name === 'br' || (closing && LINE_BREAKING.has(name))) {
-      text += '\n'
-    }
-    position = close + 1
+    position = piece.next
   }
   return text
 }

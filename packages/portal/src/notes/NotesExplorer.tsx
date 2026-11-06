@@ -190,10 +190,10 @@ export function NotesExplorer({
 
       {/* The notes: loading, failed, empty, or the page. */}
       {notes.isPending && (
-        <div role="status" aria-label="Loading notes" className="space-y-2">
+        <output aria-label="Loading notes" className="block space-y-2">
           <Skeleton className="h-16" />
           <Skeleton className="h-16" />
-        </div>
+        </output>
       )}
       {notes.isError && <ErrorState thing="notes" onRetry={() => void notes.refetch()} />}
       {notes.data && total === 0 && (

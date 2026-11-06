@@ -198,6 +198,25 @@ function draftFor(classId: string, topic: string): SummaryDraft {
   }
 }
 
+/** One class's notes: `noteCount` of them, spread over its first `writers` students, written from ten minutes in. */
+function buildClassNotes(
+  classId: string,
+  topic: string,
+  number: number,
+  start: Date,
+  noteCount: number,
+  writers: number,
+): NoteRecord[] {
+  return Array.from({ length: noteCount }, (_unused, index) => ({
+    id: `note-${classId}-${String(index + 1)}`,
+    classId,
+    studentId: STUDENTS[index % writers]?.[0] ?? '',
+    title: index % 3 === 0 ? `Week ${String(number)} notes` : null,
+    contentHtml: `<p>${topic}: ${NOTE_LINES[index % NOTE_LINES.length] ?? ''}</p>`,
+    createdAt: new Date(start.getTime() + (10 + index * 3) * 60_000).toISOString(),
+  }))
+}
+
 /** The classes, summaries and notes in `CLASS_PLAN`, dated from `now`. */
 function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
   const classes: ClassRecord[] = []
@@ -215,18 +234,17 @@ function buildClassesAndSummaries(now: Date, courses: CourseRecord[]) {
     // How many students wrote them: always leaving two who wrote nothing, so "Not written yet"
     // has someone in it.
     const writers = Math.min(STUDENTS.length - 2, Math.max(1, noteCount - 3))
-    // The class's notes, spread over its writers, written from ten minutes in.
-    for (let index = 0; index < noteCount; index += 1) {
-      const author = STUDENTS[index % writers]
-      notes.push({
-        id: `note-${id}-${String(index + 1)}`,
-        classId: id,
-        studentId: author?.[0] ?? '',
-        title: index % 3 === 0 ? `Week ${String(number)} notes` : null,
-        contentHtml: `<p>${TOPICS[courseId]?.[number - 1] ?? 'The class'}: ${NOTE_LINES[index % NOTE_LINES.length] ?? ''}</p>`,
-        createdAt: new Date(start.getTime() + (10 + index * 3) * 60_000).toISOString(),
-      })
-    }
+    // The class's notes, spread over its writers.
+    notes.push(
+      ...buildClassNotes(
+        id,
+        TOPICS[courseId]?.[number - 1] ?? 'The class',
+        number,
+        start,
+        noteCount,
+        writers,
+      ),
+    )
     // Only summaries the AI has drafted have text.
     const drafted = stage === 'in_review' || stage === 'published'
     const published = stage === 'published'

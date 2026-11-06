@@ -79,8 +79,8 @@ export function runNoteReadingContract(
 
       expect(exact.total).toBeGreaterThan(0)
       expect(exact.notes.every((entry) => entry.studentId === fixture.studentId)).toBe(true)
-      expect(byText.notes.map((entry) => entry.id).sort()).toEqual(
-        exact.notes.map((entry) => entry.id).sort(),
+      expect(byText.notes.map((entry) => entry.id).sort((a, b) => a.localeCompare(b))).toEqual(
+        exact.notes.map((entry) => entry.id).sort((a, b) => a.localeCompare(b)),
       )
     })
 
