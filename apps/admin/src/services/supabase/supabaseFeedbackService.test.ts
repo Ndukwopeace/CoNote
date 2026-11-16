@@ -72,6 +72,24 @@ describe('listFeedback', () => {
     ).toBe(true)
   })
 
+  // Proves a page past the end still reports the real total: the function returns no rows there,
+  // so the service asks for the first page to read it.
+  it('reads the total from the first page when the page asked for is past the end', async () => {
+    const { client, queries } = createFakeTables((query) =>
+      made(query, 'rpc', { p_status: null, p_kind: null, p_limit: 20, p_offset: 0 })
+        ? { data: [row({ total_count: 4 })], error: null }
+        : { data: [], error: null },
+    )
+
+    const page = await createSupabaseAdminFeedbackService({ client }).listFeedback({
+      offset: 100,
+    })
+
+    expect(page.items).toHaveLength(0)
+    expect(page.total).toBe(4)
+    expect(queries).toHaveLength(2)
+  })
+
   // Proves a refusal reaches the screen as forbidden, and a row of the wrong shape is refused.
   it('reports a refusal and refuses a malformed row', async () => {
     const refused = createFakeTables(() => ({

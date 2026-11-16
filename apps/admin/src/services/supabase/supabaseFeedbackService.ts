@@ -48,17 +48,25 @@ export function createSupabaseAdminFeedbackService({
     send: (input) => sender.send(input),
 
     async listFeedback(filter) {
-      const rows = await readRows(
-        client.rpc('admin_list_feedback', {
-          p_status: filter.status ?? null,
-          p_kind: filter.kind ?? null,
-          p_limit: FEEDBACK_PAGE_SIZE,
-          p_offset: Math.max(filter.offset ?? 0, 0),
-        }),
-        feedbackRow,
-      )
+      /** One page of rows, as the database function returns it. */
+      const read = (offset: number) =>
+        readRows(
+          client.rpc('admin_list_feedback', {
+            p_status: filter.status ?? null,
+            p_kind: filter.kind ?? null,
+            p_limit: FEEDBACK_PAGE_SIZE,
+            p_offset: offset,
+          }),
+          feedbackRow,
+        )
+      const offset = Math.max(filter.offset ?? 0, 0)
+      let rows = await read(offset)
+      // The total rides on the rows, so a page past the end has none to read it from. Ask for the
+      // first page then, so the answer matches the demo's: the real total, and no items.
+      const items = rows
+      if (rows.length === 0 && offset > 0) rows = await read(0)
       return {
-        items: rows.map((row) => ({
+        items: items.map((row) => ({
           id: row.id,
           kind: row.kind,
           message: row.message,
@@ -70,7 +78,7 @@ export function createSupabaseAdminFeedbackService({
           senderEmail: row.sender_email,
           senderRole: row.sender_role,
         })),
-        // The total is the same on every row; no rows means no matches.
+        // The total is the same on every row; no rows at all means no matches.
         total: rows[0]?.total_count ?? 0,
       }
     },
