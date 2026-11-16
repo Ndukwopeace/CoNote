@@ -9,6 +9,8 @@ import { Navigate, type RouteObject } from 'react-router'
 // The shared guards, frame and error screen (packages/portal).
 import { PortalFrame, RedirectIfSignedIn, RequireRole, RouteErrorBoundary } from '@conote/portal'
 
+// The feedback button in the top bar (D125).
+import { FeedbackAction } from '@/layouts/FeedbackAction'
 // The console's sections.
 import { NAV_ITEMS } from '@/layouts/navItems'
 // Route constants.
@@ -78,6 +80,12 @@ const consolePages: RouteObject[] = [
   {
     path: ADMIN_ROUTES.notes,
     lazy: async () => ({ Component: (await import('@/pages/notes/NotesPage')).NotesPage }),
+  },
+  {
+    path: ADMIN_ROUTES.feedback,
+    lazy: async () => ({
+      Component: (await import('@/pages/feedback/FeedbackPage')).FeedbackPage,
+    }),
   },
   {
     path: ADMIN_ROUTES.resources,
@@ -169,6 +177,7 @@ export const routes: RouteObject[] = [
             homePath={ADMIN_ROUTES.dashboard}
             items={NAV_ITEMS}
             settingsPath={ADMIN_ROUTES.settings}
+            topBarExtra={<FeedbackAction />}
           />
         ),
         // A crashed page shows the error screen inside the frame.

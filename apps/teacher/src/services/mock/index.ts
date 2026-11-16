@@ -3,6 +3,7 @@
  */
 
 // Service types.
+import { createDemoFeedbackService } from '@conote/core/feedback'
 import type { Services } from '../types'
 
 // The demo platform's records.
@@ -56,6 +57,8 @@ export function createMockServices(): Services {
     review,
     // The notes of her courses, with their authors (D123).
     notes: createMockNoteReadingService({ data, actorId, latencyMs: DEMO_LATENCY_MS }),
+    // Feedback: checked and acknowledged, kept nowhere (D125).
+    feedback: createDemoFeedbackService(DEMO_LATENCY_MS),
     // A notice for each draft waiting, with what was read kept like server data.
     notifications: createMockNotificationService({
       review,

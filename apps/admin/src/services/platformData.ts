@@ -235,12 +235,30 @@ export interface NoteRecord {
   createdAt: string
 }
 
+/**
+ * A piece of feedback a person sent from any app (`feedback`, D125). The sender's name and email
+ * are read from their account; `userId` is null once the account is deleted.
+ */
+export interface FeedbackRecord {
+  id: string
+  userId: string | null
+  role: Role
+  kind: 'bug' | 'idea' | 'other'
+  message: string
+  rating: number | null
+  page: string | null
+  status: 'new' | 'read'
+  createdAt: string
+}
+
 /** Everything the dashboard services read. */
 export interface PlatformData {
   users: UserRecord[]
   enrollments: EnrollmentRecord[]
   // Students' notes about classes (D123).
   notes: NoteRecord[]
+  // What people sent through the Feedback button (D125).
+  feedback: FeedbackRecord[]
   // Students' requests to join courses.
   enrollmentRequests: EnrollmentRequestRecord[]
   // Programmes, the courses they hold and the students in them (D105).
@@ -270,6 +288,7 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     users: [],
     enrollments: [],
     notes: [],
+    feedback: [],
     enrollmentRequests: [],
     programmes: [],
     programmeCourses: [],

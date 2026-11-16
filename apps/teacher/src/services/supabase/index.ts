@@ -5,6 +5,7 @@
 
 // The client, and the storage that honours "Remember me".
 import { createSupabaseClient } from '@conote/supabase/client'
+import { createSupabaseFeedbackService } from '@conote/supabase/feedback'
 import { createSupabaseNoteReader } from '@conote/supabase/noteReading'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
 // The staff sign-in service, shared with the admin console.
@@ -72,6 +73,8 @@ export function createSupabaseServices({
     review: createSupabaseReviewService({ client }),
     // The notes of the teacher's courses, with their authors, read through audited functions (D123).
     notes: createSupabaseNoteReader({ client }),
+    // Feedback goes to the database, which records who sent it (D125).
+    feedback: createSupabaseFeedbackService({ client }),
     // The notice that a draft is ready, and marking it read.
     notifications: createSupabaseNotificationService({
       client,

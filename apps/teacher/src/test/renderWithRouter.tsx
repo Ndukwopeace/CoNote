@@ -16,6 +16,8 @@ import { RouterProvider } from 'react-router/dom'
 
 // The app's providers.
 import { AppProviders } from '@/app/AppProviders'
+// The demo feedback sender, instant here.
+import { createDemoFeedbackService } from '@conote/core/feedback'
 // The demo services, with no simulated delay.
 import {
   createMockAuthService,
@@ -67,6 +69,8 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
     review,
     // The notes of the teacher's courses, with their authors (D123).
     notes: createMockNoteReadingService({ data: platform, actorId, latencyMs: 0 }),
+    // Feedback, instant.
+    feedback: createDemoFeedbackService(0),
     // A notice for each draft waiting, as in the app.
     notifications: createMockNotificationService({
       review,

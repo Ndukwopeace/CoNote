@@ -28,6 +28,8 @@ export const ADMIN_ROUTES = {
   aiSummaries: '/admin/ai-summaries',
   // Measured platform activity.
   analytics: '/admin/analytics',
+  // What people sent through the Feedback button (D125).
+  feedback: '/admin/feedback',
   // Recorded platform actions.
   auditLogs: '/admin/audit-logs',
   // Platform configuration.
@@ -45,6 +47,7 @@ export const NAV_ROUTES = [
   ADMIN_ROUTES.resources,
   ADMIN_ROUTES.aiSummaries,
   ADMIN_ROUTES.analytics,
+  ADMIN_ROUTES.feedback,
   ADMIN_ROUTES.auditLogs,
   ADMIN_ROUTES.settings,
 ] as const

@@ -11,6 +11,7 @@ import {
   FolderOpen,
   GraduationCap,
   LayoutDashboard,
+  MessageSquareText,
   NotebookPen,
   ScrollText,
   Settings,
@@ -40,6 +41,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Resources', to: ADMIN_ROUTES.resources, icon: FolderOpen },
   { label: 'AI & Summaries', to: ADMIN_ROUTES.aiSummaries, icon: Sparkles },
   { label: 'Analytics', to: ADMIN_ROUTES.analytics, icon: BarChart3 },
+  { label: 'Feedback', to: ADMIN_ROUTES.feedback, icon: MessageSquareText },
   { label: 'Audit Logs', to: ADMIN_ROUTES.auditLogs, icon: ScrollText },
   { label: 'Settings', to: ADMIN_ROUTES.settings, icon: Settings },
 ]

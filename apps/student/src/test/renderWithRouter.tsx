@@ -16,6 +16,8 @@ import { RouterProvider } from 'react-router/dom'
 
 // The same providers the real app uses.
 import { AppProviders } from '@/app/AppProviders'
+// The demo feedback sender, instant here.
+import { createDemoFeedbackService } from '@conote/core/feedback'
 // Storage key builder, to pre-seed a session.
 import { storageKey } from '@/lib/storage'
 // The demo auth service, used here as the test fake.
@@ -70,6 +72,8 @@ export function createTestServices(overrides: Partial<Services> = {}): Services 
   return {
     // Demo sign-in.
     auth,
+    // Feedback, instant.
+    feedback: createDemoFeedbackService(0),
     // The profile, instant.
     profile: createMockProfileService({ auth, store: window.localStorage, latencyMs: 0 }),
     // Asking to join courses, instant.

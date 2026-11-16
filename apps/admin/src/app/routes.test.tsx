@@ -35,6 +35,7 @@ describe('admin routes', () => {
     ['/admin/resources', 'Resources'],
     ['/admin/ai-summaries', 'AI & Summaries'],
     ['/admin/analytics', 'Analytics'],
+    ['/admin/feedback', 'Feedback'],
     ['/admin/audit-logs', 'Audit Logs'],
     ['/admin/settings', 'Settings'],
   ])('opens %s', async (path, heading) => {
@@ -95,6 +96,7 @@ describe('admin layout', () => {
       'Resources',
       'AI & Summaries',
       'Analytics',
+      'Feedback',
       'Audit Logs',
       'Settings',
     ])

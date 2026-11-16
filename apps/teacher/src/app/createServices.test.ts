@@ -27,6 +27,7 @@ describe('createServices', () => {
     // Every service exists.
     expect(Object.keys(services).sort()).toEqual([
       'auth',
+      'feedback',
       'notes',
       'notifications',
       'review',

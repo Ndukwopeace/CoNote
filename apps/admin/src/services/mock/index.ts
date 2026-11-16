@@ -14,6 +14,7 @@ import { createMockAuthService, readStoredSession } from './mockAuthService'
 import { createMockClassService } from './mockClassService'
 import { createMockCourseService } from './mockCourseService'
 import { createMockHealthService } from './mockHealthService'
+import { createMockFeedbackService } from './mockFeedbackService'
 import { createMockNoteReadingService } from './mockNoteReadingService'
 import { createMockProgrammeService } from './mockProgrammeService'
 import { createMockUserService } from './mockUserService'
@@ -74,6 +75,16 @@ export function createMockServices(): Services {
     }),
     // Programmes and the timetable import, changed as the signed-in administrator and saved.
     programmes: createMockProgrammeService({
+      data,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: DEMO_LATENCY_MS,
+      onChange: () => {
+        savePlatform(window.localStorage, data)
+      },
+    }),
+    // Feedback people sent, and the console's own, saved after every change (D125).
+    feedback: createMockFeedbackService({
       data,
       now,
       actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
