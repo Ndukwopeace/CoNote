@@ -12,6 +12,7 @@ import type { PasswordResetRequest, Session, SignInCodeRequest, SignInInput } fr
 // Review shapes.
 import type { ReviewDetails, ReviewQueueItem, SummaryDraft } from '@/types/review'
 // Course shapes.
+import type { FeedbackService } from '@conote/core/feedback'
 import type { CourseDetails, TeacherCourse } from '@/types/teaching'
 
 /** Signing in and out, and the current session. Same contract as the admin app's. */
@@ -120,6 +121,8 @@ export interface Services {
   auth: AuthService
   teaching: TeachingService
   review: ReviewService
+  // Feedback to the people who run CoNote (D125).
+  feedback: FeedbackService
   notifications: NotificationService
   // The notes of the courses the teacher teaches, with their authors (D123).
   notes: NoteReadingService

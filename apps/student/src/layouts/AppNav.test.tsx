@@ -57,6 +57,16 @@ describe('AppNav', () => {
     expect(names).toEqual(['Home', 'Summaries2 new', 'All notes', 'Courses', 'Classes', 'Settings'])
   })
 
+  // Proves the navigation offers feedback on every page, and the button opens the shared form.
+  it('opens the feedback form from the navigation', async () => {
+    const { user } = renderWithRouter({ routes, path: '/courses', session: makeSession() })
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+
+    await user.click(within(nav).getByRole('button', { name: 'Feedback' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Send feedback' })).toBeVisible()
+  })
+
   // Proves the page the student is on is marked, for sight and for screen readers.
   it('marks the current page', async () => {
     renderWithRouter({ routes, path: '/courses', session: makeSession() })

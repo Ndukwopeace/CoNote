@@ -195,6 +195,7 @@ The teacher portal may add `summary_versions` and `summary_reviews` for draft hi
 | `/admin/ai-summaries` | AI & Summaries |
 | `/admin/ai-summaries/:summaryId` | Summary pipeline details (status, jobs, timeline; no draft text) |
 | `/admin/analytics` | Analytics |
+| `/admin/feedback` | Feedback people sent from any app (D125) |
 | `/admin/audit-logs` | Audit logs |
 | `/admin/settings` | Settings, with sections in `?section=` |
 | `/admin/notifications` | Admin notifications |
@@ -209,7 +210,7 @@ There is no sign-up route.
 
 ## 8. Layout and navigation
 
-- **Sidebar:** Dashboard, Users, Courses, Classes, Resources, AI & Summaries, Analytics, Audit Logs, Settings.
+- **Sidebar:** Dashboard, Users, Courses, Classes, Resources, AI & Summaries, Analytics, Feedback (D125), Audit Logs, Settings.
 - **Top bar:** search, a notifications bell with unread count, and the avatar menu (profile, sign out).
 - **Desktop:** a persistent sidebar.
 - **Tablet:** a sidebar that collapses to icons.

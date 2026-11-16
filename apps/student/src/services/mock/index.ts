@@ -18,6 +18,9 @@ import { createMockProfileService, resetDemoData } from './mockProfileService'
 // The demo data, built relative to the current time.
 import { createSeed } from './seed'
 
+// The demo feedback sender.
+import { createDemoFeedbackService } from '@conote/core/feedback'
+
 // A short delay on every demo call so loading states are visible, as they will be with a server.
 const DEMO_LATENCY_MS = 300
 
@@ -59,6 +62,8 @@ export function createMockServices(): Services {
     }),
     // Prepared answers after a short delay (FR-AI-6).
     ai: createMockAiService(),
+    // Feedback: checked and acknowledged, kept nowhere (D125).
+    feedback: createDemoFeedbackService(DEMO_LATENCY_MS),
     // The profile, kept in the browser per student.
     profile: createMockProfileService({
       auth,

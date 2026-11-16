@@ -3,6 +3,8 @@
  * implementation. More services join the registry as the milestones that need them land.
  */
 
+// Sending feedback (D125).
+import type { FeedbackService } from '@conote/core/feedback'
 // What a student submits for a note.
 import type { NoteInput } from '@/lib/notes'
 // The course, class, note, summary and notification shapes.
@@ -252,6 +254,8 @@ export interface Services {
   ai: AiService
   // The student's profile.
   profile: ProfileService
+  // Feedback to the people who run CoNote (D125).
+  feedback: FeedbackService
   // Demo-only actions; absent outside mock mode.
   demo?: DemoService
 }

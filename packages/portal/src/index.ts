@@ -45,3 +45,5 @@ export { RouteErrorBoundary } from './components/RouteErrorBoundary'
 export { createErrorMessage, errorMessage } from './lib/errorMessages'
 // The query cache.
 export { createQueryClient } from './lib/queryClient'
+// The top-bar feedback button (D125).
+export { FeedbackButton } from './components/FeedbackButton'

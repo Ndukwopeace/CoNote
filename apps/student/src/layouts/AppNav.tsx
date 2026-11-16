@@ -5,9 +5,9 @@
  */
 
 // Icons for the theme switch and sign-out.
-import { LogOut, Moon, Sun } from 'lucide-react'
+import { LogOut, MessageSquarePlus, Moon, Sun } from 'lucide-react'
 // Type for what a page puts in the navigation.
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 // Client-side links, and the current address (to mark the current page).
 import { Link, useLocation } from 'react-router'
 
@@ -15,6 +15,8 @@ import { Link, useLocation } from 'react-router'
 import { Logo } from '@conote/ui/common/Logo'
 // Class-name helper.
 import { cn } from '@conote/ui/utils'
+// The feedback form (D125).
+import { StudentFeedbackDialog } from '@/features/feedback/StudentFeedbackDialog'
 // Sign-in state: signing out.
 import { useAuth } from '@/features/auth/useAuth'
 // The light/dark choice.
@@ -81,6 +83,8 @@ export function AppNav({ newSummaries, onDone, children }: Readonly<AppNavProps>
   const { signOut } = useAuth()
   // The theme in use, and the switch.
   const { theme, toggle } = useTheme()
+  // Whether the feedback form is showing. The form opens over the drawer, so the drawer stays put.
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   // Where the student is now.
   const { pathname, search } = useLocation()
   // The switch names the theme it will turn on, not the one in use.
@@ -132,6 +136,17 @@ export function AppNav({ newSummaries, onDone, children }: Readonly<AppNavProps>
           <SwitchIcon aria-hidden="true" className="size-4" />
           {other} mode
         </button>
+        {/* Feedback opens the shared form, on Home as on every other page (D125). */}
+        <button
+          type="button"
+          onClick={() => {
+            setFeedbackOpen(true)
+          }}
+          className={cn(NAV_ROW, 'justify-start gap-2 text-muted-foreground')}
+        >
+          <MessageSquarePlus aria-hidden="true" className="size-4" />
+          Feedback
+        </button>
         {/* No navigation here: the route guard sends the student to the landing page. */}
         <button
           type="button"
@@ -142,6 +157,7 @@ export function AppNav({ newSummaries, onDone, children }: Readonly<AppNavProps>
           Sign out
         </button>
       </div>
+      <StudentFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </nav>
   )
 }

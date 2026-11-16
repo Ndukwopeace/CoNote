@@ -5,6 +5,7 @@
 
 // The client, and the storage that honours "Remember me".
 import { createSupabaseClient } from '@conote/supabase/client'
+import { createSupabaseFeedbackService } from '@conote/supabase/feedback'
 import { createRememberStorage } from '@conote/supabase/rememberStorage'
 
 // Builds "conote:"-prefixed storage keys.
@@ -69,6 +70,8 @@ export function createSupabaseServices({
     // Notes and published summaries.
     notes: createSupabaseNoteService({ client }),
     summaries: createSupabaseSummaryService({ client }),
+    // Feedback goes to the database, which records who sent it (D125).
+    feedback: createSupabaseFeedbackService({ client }),
     // Notifications, and the student's profile (a new name reaches the navigation at once).
     notifications: createSupabaseNotificationService({ client, origin: window.location.origin }),
     profile: createSupabaseProfileService({

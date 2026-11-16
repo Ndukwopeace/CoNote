@@ -6,6 +6,7 @@
 // Types used in keys.
 import type { AnalyticsPeriod } from '@/types/analytics'
 import type { ClassFilter } from '@/types/classes'
+import type { FeedbackFilter } from '@/types/feedback'
 import type { CourseFilter } from '@/types/courses'
 import type { ActivityRange, ActivitySeriesKey } from '@/types/dashboard'
 import type { UserFilter } from '@/types/users'
@@ -24,6 +25,12 @@ export const queryKeys = {
     alerts: () => [...queryKeys.dashboard.all, 'alerts'] as const,
     // The health report.
     health: () => [...queryKeys.dashboard.all, 'health'] as const,
+  },
+  feedback: {
+    // Every feedback query; cleared after a status change.
+    all: ['feedback'] as const,
+    // One filtered page.
+    list: (filter: FeedbackFilter) => [...queryKeys.feedback.all, 'list', filter] as const,
   },
   analytics: {
     // Every Analytics page query.

@@ -52,6 +52,11 @@ const DATABASE_CODES: Readonly<Record<string, Mapped>> = {
   PGRST116: { kind: 'not_found', message: 'We could not find that.' },
   // Our functions raise P0002 for "not found".
   P0002: { kind: 'not_found', message: 'We could not find that.' },
+  // program_limit_exceeded: our functions raise it when someone has sent too much feedback today.
+  '54000': {
+    kind: 'validation',
+    message: 'You have sent a lot of feedback today. Try again tomorrow.',
+  },
   // unique_violation, and serialization_failure (our "stale version" signal).
   '23505': {
     kind: 'conflict',

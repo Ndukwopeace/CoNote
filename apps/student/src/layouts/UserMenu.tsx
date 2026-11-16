@@ -4,7 +4,7 @@
  */
 
 // Icons for the menu items.
-import { Download, LogOut, Settings, UserRound } from 'lucide-react'
+import { Download, LogOut, MessageSquarePlus, Settings, UserRound } from 'lucide-react'
 // Open state for the iOS install steps.
 import { useState } from 'react'
 // Internal links.
@@ -21,6 +21,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@conote/ui/dropdown-menu'
+// The feedback form (D125).
+import { StudentFeedbackDialog } from '@/features/feedback/StudentFeedbackDialog'
 // Sign-out action.
 import { useAuth } from '@/features/auth/useAuth'
 // Which install option the browser supports, and the prompt action (FR-PWA-6).
@@ -40,6 +42,8 @@ export function UserMenu({ fullName, email }: Readonly<{ fullName: string; email
   const { option: installOption, install } = useInstallOption()
   // Whether the iOS steps are showing.
   const [iosStepsOpen, setIosStepsOpen] = useState(false)
+  // Whether the feedback form is showing.
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   return (
     // A fragment: the iOS dialog sits beside the menu, so closing the menu doesn't close it.
@@ -76,6 +80,15 @@ export function UserMenu({ fullName, email }: Readonly<{ fullName: string; email
               Settings
             </Link>
           </DropdownMenuItem>
+          {/* Feedback: opens the form beside the menu, so closing the menu keeps it open (D125). */}
+          <DropdownMenuItem
+            onSelect={() => {
+              setFeedbackOpen(true)
+            }}
+          >
+            <MessageSquarePlus aria-hidden="true" />
+            Feedback
+          </DropdownMenuItem>
           {/* Install app, only where the browser can install it (FR-PWA-6). */}
           {installOption !== 'hidden' && (
             <DropdownMenuItem
@@ -99,6 +112,8 @@ export function UserMenu({ fullName, email }: Readonly<{ fullName: string; email
       </DropdownMenu>
       {/* The iOS steps, opened from the menu item above. */}
       <IosInstallDialog open={iosStepsOpen} onOpenChange={setIosStepsOpen} />
+      {/* The feedback form, opened from the menu item above. */}
+      <StudentFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </>
   )
 }

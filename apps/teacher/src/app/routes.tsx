@@ -12,6 +12,8 @@ import { PortalFrame, RedirectIfSignedIn, RequireRole, RouteErrorBoundary } from
 
 // The bell in the top bar.
 import { NotificationBell } from '@/features/notifications/NotificationBell'
+// The feedback button in the top bar (D125).
+import { FeedbackAction } from '@/layouts/FeedbackAction'
 // The portal's sections.
 import { NAV_ITEMS } from '@/layouts/navItems'
 // Route constants.
@@ -106,7 +108,12 @@ export const routes: RouteObject[] = [
             name="Teacher"
             homePath={TEACHER_ROUTES.courses}
             items={NAV_ITEMS}
-            topBarExtra={<NotificationBell />}
+            topBarExtra={
+              <>
+                <FeedbackAction />
+                <NotificationBell />
+              </>
+            }
           />
         ),
         // A crashed page shows the error screen inside the frame.

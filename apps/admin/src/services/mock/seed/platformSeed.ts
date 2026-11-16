@@ -23,6 +23,7 @@ import type {
   PlatformData,
   ResourceRecord,
   SummaryRecord,
+  FeedbackRecord,
   UserRecord,
 } from '@/services/platformData'
 
@@ -622,6 +623,51 @@ function buildActivity(clock: SeedClock, random: () => number): ActivityEvent[] 
 }
 
 /** Builds the demo platform for the clock `now`. */
+/**
+ * A few pieces of feedback, from the first students and the first teacher of the demo, so the
+ * Feedback page has something to show before anyone sends any (D125).
+ */
+function buildFeedback(users: UserRecord[], clock: SeedClock): FeedbackRecord[] {
+  // Who sends: the first two students and the first teacher.
+  const students = users.filter((user) => user.role === 'student')
+  const teacher = users.find((user) => user.role === 'teacher')
+  return [
+    {
+      id: 'feedback-1',
+      userId: students[0]?.id ?? null,
+      role: 'student',
+      kind: 'idea',
+      message: 'Could the notes screen have a dark theme at night?',
+      rating: 4,
+      page: '/dashboard',
+      status: 'new',
+      createdAt: clock.ago(3 * HOUR),
+    },
+    {
+      id: 'feedback-2',
+      userId: students[1]?.id ?? null,
+      role: 'student',
+      kind: 'bug',
+      message: 'I wrote a note after class and it would not save.',
+      rating: 2,
+      page: '/dashboard',
+      status: 'new',
+      createdAt: clock.ago(2 * DAY),
+    },
+    {
+      id: 'feedback-3',
+      userId: teacher?.id ?? null,
+      role: 'teacher',
+      kind: 'other',
+      message: 'The review queue is clear. Thank you for the fix.',
+      rating: 5,
+      page: '/teacher/review',
+      status: 'read',
+      createdAt: clock.ago(5 * DAY),
+    },
+  ]
+}
+
 export function createPlatformSeed(now: Date): PlatformData {
   // The same numbers every time.
   const random = sequence(20_261_008)
@@ -645,6 +691,7 @@ export function createPlatformSeed(now: Date): PlatformData {
     users,
     enrollments,
     notes: buildNotes(classes, enrollments),
+    feedback: buildFeedback(users, clock),
     enrollmentRequests: buildEnrollmentRequests(users, enrollments, clock),
     // Two programmes over the demo courses (D105). Nobody has joined one in this demo: students
     // join in the student app, which is a separate demo.

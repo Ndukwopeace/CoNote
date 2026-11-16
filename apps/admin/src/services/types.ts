@@ -39,6 +39,8 @@ import type {
   ProgrammeMember,
   ProgrammeRequestItem,
 } from '@/types/programmes'
+// Feedback shapes.
+import type { AdminFeedbackService } from '@/types/feedback'
 // Analytics shapes.
 import type { AnalyticsPeriod, AnalyticsReport, ClassParticipation } from '@/types/analytics'
 // Dashboard shapes.
@@ -243,4 +245,6 @@ export interface Services {
   programmes: ProgrammeService
   // The notes of any course, with their authors (D123).
   notes: NoteReadingService
+  // Feedback people sent, and the one the console sends itself (D125).
+  feedback: AdminFeedbackService
 }

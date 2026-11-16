@@ -27,6 +27,7 @@ import {
 import { createMockClassService } from '@/services/mock/mockClassService'
 import { createMockCourseService } from '@/services/mock/mockCourseService'
 import { createMockHealthService } from '@/services/mock/mockHealthService'
+import { createMockFeedbackService } from '@/services/mock/mockFeedbackService'
 import { createMockNoteReadingService } from '@/services/mock/mockNoteReadingService'
 import { createMockProgrammeService } from '@/services/mock/mockProgrammeService'
 import { createMockUserService } from '@/services/mock/mockUserService'
@@ -76,6 +77,12 @@ export function createTestServices(platform: PlatformData = emptyPlatformData())
       latencyMs: 0,
     }),
     programmes: createMockProgrammeService({
+      data: platform,
+      now,
+      actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: 0,
+    }),
+    feedback: createMockFeedbackService({
       data: platform,
       now,
       actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,

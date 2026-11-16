@@ -66,6 +66,7 @@ describe('fromSupabaseError', () => {
     ['40001', 'conflict'],
     ['23514', 'validation'],
     ['22023', 'validation'],
+    ['54000', 'validation'],
     ['P0002', 'not_found'],
     ['23503', 'validation'],
   ] as const)('maps the database code %s to %s', (code, kind) => {
