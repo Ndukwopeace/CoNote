@@ -45,6 +45,18 @@ function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+/** "Ada · ada@x.example · student · /dashboard · 10 Nov 2026, 09:00": who, from where, and when. */
+function senderLine(item: FeedbackItem): string {
+  // The name, or a note that the account is gone, then the email when there is one.
+  const parts = [item.senderName ?? 'Deleted account']
+  if (item.senderEmail) parts.push(item.senderEmail)
+  // The role, the page when recorded, and the time.
+  parts.push(item.senderRole)
+  if (item.page !== null) parts.push(item.page)
+  parts.push(formatWhen(item.createdAt))
+  return parts.join(' · ')
+}
+
 /** One piece of feedback: who, when, what, and the way to mark it read. */
 function FeedbackCard({ item }: Readonly<{ item: FeedbackItem }>) {
   // Marking it read or new.
@@ -67,11 +79,7 @@ function FeedbackCard({ item }: Readonly<{ item: FeedbackItem }>) {
       {/* The message, as plain text. Long unbroken words wrap instead of running off the screen. */}
       <p className="text-sm [overflow-wrap:anywhere] whitespace-pre-wrap">{item.message}</p>
       {/* Who sent it, from where, and when. */}
-      <p className="text-xs text-muted-foreground">
-        {`${item.senderName ?? 'Deleted account'}${item.senderEmail ? ` · ${item.senderEmail}` : ''} · ${item.senderRole}`}
-        {item.page !== null && ` · ${item.page}`}
-        {` · ${formatWhen(item.createdAt)}`}
-      </p>
+      <p className="text-xs text-muted-foreground">{senderLine(item)}</p>
       {/* Mark it read, or new again. */}
       <Button
         type="button"

@@ -80,9 +80,9 @@ function FeedbackForm<K extends string>({
     try {
       await onSend({ kind, message, rating })
       setSent(true)
-    } catch (caught) {
+    } catch (error_) {
       // The services' messages are written for people; anything else gets a plain line.
-      setError(caught instanceof Error ? caught.message : 'We could not send that. Try again.')
+      setError(error_ instanceof Error ? error_.message : 'We could not send that. Try again.')
     } finally {
       setSending(false)
     }
