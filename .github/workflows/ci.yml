@@ -75,7 +75,7 @@ jobs:
       # Code quality and the coverage report above, sent to SonarCloud (sonar-project.properties).
       - name: SonarCloud scan
         if: steps.sonar.outputs.enabled == 'true'
-        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         env:
           # SECURITY: the token only lets CI upload analysis results. It is passed to this one
           # step, not the whole job, so no npm script or other tool can read it.
@@ -99,7 +99,7 @@ jobs:
       # SECURITY: pinned to an exact commit like every other action.
       - name: Cache Playwright browser
         id: playwright-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
