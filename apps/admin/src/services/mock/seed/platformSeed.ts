@@ -711,7 +711,8 @@ function buildForms(
 ): { forms: FormRecord[]; formResponses: FormResponseRecord[] } {
   const form: FormRecord = {
     id: 'form-assessment',
-    token: 'f0e1d2c3b4a5968778695a4b3c2d1e0f',
+    // A readable demo link, not a real secret: the demo has no public site to protect.
+    token: 'demo-lecturer-assessment-link',
     title: 'Lecturer assessment',
     description:
       'Rate one course at a time. Your answers are anonymous. To rate another course, choose "Submit another response" after you send this one.',
