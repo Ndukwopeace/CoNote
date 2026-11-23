@@ -60,6 +60,10 @@ export const queryKeys = {
     // The signed-in student's profile.
     me: () => [...queryKeys.profile.all, 'me'] as const,
   },
+  forms: {
+    // The public form behind one link (D126).
+    byToken: (token: string) => ['forms', token] as const,
+  },
   notifications: {
     // Every notification query.
     all: ['notifications'] as const,

@@ -31,6 +31,7 @@ describe('NAV_ROUTES', () => {
       ADMIN_ROUTES.resources,
       ADMIN_ROUTES.aiSummaries,
       ADMIN_ROUTES.analytics,
+      ADMIN_ROUTES.forms,
       ADMIN_ROUTES.feedback,
       ADMIN_ROUTES.auditLogs,
       ADMIN_ROUTES.settings,

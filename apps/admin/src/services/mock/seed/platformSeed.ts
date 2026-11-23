@@ -24,6 +24,8 @@ import type {
   ResourceRecord,
   SummaryRecord,
   FeedbackRecord,
+  FormRecord,
+  FormResponseRecord,
   UserRecord,
 } from '@/services/platformData'
 
@@ -95,6 +97,17 @@ const COURSES: readonly (readonly [string, string, string | null])[] = [
   ['PHY 101', 'General Physics', 'teacher-6'],
   ['CSC 301', 'Operating Systems', null],
 ]
+
+/** The lecturers each demo course's timetable names. CSC 301 has one who is not on the platform. */
+const LECTURERS: Readonly<Record<string, string[]>> = {
+  'SWE 311': ['Dr. Smith'],
+  'ENG 201': ['Mrs. Adeyemi'],
+  'CSE 205': ['Dr. Bello', 'Mr. Eze'],
+  'BUS 207': ['Mr. Okoro'],
+  'MTH 202': ['Dr. Obi'],
+  'PHY 101': ['Prof. Okafor'],
+  'CSC 301': ['Dr. Hassan'],
+}
 
 /** The student portal's demo teachers (apps/student/src/services/mock/seed), by ID and name. */
 const STUDENT_PORTAL_TEACHERS = [
@@ -412,6 +425,8 @@ function courseFor(
     description,
     department,
     teacherId,
+    // What the timetable names, which may be someone with no account (D126).
+    lecturers: LECTURERS[code] ?? [],
     ...extra,
   }
 }
@@ -668,6 +683,120 @@ function buildFeedback(users: UserRecord[], clock: SeedClock): FeedbackRecord[] 
   ]
 }
 
+/** The question IDs of the demo assessment, so the answers can refer to them. */
+const ASSESSMENT = {
+  lecturer: 'q-assessment-lecturer',
+  clear: 'q-assessment-clear',
+  prepared: 'q-assessment-prepared',
+  respect: 'q-assessment-respect',
+  time: 'q-assessment-time',
+  comment: 'q-assessment-comment',
+} as const
+
+/** A few real-sounding comments, used now and then in the demo answers. */
+const ASSESSMENT_COMMENTS = [
+  'Very clear examples.',
+  'Could slow down in the last half hour.',
+  'Always ready to answer questions after class.',
+  'More practice problems would help.',
+] as const
+
+/**
+ * One demo lecturer assessment, open, with answers for every lecturer the demo timetable names, so the
+ * Forms pages have results to show (D126). The numbers follow a fixed pattern, not a random one.
+ */
+function buildForms(
+  courses: CourseRecord[],
+  clock: SeedClock,
+): { forms: FormRecord[]; formResponses: FormResponseRecord[] } {
+  const form: FormRecord = {
+    id: 'form-assessment',
+    // A readable demo link, not a real secret: the demo has no public site to protect.
+    token: 'demo-lecturer-assessment-link',
+    title: 'Lecturer assessment',
+    description:
+      'Rate one course at a time. Your answers are anonymous. To rate another course, choose "Submit another response" after you send this one.',
+    accepting: true,
+    opensAt: null,
+    closesAt: null,
+    createdAt: clock.ago(6 * DAY),
+    questions: [
+      {
+        id: ASSESSMENT.lecturer,
+        kind: 'lecturer',
+        prompt: 'Course and lecturer',
+        required: true,
+        options: [],
+      },
+      {
+        id: ASSESSMENT.clear,
+        kind: 'rating',
+        prompt: 'Explains the material clearly',
+        required: true,
+        options: [],
+      },
+      {
+        id: ASSESSMENT.prepared,
+        kind: 'rating',
+        prompt: 'Is prepared for classes',
+        required: true,
+        options: [],
+      },
+      {
+        id: ASSESSMENT.respect,
+        kind: 'rating',
+        prompt: 'Treats students with respect',
+        required: true,
+        options: [],
+      },
+      {
+        id: ASSESSMENT.time,
+        kind: 'choice',
+        prompt: 'Starts and ends on time',
+        required: false,
+        options: ['Always', 'Usually', 'Rarely'],
+      },
+      {
+        id: ASSESSMENT.comment,
+        kind: 'paragraph',
+        prompt: 'What could improve?',
+        required: false,
+        options: [],
+      },
+    ],
+  }
+  const formResponses: FormResponseRecord[] = []
+  // Courses in use, in code order, each lecturer the timetable names.
+  const named = courses
+    .filter((course) => course.archivedAt === null)
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .flatMap((course) => course.lecturers.map((lecturer) => ({ course, lecturer })))
+  named.forEach(({ course, lecturer }, group) => {
+    // Between 6 and 13 answers for each, newest first in time.
+    const count = 6 + ((group * 5) % 8)
+    for (let n = 0; n < count; n += 1) {
+      const ratings = (offset: number) => 3 + ((n + group + offset) % 3)
+      formResponses.push({
+        id: `response-${String(group)}-${String(n)}`,
+        formId: form.id,
+        createdAt: clock.ago((n * 7 + group + 1) * HOUR),
+        courseCode: course.code,
+        lecturer,
+        answers: {
+          [ASSESSMENT.clear]: ratings(0),
+          [ASSESSMENT.prepared]: ratings(1),
+          [ASSESSMENT.respect]: Math.min(5, ratings(2) + 1),
+          [ASSESSMENT.time]: ['Always', 'Usually', 'Rarely'][(n + group) % 3] ?? 'Always',
+          ...(n % 3 === 0
+            ? { [ASSESSMENT.comment]: ASSESSMENT_COMMENTS[(n + group) % 4] ?? '' }
+            : {}),
+        },
+      })
+    }
+  })
+  return { forms: [form], formResponses }
+}
+
 export function createPlatformSeed(now: Date): PlatformData {
   // The same numbers every time.
   const random = sequence(20_261_008)
@@ -692,6 +821,7 @@ export function createPlatformSeed(now: Date): PlatformData {
     enrollments,
     notes: buildNotes(classes, enrollments),
     feedback: buildFeedback(users, clock),
+    ...buildForms(courses, clock),
     enrollmentRequests: buildEnrollmentRequests(users, enrollments, clock),
     // Two programmes over the demo courses (D105). Nobody has joined one in this demo: students
     // join in the student app, which is a separate demo.

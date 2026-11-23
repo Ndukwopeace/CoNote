@@ -17,6 +17,8 @@ export interface ImportPayload {
     code: string
     title: string
     teacherId: string | null
+    // The lecturer names the timetable gives, kept as plain text (D126).
+    lecturers?: string[]
     sessions: PlannedSession[]
   }[]
 }
@@ -42,6 +44,7 @@ export function toImportPayload(
       code: course.code,
       title: course.title,
       teacherId: teachers[course.code] ?? null,
+      lecturers: [...course.teacherNames],
       sessions: expandSessions(course.slots, term, course.title),
     })),
   }

@@ -108,6 +108,14 @@ export class Harness extends StackHarness<PlatformData> {
     super(SETTINGS, options)
   }
 
+  /** Sends one answer to a form the way a visitor does, through the public function (D126). */
+  async submitFormAnswer(token: string, answers: Record<string, unknown>) {
+    ok(
+      await this.server.rpc('submit_form_response', { p_token: token, p_answers: answers }),
+      'submit a form answer',
+    )
+  }
+
   /** Makes the stack hold exactly `source`'s accounts, courses and what hangs off them. */
   protected async load(source: PlatformData) {
     const data = withStubs(source)
@@ -119,6 +127,7 @@ export class Harness extends StackHarness<PlatformData> {
       'security_events',
       'delivery_failures',
       'storage_errors',
+      'forms',
     ]) {
       ok(await this.server.from(table).delete().neq('id', nobody), `clear ${table}`)
     }
@@ -174,6 +183,7 @@ export class Harness extends StackHarness<PlatformData> {
           department: course.department,
           status: course.status,
           teacher_id: course.teacherId === null ? null : id(course.teacherId),
+          lecturers: course.lecturers,
           created_at: course.createdAt,
           archived_at: course.archivedAt,
         })),

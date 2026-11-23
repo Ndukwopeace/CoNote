@@ -60,6 +60,24 @@ interface Draft {
   newLinks: { programmeId: string; courseId: string }[]
   // Teachers to fill in on courses that exist and have none.
   teacherFills: Map<string, string>
+  // Lecturer names the timetable gives for courses that exist, which replace what they had (D126).
+  lecturerSets: Map<string, string[]>
+}
+
+/**
+ * The lecturer names a course entry gives, as the database stores them: trimmed, without blanks or
+ * repeats, in order. Refuses more than ten, or a name over 100 characters (D126).
+ */
+function cleanLecturers(names: readonly string[] | undefined): string[] {
+  const given = names ?? []
+  if (given.length > 10) throw new AppError('validation', 'A course has at most ten lecturers.')
+  const clean = [...new Set(given.map((name) => name.trim()).filter((name) => name !== ''))].sort(
+    (a, b) => a.localeCompare(b),
+  )
+  if (clean.some((name) => name.length > 100)) {
+    throw new AppError('validation', 'A lecturer name is too long.')
+  }
+  return clean
 }
 
 /** A course by code: one that exists, or one this import has made. */
@@ -95,8 +113,11 @@ function addCourse(
   options: { timezone: string; nowIso: string },
 ): CourseRecord {
   const existing = courseByCode(data, draft, code)
+  const lecturers = cleanLecturers(entry.lecturers)
   if (existing) {
     draft.outcome.coursesExisting += 1
+    // The timetable is where lecturer names come from; a course it names nobody for keeps its own.
+    if (lecturers.length > 0) draft.lecturerSets.set(existing.id, lecturers)
     // A teacher is filled in only where the course has none.
     if (
       entry.teacherId !== null &&
@@ -118,6 +139,7 @@ function addCourse(
     department: null,
     status: courseStatus(starts, ends, options.nowIso),
     teacherId: entry.teacherId,
+    lecturers,
     createdAt: options.nowIso,
     archivedAt: null,
   }
@@ -223,6 +245,7 @@ function buildDraft(data: PlatformData, payload: ImportPayload, nowIso: string):
     newProgrammes: [],
     newLinks: [],
     teacherFills: new Map(),
+    lecturerSets: new Map(),
   }
   for (const entry of payload.courses) {
     const code = normalizeCourseCode(entry.code)
@@ -440,6 +463,10 @@ export function createMockProgrammeService({
       for (const [courseId, teacherId] of draft.teacherFills) {
         const course = data.courses.find((candidate) => candidate.id === courseId)
         if (course) course.teacherId = teacherId
+      }
+      for (const [courseId, lecturers] of draft.lecturerSets) {
+        const course = data.courses.find((candidate) => candidate.id === courseId)
+        if (course) course.lecturers = lecturers
       }
       data.courses.push(...draft.newCourses)
       data.classes.push(...draft.newClasses)

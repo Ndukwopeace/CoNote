@@ -89,7 +89,13 @@ function ClassTable({ period }: Readonly<{ period: AnalyticsPeriod }>) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card">
+    // A table wider than a phone scrolls sideways, so the box can take the keyboard focus and be scrolled by keys.
+    <section
+      aria-label="Notes by class"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a box that scrolls sideways must take focus, or a keyboard user cannot scroll it (axe: scrollable-region-focusable)
+      tabIndex={0}
+      className="overflow-x-auto rounded-xl border bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+    >
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Notes by class, quietest first</caption>
         <thead className="border-b text-muted-foreground">
@@ -142,7 +148,7 @@ function ClassTable({ period }: Readonly<{ period: AnalyticsPeriod }>) {
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   )
 }
 

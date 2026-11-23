@@ -18,6 +18,8 @@ import { SkipLandingInApp } from '@/features/pwa/SkipLandingInApp'
 import { RequireStudent } from '@/features/auth/RequireStudent'
 // Centred card for sign in and password pages.
 import { AuthLayout } from '@/layouts/AuthLayout'
+// The plain page around a public form (D126).
+import { FormLayout } from '@/layouts/FormLayout'
 // Home's own frame: dark, with its own menu and composer (D103).
 import { HomeLayout } from '@/layouts/HomeLayout'
 // Signed-in shell with navigation.
@@ -176,6 +178,20 @@ export const routes: RouteObject[] = [
             lazy: async () => ({
               Component: (await import('@/pages/auth/ResetPasswordPage')).ResetPasswordPage,
             }),
+          },
+        ],
+      },
+      // A form anyone with the link can answer, with no account and no sign-in (D126). It is not
+      // behind any guard, so a student who is signed in sees it too.
+      {
+        element: <FormLayout />,
+        children: [
+          {
+            path: 'f/:token',
+            lazy: async () => ({
+              Component: (await import('@/pages/forms/PublicFormPage')).PublicFormPage,
+            }),
+            errorElement: <RouteErrorBoundary />,
           },
         ],
       },

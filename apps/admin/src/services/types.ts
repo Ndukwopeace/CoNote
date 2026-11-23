@@ -41,6 +41,8 @@ import type {
 } from '@/types/programmes'
 // Feedback shapes.
 import type { AdminFeedbackService } from '@/types/feedback'
+// Form shapes.
+import type { AdminFormService } from '@/types/forms'
 // Analytics shapes.
 import type { AnalyticsPeriod, AnalyticsReport, ClassParticipation } from '@/types/analytics'
 // Dashboard shapes.
@@ -247,4 +249,6 @@ export interface Services {
   notes: NoteReadingService
   // Feedback people sent, and the one the console sends itself (D125).
   feedback: AdminFeedbackService
+  // Lecturer assessments and other forms, built and read here (D126).
+  forms: AdminFormService
 }

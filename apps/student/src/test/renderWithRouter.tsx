@@ -16,6 +16,8 @@ import { RouterProvider } from 'react-router/dom'
 
 // The same providers the real app uses.
 import { AppProviders } from '@/app/AppProviders'
+// The demo form, instant here.
+import { createMockPublicFormService } from '@/services/mock/mockPublicFormService'
 // The demo feedback sender, instant here.
 import { createDemoFeedbackService } from '@conote/core/feedback'
 // Storage key builder, to pre-seed a session.
@@ -74,6 +76,8 @@ export function createTestServices(overrides: Partial<Services> = {}): Services 
     auth,
     // Feedback, instant.
     feedback: createDemoFeedbackService(0),
+    // The demo form, instant.
+    forms: createMockPublicFormService(0),
     // The profile, instant.
     profile: createMockProfileService({ auth, store: window.localStorage, latencyMs: 0 }),
     // Asking to join courses, instant.

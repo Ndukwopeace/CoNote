@@ -4,6 +4,8 @@
  * will read the same facts from the database tables named on each type. Times are ISO text.
  */
 
+// The form questions.
+import type { FormQuestion } from '@conote/core/forms'
 // The shared vocabulary.
 import type { AccountStatus, AiJobStatus, CourseStatus, Role, SummaryStatus } from '@conote/domain'
 
@@ -80,6 +82,8 @@ export interface CourseRecord {
   status: CourseStatus
   // The one teacher, or null while none is assigned.
   teacherId: string | null
+  // The lecturers its timetable names, as plain text. They need not be accounts on the platform (D126).
+  lecturers: string[]
   createdAt: string
   // When it was archived, or null while it is in use.
   archivedAt: string | null
@@ -251,6 +255,33 @@ export interface FeedbackRecord {
   createdAt: string
 }
 
+/** A form an administrator built (`forms` and `form_questions`, D126). */
+export interface FormRecord {
+  id: string
+  // The secret in the public link.
+  token: string
+  title: string
+  description: string
+  // Whether the form takes answers now, inside its dates.
+  accepting: boolean
+  opensAt: string | null
+  closesAt: string | null
+  createdAt: string
+  questions: FormQuestion[]
+}
+
+/** One answer to a form (`form_responses`). It holds nothing that says who sent it. */
+export interface FormResponseRecord {
+  id: string
+  formId: string
+  createdAt: string
+  // The course and lecturer answered about, as text, or null when the form has no such question.
+  courseCode: string | null
+  lecturer: string | null
+  // The other answers, by question ID.
+  answers: Record<string, string | number>
+}
+
 /** Everything the dashboard services read. */
 export interface PlatformData {
   users: UserRecord[]
@@ -259,6 +290,9 @@ export interface PlatformData {
   notes: NoteRecord[]
   // What people sent through the Feedback button (D125).
   feedback: FeedbackRecord[]
+  // The forms administrators built, and the answers to them (D126).
+  forms: FormRecord[]
+  formResponses: FormResponseRecord[]
   // Students' requests to join courses.
   enrollmentRequests: EnrollmentRequestRecord[]
   // Programmes, the courses they hold and the students in them (D105).
@@ -289,6 +323,8 @@ export function emptyPlatformData(overrides: Partial<PlatformData> = {}): Platfo
     enrollments: [],
     notes: [],
     feedback: [],
+    forms: [],
+    formResponses: [],
     enrollmentRequests: [],
     programmes: [],
     programmeCourses: [],
@@ -340,6 +376,7 @@ export function courseRecord(
     department: null,
     status: 'ongoing',
     teacherId: null,
+    lecturers: [],
     createdAt: '2026-08-15T09:00:00.000Z',
     archivedAt: null,
     ...overrides,

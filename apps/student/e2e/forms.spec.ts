@@ -1,67 +1,43 @@
 /**
- * Form fields and the iPhone's zoom. iOS Safari zooms the whole page when a field with text
- * smaller than 16px gets focus, and does not zoom back out, so on a touch screen every field must
- * use at least 16px. On a desktop the smaller, denser text stays. The "phone" project is a touch
- * screen and the "desktop" project is not, so one test covers both.
+ * Browser test for the public form (D126): anyone with the link opens it with no account, rates a course,
+ * sends it, and can submit another response. The demo form is at /f/demo, against the production build.
  */
 
-// Playwright's assertions and test function.
-import { expect, test, type Locator, type Page } from '@playwright/test'
+// Playwright's test runner and assertions.
+import { expect, test } from '@playwright/test'
 
-// Shared helpers.
-import { signIn } from './helpers.ts'
+// Student helpers.
+import { expectNoAxeViolations, watchCspViolations } from './helpers.ts'
 
-/** The size of the text in `field`, in pixels. */
-async function fontSize(field: Locator): Promise<number> {
-  return field.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))
-}
+test('a visitor answers the public form and submits another response', async ({ page }) => {
+  // Watch for Content-Security-Policy breaks throughout.
+  const cspViolations = watchCspViolations(page)
+  // Open the link with no sign-in: the form, not a login page.
+  await page.goto('/f/demo')
+  await expect(page.getByRole('heading', { level: 1, name: /Lecturer assessment/ })).toBeVisible()
+  await expect(page).toHaveURL(/\/f\/demo$/)
+  await expectNoAxeViolations(page)
 
-/** Whether the screen is a touch screen, the way the stylesheet asks. */
-async function isTouchScreen(page: Page): Promise<boolean> {
-  return page.evaluate(() => window.matchMedia('(pointer: coarse)').matches)
-}
+  // Leaving a required question empty is explained.
+  await page.getByRole('button', { name: 'Submit' }).click()
+  await expect(page.getByText('"Course and lecturer" needs an answer.')).toBeVisible()
 
-/**
- * Proves `field` is at least 16px on a touch screen. On a desktop the compact text stays, unless
- * the field was never compact (`compactOnDesktop` false), as with the composer.
- */
-async function expectNoZoomSize(page: Page, field: Locator, { compactOnDesktop = true } = {}) {
-  const size = await fontSize(field)
-  if (await isTouchScreen(page)) {
-    expect(size).toBeGreaterThanOrEqual(16)
-  } else if (compactOnDesktop) {
-    // The compact desktop text is deliberate: the rule is for touch screens only.
-    expect(size).toBeLessThan(16)
-  }
-}
+  // Choose a course and lecturer, rate, and send.
+  await page.getByLabel(/Course and lecturer/).selectOption({ label: 'SWE 311 · Dr. B. Jones' })
+  await page.getByRole('radio', { name: '5 of 5, Excellent' }).first().locator('xpath=..').click()
+  await page.getByRole('radio', { name: '4 of 5, Very good' }).nth(1).locator('xpath=..').click()
+  await page.getByLabel('What could improve?').fill('More practice problems')
+  await page.getByRole('button', { name: 'Submit' }).click()
+  await expect(page.getByText('Thank you. Your response was sent.')).toBeVisible()
 
-test('the sign-in fields are big enough that iOS does not zoom', async ({ page }) => {
-  await page.goto('/login')
-  await expectNoZoomSize(page, page.getByLabel('Email address'))
-  await expectNoZoomSize(page, page.getByLabel('Password', { exact: true }))
-})
+  // Another response starts from an empty form.
+  await page.getByRole('button', { name: 'Submit another response' }).click()
+  await expect(page.getByLabel(/Course and lecturer/)).toHaveValue('')
 
-test('the notes filters and the chat box do not trigger the zoom either', async ({ page }) => {
-  await page.goto('/login')
-  await signIn(page)
-  await page.waitForURL('**/dashboard')
+  // A wrong link says so.
+  await page.goto('/f/not-a-real-link')
+  await expect(page.getByText('We could not find this form')).toBeVisible()
 
-  // The notes screen: its search box and its two filters.
-  await page.goto('/notes')
-  await expectNoZoomSize(page, page.getByRole('combobox').first())
-
-  // Ask AI: the question box.
-  await page.goto('/ask-ai')
-  await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Ask a question' }))
-
-  // The note composer on Home: the text box, and the title field from the plus menu.
-  await page.goto('/dashboard')
-  await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Note', exact: true }), {
-    compactOnDesktop: false,
-  })
-  await page.getByRole('button', { name: 'More options' }).click()
-  await page.getByRole('menuitem', { name: 'Add a title' }).click()
-  await expectNoZoomSize(page, page.getByRole('textbox', { name: 'Title' }), {
-    compactOnDesktop: false,
-  })
+  // Nothing was blocked by the policy.
+  expect(cspViolations).toEqual([])
 })

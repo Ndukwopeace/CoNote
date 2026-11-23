@@ -78,6 +78,8 @@ export function isSettingsTab(value: string | undefined): value is SettingsTab {
  * shape of the path or add query parameters (path injection).
  */
 export const routeTo = {
+  // A form anyone with the link can answer (D126). The token is the secret in the link.
+  form: (token: string) => `/f/${encodeURIComponent(token)}`,
   // One course.
   course: (courseId: string) => `/courses/${encodeURIComponent(courseId)}`,
   // One class inside a course.
