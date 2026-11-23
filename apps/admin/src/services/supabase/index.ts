@@ -13,6 +13,7 @@ import { createRememberStorage } from '@conote/supabase/rememberStorage'
 import { createSupabaseAlertService } from './supabaseAlertService'
 import { createSupabaseAnalyticsService } from './supabaseAnalyticsService'
 import { createSupabaseAdminFeedbackService } from './supabaseFeedbackService'
+import { createSupabaseAdminFormService } from './supabaseFormService'
 import { createSupabaseHealthService } from './supabaseHealthService'
 // The class and course services.
 import { createSupabaseClassService } from './supabaseClassService'
@@ -86,6 +87,8 @@ export function createSupabaseServices({
     classes: createSupabaseClassService({ client }),
     // Programmes, and the timetable import (one database function).
     programmes: createSupabaseProgrammeService({ client }),
+    // Forms and their answers, built and read through administrator-only functions (D126).
+    forms: createSupabaseAdminFormService({ client }),
     // Feedback people sent, read and sorted through administrator-only functions (D125).
     feedback: createSupabaseAdminFeedbackService({ client }),
     // Students' notes with their authors, read through audited database functions (D123).

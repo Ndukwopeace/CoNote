@@ -15,6 +15,7 @@ import { createMockClassService } from './mockClassService'
 import { createMockCourseService } from './mockCourseService'
 import { createMockHealthService } from './mockHealthService'
 import { createMockFeedbackService } from './mockFeedbackService'
+import { createMockFormService } from './mockFormService'
 import { createMockNoteReadingService } from './mockNoteReadingService'
 import { createMockProgrammeService } from './mockProgrammeService'
 import { createMockUserService } from './mockUserService'
@@ -88,6 +89,15 @@ export function createMockServices(): Services {
       data,
       now,
       actorId: () => readStoredSession(window.sessionStorage)?.user.id ?? null,
+      latencyMs: DEMO_LATENCY_MS,
+      onChange: () => {
+        savePlatform(window.localStorage, data)
+      },
+    }),
+    // Forms and their answers, saved after every change (D126).
+    forms: createMockFormService({
+      data,
+      now,
       latencyMs: DEMO_LATENCY_MS,
       onChange: () => {
         savePlatform(window.localStorage, data)

@@ -82,6 +82,22 @@ const consolePages: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/pages/notes/NotesPage')).NotesPage }),
   },
   {
+    path: ADMIN_ROUTES.forms,
+    lazy: async () => ({ Component: (await import('@/pages/forms/FormsPage')).FormsPage }),
+  },
+  {
+    path: `${ADMIN_ROUTES.forms}/:formId`,
+    lazy: async () => ({
+      Component: (await import('@/pages/forms/FormEditorPage')).FormEditorPage,
+    }),
+  },
+  {
+    path: `${ADMIN_ROUTES.forms}/:formId/results`,
+    lazy: async () => ({
+      Component: (await import('@/pages/forms/FormResultsPage')).FormResultsPage,
+    }),
+  },
+  {
     path: ADMIN_ROUTES.feedback,
     lazy: async () => ({
       Component: (await import('@/pages/feedback/FeedbackPage')).FeedbackPage,

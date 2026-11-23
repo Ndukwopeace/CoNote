@@ -162,4 +162,91 @@ describe('mock ProgrammeService', () => {
 
     expect(data.classes.at(-1)?.number).toBe(5)
   })
+
+  // Proves the lecturer names in an import are stored on a new course, trimmed, once each and in order (D126).
+  it('stores the lecturer names the timetable gives', async () => {
+    const data = smallPlatform()
+    const service = createMockProgrammeService({
+      data,
+      now: () => new Date('2026-10-20T12:00:00Z'),
+      actorId: () => 'a1',
+      latencyMs: 0,
+    })
+
+    await service.importTimetable(
+      {
+        ...payload,
+        courses: [
+          {
+            ...payload.courses[0]!,
+            lecturers: ['Dr. B. Jones', ' Dr. A. Smith ', 'Dr. A. Smith', ''],
+          },
+        ],
+      },
+      { dryRun: false },
+    )
+
+    expect(data.courses.find((course) => course.code === 'NEW 101')?.lecturers).toEqual([
+      'Dr. A. Smith',
+      'Dr. B. Jones',
+    ])
+  })
+
+  // Proves names replace those a course had, a course the timetable names nobody for keeps its own, and
+  // a dry run changes nothing.
+  it('replaces lecturer names on a course that exists, and keeps them when none are given', async () => {
+    const data = smallPlatform()
+    data.courses[0]!.lecturers = ['Old Name']
+    const service = createMockProgrammeService({
+      data,
+      now: () => new Date('2026-10-20T12:00:00Z'),
+      actorId: () => 'a1',
+      latencyMs: 0,
+    })
+    const existing = {
+      timezone: 'Africa/Douala',
+      programmes: [],
+      courses: [{ code: 'CSC 101', title: 'x', teacherId: null, sessions: [] }],
+    }
+
+    await service.importTimetable(
+      { ...existing, courses: [{ ...existing.courses[0]!, lecturers: ['New Name'] }] },
+      { dryRun: true },
+    )
+    expect(data.courses[0]?.lecturers).toEqual(['Old Name'])
+
+    await service.importTimetable(
+      { ...existing, courses: [{ ...existing.courses[0]!, lecturers: ['New Name'] }] },
+      { dryRun: false },
+    )
+    expect(data.courses[0]?.lecturers).toEqual(['New Name'])
+
+    await service.importTimetable(existing, { dryRun: false })
+    expect(data.courses[0]?.lecturers).toEqual(['New Name'])
+  })
+
+  // Proves more than ten lecturers, or a name over 100 characters, is refused.
+  it('refuses too many lecturers or a name that is too long', async () => {
+    const service = createMockProgrammeService({
+      data: smallPlatform(),
+      now: () => new Date('2026-10-20T12:00:00Z'),
+      actorId: () => 'a1',
+      latencyMs: 0,
+    })
+    const withLecturers = (lecturers: string[]) => ({
+      timezone: 'Africa/Douala',
+      programmes: [],
+      courses: [{ code: 'CSC 101', title: 'x', teacherId: null, lecturers, sessions: [] }],
+    })
+
+    await expect(
+      service.importTimetable(
+        withLecturers(Array.from({ length: 11 }, (_u, i) => `L${String(i)}`)),
+        { dryRun: false },
+      ),
+    ).rejects.toMatchObject({ kind: 'validation' })
+    await expect(
+      service.importTimetable(withLecturers(['x'.repeat(101)]), { dryRun: false }),
+    ).rejects.toMatchObject({ kind: 'validation' })
+  })
 })

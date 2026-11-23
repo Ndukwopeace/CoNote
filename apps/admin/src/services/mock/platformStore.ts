@@ -40,6 +40,8 @@ const courseSchema = z.object({
   department: z.string().nullable(),
   status: z.enum(['upcoming', 'ongoing', 'completed']),
   teacherId: z.string().nullable(),
+  // Absent in a save made before lecturers were kept (D126).
+  lecturers: z.array(z.string()).default([]),
   createdAt: z.string(),
   archivedAt: z.string().nullable(),
 })
@@ -120,6 +122,37 @@ const feedbackSchema = z.object({
   createdAt: z.string(),
 })
 
+/** What a saved form must look like. */
+const formSchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  title: z.string(),
+  description: z.string(),
+  accepting: z.boolean(),
+  opensAt: z.string().nullable(),
+  closesAt: z.string().nullable(),
+  createdAt: z.string(),
+  questions: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.enum(['lecturer', 'short', 'paragraph', 'choice', 'dropdown', 'rating']),
+      prompt: z.string(),
+      required: z.boolean(),
+      options: z.array(z.string()),
+    }),
+  ),
+})
+
+/** What a saved answer to a form must look like. */
+const formResponseSchema = z.object({
+  id: z.string(),
+  formId: z.string(),
+  createdAt: z.string(),
+  courseCode: z.string().nullable(),
+  lecturer: z.string().nullable(),
+  answers: z.record(z.string(), z.union([z.string(), z.number()])),
+})
+
 /** What the saved records must look like. Courses and resources are optional so that records
  *  saved before the Courses milestone still load. */
 const storedSchema = z.object({
@@ -153,6 +186,9 @@ const storedSchema = z.object({
   invitedCourses: z.array(z.object({ userId: z.string(), courseId: z.string() })).optional(),
   // Feedback people sent; absent in a save made before it existed (D125).
   feedback: z.array(feedbackSchema).optional(),
+  // Forms and their answers; absent in a save made before they existed (D126).
+  forms: z.array(formSchema).optional(),
+  formResponses: z.array(formResponseSchema).optional(),
   users: z.array(userSchema),
   enrollments: z.array(z.object({ courseId: z.string(), studentId: z.string() })),
   auditLog: z.array(
@@ -191,6 +227,8 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       programmeRequests,
       invitedCourses,
       feedback,
+      forms,
+      formResponses,
       ...saved
     } = parsed.data
     // Classes, summaries and jobs describe one another, so they are taken from the save together.
@@ -211,6 +249,9 @@ export function loadPlatform(store: Storage, seed: PlatformData): PlatformData {
       programmeRequests: programmeRequests ?? seed.programmeRequests,
       invitedCourses: invitedCourses ?? seed.invitedCourses,
       feedback: feedback ?? seed.feedback,
+      // Forms and their answers describe one another, so they come from the save together.
+      forms: forms && formResponses ? forms : seed.forms,
+      formResponses: forms && formResponses ? formResponses : seed.formResponses,
     }
   } catch {
     // Not JSON.
@@ -236,6 +277,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
     programmeRequests,
     invitedCourses,
     feedback,
+    forms,
+    formResponses,
     auditLog,
   } = data
   store.setItem(
@@ -255,6 +298,8 @@ export function savePlatform(store: Storage, data: PlatformData) {
       programmeRequests,
       invitedCourses,
       feedback,
+      forms,
+      formResponses,
       auditLog,
     }),
   )

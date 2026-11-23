@@ -401,6 +401,7 @@ Names only. Values live in the places shown, and nowhere else.
 | `VITE_SUPABASE_ANON_KEY` | Vercel (3 projects)               | The public key. Safe in the browser **because** row-level security guards the data. |
 | `VITE_DATA_SOURCE`       | Vercel (3 projects)               | `supabase` for live, `mock` for demo.                                 |
 | `APP_URL_STUDENT`, `APP_URL_TEACHER`, `APP_URL_ADMIN` | Supabase function secrets | The addresses put in invitation and reset emails.   |
+| `VITE_STUDENT_APP_URL`                                | Vercel setting, admin project | The student site's address, so the Forms page shows the whole link to share (D126). Optional. |
 | `GROQ_API_KEY`           | Supabase function secrets         | Lets `ask-ai` and `process-ai-jobs` call the language model.          |
 | `GROQ_MODEL` (optional)  | Supabase function secrets         | Picks the model. A wrong name makes jobs fail at once.                |
 | `PIPELINE_TOKEN`         | Supabase function secrets **and** the scheduled job | The password the scheduled job sends to `process-ai-jobs`. |

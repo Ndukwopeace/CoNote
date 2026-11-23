@@ -5,6 +5,8 @@
 
 // Sending feedback (D125).
 import type { FeedbackService } from '@conote/core/feedback'
+// Public forms: the lecturer assessment (D126).
+import type { PublicFormService } from '@conote/core/forms'
 // What a student submits for a note.
 import type { NoteInput } from '@/lib/notes'
 // The course, class, note, summary and notification shapes.
@@ -256,6 +258,8 @@ export interface Services {
   profile: ProfileService
   // Feedback to the people who run CoNote (D125).
   feedback: FeedbackService
+  // Forms anyone with the link can answer, such as the lecturer assessment (D126).
+  forms: PublicFormService
   // Demo-only actions; absent outside mock mode.
   demo?: DemoService
 }

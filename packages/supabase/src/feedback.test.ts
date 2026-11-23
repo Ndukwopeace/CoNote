@@ -61,7 +61,7 @@ describe('createSupabaseFeedbackService', () => {
       createSupabaseFeedbackService({ client: limited.client }).send(INPUT),
     ).rejects.toMatchObject({
       kind: 'validation',
-      message: 'You have sent a lot of feedback today. Try again tomorrow.',
+      message: 'Too much was sent in a short time. Try again later.',
     })
 
     const refused = clientAnswering({ code: '42501', message: 'forbidden' })

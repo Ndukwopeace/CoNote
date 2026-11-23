@@ -20,6 +20,8 @@ import { createSeed } from './seed'
 
 // The demo feedback sender.
 import { createDemoFeedbackService } from '@conote/core/feedback'
+// The demo public form.
+import { createMockPublicFormService } from './mockPublicFormService'
 
 // A short delay on every demo call so loading states are visible, as they will be with a server.
 const DEMO_LATENCY_MS = 300
@@ -64,6 +66,8 @@ export function createMockServices(): Services {
     ai: createMockAiService(),
     // Feedback: checked and acknowledged, kept nowhere (D125).
     feedback: createDemoFeedbackService(DEMO_LATENCY_MS),
+    // One demo form, at the link /f/demo (D126).
+    forms: createMockPublicFormService(DEMO_LATENCY_MS),
     // The profile, kept in the browser per student.
     profile: createMockProfileService({
       auth,

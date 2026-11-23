@@ -55,6 +55,16 @@ describe('toImportPayload', () => {
     ])
   })
 
+  // Proves the lecturer names the timetable gives travel with each course, as plain text (D126).
+  it('carries the lecturer names the timetable gives', () => {
+    const payload = toImportPayload(plan, term, {}, 'Africa/Douala')
+
+    expect(payload.courses.map((course) => [course.code, course.lecturers])).toEqual([
+      ['CYB 101', ['Mr TAGWAN']],
+      ['MATH 101', []],
+    ])
+  })
+
   // Proves each course's classes are the weekly slots spread over the term.
   it('spreads each course over the term', () => {
     const payload = toImportPayload(plan, term, {}, 'Africa/Douala')

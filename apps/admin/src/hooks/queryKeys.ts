@@ -7,6 +7,7 @@
 import type { AnalyticsPeriod } from '@/types/analytics'
 import type { ClassFilter } from '@/types/classes'
 import type { FeedbackFilter } from '@/types/feedback'
+import type { FormResponseFilter } from '@/types/forms'
 import type { CourseFilter } from '@/types/courses'
 import type { ActivityRange, ActivitySeriesKey } from '@/types/dashboard'
 import type { UserFilter } from '@/types/users'
@@ -25,6 +26,19 @@ export const queryKeys = {
     alerts: () => [...queryKeys.dashboard.all, 'alerts'] as const,
     // The health report.
     health: () => [...queryKeys.dashboard.all, 'health'] as const,
+  },
+  forms: {
+    // Every Forms query; cleared after a change to a form or its answers (D126).
+    all: ['forms'] as const,
+    // The list of forms.
+    list: () => [...queryKeys.forms.all, 'list'] as const,
+    // One form.
+    detail: (formId: string) => [...queryKeys.forms.all, 'detail', formId] as const,
+    // One form's results by course and lecturer.
+    summary: (formId: string) => [...queryKeys.forms.all, 'summary', formId] as const,
+    // One filtered page of a form's answers.
+    responses: (formId: string, filter: FormResponseFilter) =>
+      [...queryKeys.forms.all, 'responses', formId, filter] as const,
   },
   feedback: {
     // Every feedback query; cleared after a status change.

@@ -316,6 +316,8 @@ export function createMockCourseService({
       const course: CourseRecord = {
         id: `course-${crypto.randomUUID()}`,
         ...values,
+        // A course made by hand has no timetable, so no lecturers (D126).
+        lecturers: [],
         createdAt: now().toISOString(),
         archivedAt: null,
       }

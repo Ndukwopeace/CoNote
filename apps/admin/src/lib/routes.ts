@@ -30,6 +30,8 @@ export const ADMIN_ROUTES = {
   analytics: '/admin/analytics',
   // What people sent through the Feedback button (D125).
   feedback: '/admin/feedback',
+  // Forms such as the lecturer assessment, built here and answered by anyone with the link (D126).
+  forms: '/admin/forms',
   // Recorded platform actions.
   auditLogs: '/admin/audit-logs',
   // Platform configuration.
@@ -47,6 +49,7 @@ export const NAV_ROUTES = [
   ADMIN_ROUTES.resources,
   ADMIN_ROUTES.aiSummaries,
   ADMIN_ROUTES.analytics,
+  ADMIN_ROUTES.forms,
   ADMIN_ROUTES.feedback,
   ADMIN_ROUTES.auditLogs,
   ADMIN_ROUTES.settings,
@@ -65,6 +68,9 @@ export const routeTo = {
   class: (classId: string) => `${ADMIN_ROUTES.classes}/${encodeURIComponent(classId)}`,
   // One resource's details.
   resource: (resourceId: string) => `${ADMIN_ROUTES.resources}/${encodeURIComponent(resourceId)}`,
+  // One form: its questions and settings, and its results (D126).
+  form: (formId: string) => `${ADMIN_ROUTES.forms}/${encodeURIComponent(formId)}`,
+  formResults: (formId: string) => `${ADMIN_ROUTES.forms}/${encodeURIComponent(formId)}/results`,
   // One summary's pipeline view.
   summary: (summaryId: string) => `${ADMIN_ROUTES.aiSummaries}/${encodeURIComponent(summaryId)}`,
   // Sign-in, remembering where to go afterwards (checked by isSafeRedirect before use).
