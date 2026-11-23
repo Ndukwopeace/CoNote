@@ -69,7 +69,7 @@ describe('mock Form service', () => {
     const summary = await service.getSummary(form?.id ?? '')
 
     expect(form).toMatchObject({ title: 'Lecturer assessment', state: 'open' })
-    expect(summary.length).toBe(
+    expect(summary).toHaveLength(
       data.courses
         .filter((course) => course.archivedAt === null)
         .flatMap((course) => course.lecturers).length,

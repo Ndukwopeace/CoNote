@@ -21,8 +21,7 @@ export function ResultsTable({
   const ratings = questions.filter((question) => question.kind === 'rating')
   return (
     // A table wider than a phone scrolls sideways, so the box can take the keyboard focus and be scrolled by keys.
-    <div
-      role="region"
+    <section
       aria-label="Results table"
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a box that scrolls sideways must take focus, or a keyboard user cannot scroll it (axe: scrollable-region-focusable)
       tabIndex={0}
@@ -79,6 +78,6 @@ export function ResultsTable({
           })}
         </tbody>
       </table>
-    </div>
+    </section>
   )
 }

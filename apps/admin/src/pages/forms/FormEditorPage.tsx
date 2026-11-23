@@ -222,7 +222,7 @@ function Editor({
               setAccepting(event.target.checked)
             }}
           />
-          Accepting responses
+          <span>Accepting responses</span>
         </label>
         <div className="flex flex-wrap gap-4">
           <div className="grid gap-1 text-sm">
@@ -325,9 +325,7 @@ function Editor({
           </p>
         )}
         {saved && !save.isPending && (
-          <p role="status" className="text-sm text-success-strong">
-            Saved.
-          </p>
+          <output className="text-sm text-success-strong">Saved.</output>
         )}
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={submit} disabled={save.isPending}>

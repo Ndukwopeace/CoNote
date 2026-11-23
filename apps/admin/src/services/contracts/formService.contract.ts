@@ -89,17 +89,20 @@ function draft(title: string, overrides: Partial<FormDraft> = {}): FormDraft {
   }
 }
 
+/** Builds a form and returns the service, the platform it runs on and the saved form's ID. */
+async function buildForm(env: FormContractEnv, overrides: Partial<FormDraft>) {
+  const data = platform()
+  const service = env.create(data, NOW)
+  const title = uniqueTitle('Assessment')
+  const id = await service.saveForm(draft(title, overrides))
+  return { data, service, id, title }
+}
+
 /** Registers the AdminFormService contract suite under `name`. */
 export function describeFormServiceContract(name: string, env: FormContractEnv) {
   describe(`AdminFormService contract: ${name}`, () => {
-    // Builds a form and returns the service, the platform it runs on and the saved form's ID.
-    async function built(overrides: Partial<FormDraft> = {}) {
-      const data = platform()
-      const service = env.create(data, NOW)
-      const title = uniqueTitle('Assessment')
-      const id = await service.saveForm(draft(title, overrides))
-      return { data, service, id, title }
-    }
+    // Builds a form on this environment and returns the service, the platform and the saved form's ID.
+    const built = (overrides: Partial<FormDraft> = {}) => buildForm(env, overrides)
 
     // Proves a form is saved with its questions in order, closed until switched on, and listed.
     it('saves a form and reads it back, closed at first', async () => {

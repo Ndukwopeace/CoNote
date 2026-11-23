@@ -50,7 +50,10 @@ export function fromLocalInput(value: string): string | null {
 export function publicFormPath(token: string, base?: string): string {
   const path = `/f/${encodeURIComponent(token)}`
   if (base === undefined || base === '') return path
-  return `${base.replace(/\/+$/, '')}${path}`
+  // Trailing slashes are cut off one at a time, so the join below has exactly one.
+  let trimmed = base
+  while (trimmed.endsWith('/')) trimmed = trimmed.slice(0, -1)
+  return `${trimmed}${path}`
 }
 
 /** `text` safe to open in a spreadsheet and to sit in one CSV cell. */

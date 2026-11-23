@@ -5,7 +5,7 @@
  */
 
 // Icons.
-import { ArrowLeft, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, BarChart3, Download, Trash2 } from 'lucide-react'
 // Local state.
 import { useState } from 'react'
 // Links and the ID in the address.
@@ -20,8 +20,6 @@ import { NativeSelect } from '@conote/ui/native-select'
 import { Skeleton } from '@conote/ui/skeleton'
 // Load-failure panel.
 import { ErrorState } from '@conote/portal'
-// Icon for the empty state.
-import { BarChart3 } from 'lucide-react'
 
 // The pieces.
 import { ResultsTable } from '@/features/forms/ResultsTable'

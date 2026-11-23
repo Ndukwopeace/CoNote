@@ -88,17 +88,11 @@ export function QuestionEditor({
             onChange={(event) => {
               const kind = FORM_QUESTION_KINDS.find((value) => value === event.target.value)
               if (kind === undefined) return
-              onChange({
-                ...question,
-                kind,
-                // Choices belong to the two kinds that have them; a new such question starts with two.
-                options:
-                  kind === 'choice' || kind === 'dropdown'
-                    ? question.options.length >= 2
-                      ? question.options
-                      : ['Option 1', 'Option 2']
-                    : [],
-              })
+              // Choices belong to the two kinds that have them; a new such question starts with two.
+              const hasChoices = kind === 'choice' || kind === 'dropdown'
+              const startingChoices =
+                question.options.length >= 2 ? question.options : ['Option 1', 'Option 2']
+              onChange({ ...question, kind, options: hasChoices ? startingChoices : [] })
             }}
           >
             {kindsFor(question.kind, lecturerTaken).map((kind) => (

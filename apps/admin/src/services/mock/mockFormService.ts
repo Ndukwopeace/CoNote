@@ -15,6 +15,7 @@ import {
   FORM_RESPONSES_PAGE_SIZE,
   type AdminForm,
   type AdminFormService,
+  type FormDraft,
   type FormListItem,
   type FormResultRow,
 } from '@/types/forms'
@@ -29,6 +30,22 @@ interface MockFormOptions {
   latencyMs: number
   // Called after a change, so the demo can save the platform.
   onChange?: () => void
+}
+
+/** Refuses a change that would lose or alter a question that already has answers. */
+function checkAnsweredForm(existing: FormRecord, draft: FormDraft): void {
+  const kept = new Set(draft.questions.map((question) => question.id))
+  if (existing.questions.some((question) => !kept.has(question.id))) {
+    throw new AppError('validation', 'A question with answers cannot be removed.')
+  }
+  for (const question of draft.questions) {
+    const before = existing.questions.find((candidate) => candidate.id === question.id)
+    const sameChoices =
+      before?.options.join('\n') === question.options.map((option) => option.trim()).join('\n')
+    if (before && (before.kind !== question.kind || !sameChoices)) {
+      throw new AppError('validation', 'An answered question keeps its kind and choices.')
+    }
+  }
 }
 
 /** A new secret for a public link: 32 characters, like the database's. */
@@ -135,22 +152,7 @@ export function createMockFormService({
         existing !== undefined &&
         data.formResponses.some((response) => response.formId === existing.id)
       // With answers on file, nothing may go and an answered question keeps its kind and choices.
-      if (existing && hasResponses) {
-        const kept = new Set(draft.questions.map((question) => question.id))
-        if (existing.questions.some((question) => !kept.has(question.id))) {
-          throw new AppError('validation', 'A question with answers cannot be removed.')
-        }
-        for (const question of draft.questions) {
-          const before = existing.questions.find((candidate) => candidate.id === question.id)
-          if (
-            before &&
-            (before.kind !== question.kind ||
-              before.options.join('\n') !== question.options.map((o) => o.trim()).join('\n'))
-          ) {
-            throw new AppError('validation', 'An answered question keeps its kind and choices.')
-          }
-        }
-      }
+      if (existing && hasResponses) checkAnsweredForm(existing, draft)
       // The questions, with an ID for each new one.
       const questions: FormQuestion[] = draft.questions.map((question) => {
         if (question.id !== undefined && !existing?.questions.some((q) => q.id === question.id)) {

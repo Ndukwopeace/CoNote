@@ -90,8 +90,7 @@ function ClassTable({ period }: Readonly<{ period: AnalyticsPeriod }>) {
 
   return (
     // A table wider than a phone scrolls sideways, so the box can take the keyboard focus and be scrolled by keys.
-    <div
-      role="region"
+    <section
       aria-label="Notes by class"
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a box that scrolls sideways must take focus, or a keyboard user cannot scroll it (axe: scrollable-region-focusable)
       tabIndex={0}
@@ -149,7 +148,7 @@ function ClassTable({ period }: Readonly<{ period: AnalyticsPeriod }>) {
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   )
 }
 

@@ -22,10 +22,13 @@ import {
 
 /** A file name from a form's title: letters and digits only, so it is safe on any computer. */
 function fileName(title: string): string {
-  const slug = title
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-+|-+$/g, '')
+  // Runs of other characters become one dash; the dashes at either end are then cut off.
+  const dashed = title.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-')
+  let start = 0
+  let end = dashed.length
+  while (start < end && dashed[start] === '-') start += 1
+  while (end > start && dashed[end - 1] === '-') end -= 1
+  const slug = dashed.slice(start, end)
   return `${slug === '' ? 'form' : slug}-responses.csv`
 }
 
