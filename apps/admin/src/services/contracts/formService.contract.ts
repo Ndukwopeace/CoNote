@@ -127,13 +127,18 @@ export function describeFormServiceContract(name: string, env: FormContractEnv) 
 
     // Proves the state follows the switch and the dates.
     it('is open when switched on, and not open before its date', async () => {
-      const open = await built({ accepting: true })
-      const later = await built({ accepting: true, opensAt: '2099-01-01T00:00:00.000Z' })
-      const past = await built({ accepting: true, closesAt: '2000-01-01T00:00:00.000Z' })
+      // One service for all three forms: a real stack starts a fresh session for each service it makes.
+      const { service, id: openId } = await built({ accepting: true })
+      const laterId = await service.saveForm(
+        draft(uniqueTitle('Later'), { accepting: true, opensAt: '2099-01-01T00:00:00.000Z' }),
+      )
+      const pastId = await service.saveForm(
+        draft(uniqueTitle('Past'), { accepting: true, closesAt: '2000-01-01T00:00:00.000Z' }),
+      )
 
-      expect((await open.service.getForm(open.id)).state).toBe('open')
-      expect((await later.service.getForm(later.id)).state).toBe('not_open')
-      expect((await past.service.getForm(past.id)).state).toBe('closed')
+      expect((await service.getForm(openId)).state).toBe('open')
+      expect((await service.getForm(laterId)).state).toBe('not_open')
+      expect((await service.getForm(pastId)).state).toBe('closed')
     })
 
     // Proves the builder's limits are enforced by the service too.
